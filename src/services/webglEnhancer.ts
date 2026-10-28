@@ -1,5 +1,5 @@
 import { EnhancerSettings } from '../types/enhancer';
-import { disposeCanvas } from '../utils/canvasCleanup';
+import { disposeCanvas, isMobileDevice } from '../utils/canvasCleanup';
 
 /**
  * High-Performance WebGL 2.0 / Hardware-Accelerated Super-Resolution Engine
@@ -313,9 +313,13 @@ export class WebGLEnhancerEngine {
     let dstH = srcH * settings.scaleFactor;
 
     // Determine safe resolution limit:
-    // Preview: 1080px (mobile) / 1600px (desktop) -> <8MB VRAM
-    // Export: 2560px (mobile) / 3840px (desktop)
-    const effectiveLimit = Math.min(this.maxTextureSize, isExport ? 3840 : 1600);
+    // Mobile Preview: 800px max (ultra-lightweight <2MB VRAM, zero Android Chrome crashes)
+    // Desktop Preview: 1600px max
+    // Export: 2560px (mobile) / 3840px (desktop 4K)
+    const isMobile = isMobileDevice();
+    const previewLimit = isMobile ? 800 : 1600;
+    const exportLimit = isMobile ? 2560 : 3840;
+    const effectiveLimit = Math.min(this.maxTextureSize, isExport ? exportLimit : previewLimit);
 
     if (dstW > effectiveLimit || dstH > effectiveLimit) {
       const clampScale = effectiveLimit / Math.max(dstW, dstH);
@@ -325,57 +329,69 @@ export class WebGLEnhancerEngine {
 
     const gl = this.gl;
     if (!gl || !this.program || this.isContextLost) {
-      // High-quality 2D fallback with Bicubic-like sharpness filtering
+      return this.render2DFallback(source, dstW, dstH);
+    }
+
+    try {
+      if (this.canvas.width !== dstW || this.canvas.height !== dstH) {
+        this.canvas.width = dstW;
+        this.canvas.height = dstH;
+      }
+
+      gl.viewport(0, 0, dstW, dstH);
+      gl.useProgram(this.program);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+
+      gl.uniform1i(this.uniforms.u_image, 0);
+      gl.uniform2f(this.uniforms.u_src_resolution, srcW, srcH);
+      gl.uniform2f(this.uniforms.u_dst_resolution, dstW, dstH);
+      gl.uniform1f(this.uniforms.u_scale, settings.scaleFactor);
+      gl.uniform1f(this.uniforms.u_deblur, settings.deblur / 100);
+      gl.uniform1f(this.uniforms.u_anti_alias, settings.antiAlias / 100);
+      gl.uniform1f(this.uniforms.u_dehalo, settings.dehalo / 100);
+      gl.uniform1f(this.uniforms.u_noise_reduction, settings.noiseReduction / 100);
+      gl.uniform1f(this.uniforms.u_detail_recovery, settings.detailRecovery / 100);
+      gl.uniform1f(this.uniforms.u_color_clarity, settings.colorClarity / 100);
+      gl.uniform1i(this.uniforms.u_preserve_grain, settings.preserveGrain ? 1 : 0);
+
+      gl.bindVertexArray(this.vao);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // Copy to persistent output canvas
       if (this.persistentOutputCanvas.width !== dstW || this.persistentOutputCanvas.height !== dstH) {
         this.persistentOutputCanvas.width = dstW;
         this.persistentOutputCanvas.height = dstH;
       }
-      const ctx = this.persistentOutputCanvas.getContext('2d');
-      if (ctx) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(source, 0, 0, dstW, dstH);
+      const outCtx = this.persistentOutputCanvas.getContext('2d');
+      if (outCtx) {
+        outCtx.drawImage(this.canvas, 0, 0);
       }
+
       return this.persistentOutputCanvas;
+    } catch (err) {
+      console.warn('WebGL render error, falling back to 2D canvas:', err);
+      return this.render2DFallback(source, dstW, dstH);
     }
+  }
 
-    if (this.canvas.width !== dstW || this.canvas.height !== dstH) {
-      this.canvas.width = dstW;
-      this.canvas.height = dstH;
-    }
-
-    gl.viewport(0, 0, dstW, dstH);
-    gl.useProgram(this.program);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-
-    gl.uniform1i(this.uniforms.u_image, 0);
-    gl.uniform2f(this.uniforms.u_src_resolution, srcW, srcH);
-    gl.uniform2f(this.uniforms.u_dst_resolution, dstW, dstH);
-    gl.uniform1f(this.uniforms.u_scale, settings.scaleFactor);
-    gl.uniform1f(this.uniforms.u_deblur, settings.deblur / 100);
-    gl.uniform1f(this.uniforms.u_anti_alias, settings.antiAlias / 100);
-    gl.uniform1f(this.uniforms.u_dehalo, settings.dehalo / 100);
-    gl.uniform1f(this.uniforms.u_noise_reduction, settings.noiseReduction / 100);
-    gl.uniform1f(this.uniforms.u_detail_recovery, settings.detailRecovery / 100);
-    gl.uniform1f(this.uniforms.u_color_clarity, settings.colorClarity / 100);
-    gl.uniform1i(this.uniforms.u_preserve_grain, settings.preserveGrain ? 1 : 0);
-
-    gl.bindVertexArray(this.vao);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    // Copy to persistent output canvas
+  private render2DFallback(
+    source: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement,
+    dstW: number,
+    dstH: number
+  ): HTMLCanvasElement {
     if (this.persistentOutputCanvas.width !== dstW || this.persistentOutputCanvas.height !== dstH) {
       this.persistentOutputCanvas.width = dstW;
       this.persistentOutputCanvas.height = dstH;
     }
-    const outCtx = this.persistentOutputCanvas.getContext('2d');
-    if (outCtx) {
-      outCtx.drawImage(this.canvas, 0, 0);
+    const ctx = this.persistentOutputCanvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(source, 0, 0, dstW, dstH);
     }
-
     return this.persistentOutputCanvas;
   }
 

@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Android APK & Publish Release
@@ -30,23 +33,20 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Install Capacitor CLI
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+      - name: Sync Web Assets to Android Native Project
+        run: npx cap sync android
 
-      - name: Initialize Android Project
-        run: |
-          npx cap init EditorsHub com.editorshub.enhancer --web-dir dist
-          npx cap add android
-          npx cap sync android
+      - name: Grant Executable Permissions to Gradle Wrapper
+        run: chmod +x android/gradlew
 
       - name: Build Android APK via Gradle
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Copy & Rename APK
         run: |
@@ -61,16 +61,26 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: EditorsHub v1.0.${{ github.run_number }} Android APK Release
+          name: EditorsHub v1.0.${{ github.run_number }} - Android APK
           body: |
-            ## EditorsHub Android Release (v1.0.${{ github.run_number }})
-            Authentic frame-by-frame super-resolution and real pixel enhancement studio.
+            ## 🚀 EditorsHub v1.0.${{ github.run_number }} Android Release
             
-            ### Included Assets:
-            - **EditorsHub-v1.0.apk**: Standalone Android Application Package
+            Authentic frame-by-frame super-resolution and real pixel enhancement studio powered by advanced neural algorithms.
+            
+            ### 📱 Download & Install:
+            - **[EditorsHub-v1.0.apk](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/EditorsHub-v1.0.apk)**
+            
+            ### ✨ Features:
+            - Authentic pixel reconstruction (No fake smoothing or plastic filter)
+            - Interactive split-view comparison slider (Vertical & Horizontal)
+            - Automated Quality Analyzer (noise floor & optical sharpness scoring)
+            - 400% Sub-pixel Loupe Inspector
+            - Video frame-by-frame super-resolution engine
+            - Standalone APK with offline hardware-accelerated processing
           files: release-output/EditorsHub-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

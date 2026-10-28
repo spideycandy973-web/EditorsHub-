@@ -22,9 +22,9 @@ export function getMaxSafeDimension(isExport = false): number {
     return mobile ? 2560 : 3840;
   }
   // Interactive preview and split-view comparison:
-  // Mobile: 1080px max (sharp on mobile screens, ~4.5MB VRAM max)
+  // Mobile: 800px max (sharp on mobile screens, ~2MB VRAM max, prevents Chrome dead-face)
   // Desktop: 1600px max (~9.5MB VRAM max)
-  return mobile ? 1080 : 1600;
+  return mobile ? 800 : 1600;
 }
 
 export function disposeCanvas(canvas: HTMLCanvasElement | null | undefined): void {
