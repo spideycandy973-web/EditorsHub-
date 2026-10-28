@@ -3,6 +3,10 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import path from 'path';
 import dotenv from 'dotenv';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 dotenv.config();
 
@@ -196,6 +200,50 @@ print("Running authentic super-resolution on input frames...")
     pythonScript,
     colabUrl: 'https://colab.research.google.com/drive/1k7WXSMLeeJd4i7RCxrlCl_1gM0YAVh7V?usp=sharing',
   });
+});
+
+// API Route: One-click push to GitHub repository to trigger the automated APK compiler
+app.post('/api/github/push-release', async (req, res) => {
+  try {
+    const { repoUrl, token } = req.body;
+    if (!repoUrl) {
+      return res.status(400).json({ error: 'GitHub repository URL is required.' });
+    }
+    if (!token) {
+      return res.status(400).json({ error: 'GitHub Personal Access Token is required to authenticate push.' });
+    }
+
+    const cleanRepo = repoUrl.trim();
+    const match = cleanRepo.match(/github\.com\/([^/]+)\/([^/.]+)/);
+    if (!match) {
+      return res.status(400).json({ error: 'Invalid GitHub repository URL format. Use https://github.com/OWNER/REPO.git' });
+    }
+    const owner = match[1];
+    const repo = match[2];
+
+    const authenticatedRemote = `https://${encodeURIComponent(token.trim())}@github.com/${owner}/${repo}.git`;
+
+    const { stdout, stderr } = await execAsync(`git push "${authenticatedRemote}" main --force`, {
+      timeout: 45000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+    });
+
+    console.log('GitHub Push Output:', stdout || stderr);
+
+    res.json({
+      success: true,
+      owner,
+      repo,
+      actionsUrl: `https://github.com/${owner}/${repo}/actions`,
+      releasesUrl: `https://github.com/${owner}/${repo}/releases`,
+      message: 'Successfully pushed codebase, Android native project, and CI/CD workflow to your GitHub repository!'
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Git push error:', msg);
+    const sanitizedMsg = msg.replace(/https:\/\/[^@]+@/g, 'https://***@');
+    res.status(500).json({ error: sanitizedMsg });
+  }
 });
 
 // Vite Middleware for Fullstack Development
