@@ -313,12 +313,12 @@ export class WebGLEnhancerEngine {
     let dstH = srcH * settings.scaleFactor;
 
     // Determine safe resolution limit:
-    // Mobile Preview: 800px max (ultra-lightweight <2MB VRAM, zero Android Chrome crashes)
+    // Mobile Preview: 640px max (ultra-lightweight <1MB VRAM, zero Android Chrome crashes)
     // Desktop Preview: 1600px max
-    // Export: 2560px (mobile) / 3840px (desktop 4K)
+    // Export: 2048px (mobile) / 3840px (desktop 4K)
     const isMobile = isMobileDevice();
-    const previewLimit = isMobile ? 800 : 1600;
-    const exportLimit = isMobile ? 2560 : 3840;
+    const previewLimit = isMobile ? 640 : 1600;
+    const exportLimit = isMobile ? 2048 : 3840;
     const effectiveLimit = Math.min(this.maxTextureSize, isExport ? exportLimit : previewLimit);
 
     if (dstW > effectiveLimit || dstH > effectiveLimit) {

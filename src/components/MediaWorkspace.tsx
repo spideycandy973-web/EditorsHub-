@@ -124,7 +124,7 @@ export const MediaWorkspace: React.FC<MediaWorkspaceProps> = ({
       if (origSource) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'medium';
-        ctx.drawImage(origSource, 0, 0, srcW, srcH, 0, 0, displayW, displayH);
+        ctx.drawImage(origSource, 0, 0, origSource.width, origSource.height, 0, 0, displayW, displayH);
       }
       return;
     }
@@ -149,7 +149,7 @@ export const MediaWorkspace: React.FC<MediaWorkspaceProps> = ({
         ctx.clip();
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'medium';
-        ctx.drawImage(origSource, 0, 0, srcW, srcH, 0, 0, displayW, displayH);
+        ctx.drawImage(origSource, 0, 0, origSource.width, origSource.height, 0, 0, displayW, displayH);
         ctx.restore();
       }
 
@@ -176,7 +176,7 @@ export const MediaWorkspace: React.FC<MediaWorkspaceProps> = ({
         ctx.clip();
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'medium';
-        ctx.drawImage(origSource, 0, 0, srcW, srcH, 0, 0, displayW, displayH);
+        ctx.drawImage(origSource, 0, 0, origSource.width, origSource.height, 0, 0, displayW, displayH);
         ctx.restore();
       }
 

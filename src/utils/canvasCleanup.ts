@@ -6,25 +6,28 @@
 
 export function isMobileDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isTouch = typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1;
+  const isSmallScreen = typeof window !== 'undefined' && (window.innerWidth <= 840 || (typeof window.screen !== 'undefined' && window.screen.width <= 840));
   return (
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (typeof window !== 'undefined' && window.innerWidth <= 768)
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+    (isTouch && isSmallScreen)
   );
 }
 
 /**
  * Returns maximum safe texture and canvas dimensions based on platform.
- * Keeps GPU VRAM usage strictly below 25MB on mobile devices to prevent Chrome "Aw, Snap!" crashes.
+ * Keeps GPU VRAM usage strictly below 10MB on mobile devices to prevent Chrome "Aw, Snap!" dead-face crashes.
  */
 export function getMaxSafeDimension(isExport = false): number {
   const mobile = isMobileDevice();
   if (isExport) {
-    return mobile ? 2560 : 3840;
+    return mobile ? 2048 : 3840;
   }
   // Interactive preview and split-view comparison:
-  // Mobile: 800px max (sharp on mobile screens, ~2MB VRAM max, prevents Chrome dead-face)
+  // Mobile: 640px max (sharp on mobile screens, <1MB VRAM, zero Android Chrome crashes)
   // Desktop: 1600px max (~9.5MB VRAM max)
-  return mobile ? 800 : 1600;
+  return mobile ? 640 : 1600;
 }
 
 export function disposeCanvas(canvas: HTMLCanvasElement | null | undefined): void {

@@ -3,7 +3,7 @@ import { MediaItem, EnhancerSettings, ModelPreset, ProcessingStatus, QualityAnal
 import { PRESET_CONFIGS } from './services/superResolutionEngine';
 import { webglEnhancer } from './services/webglEnhancer';
 import { analyzeFrameQuality } from './services/qualityAnalyzer';
-import { disposeCanvas } from './utils/canvasCleanup';
+import { disposeCanvas, getSafeDisplayDimensions, getMaxSafeDimension } from './utils/canvasCleanup';
 import { VideoSuperResolutionProcessor } from './services/videoProcessor';
 import { Header } from './components/Header';
 import { EnhancerControls } from './components/EnhancerControls';
@@ -162,13 +162,17 @@ export default function App() {
       setVideoTime(time);
       const w = vid.videoWidth || 1280;
       const h = vid.videoHeight || 720;
+      const maxDim = getMaxSafeDimension(false);
+      const { width: safeW, height: safeH } = getSafeDisplayDimensions(w, h, maxDim);
       
       const origCv = document.createElement('canvas');
-      origCv.width = w;
-      origCv.height = h;
+      origCv.width = safeW;
+      origCv.height = safeH;
       const ctx = origCv.getContext('2d');
       if (ctx) {
-        ctx.drawImage(vid, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'medium';
+        ctx.drawImage(vid, 0, 0, safeW, safeH);
         updateOriginalCanvas(origCv);
       }
 
@@ -209,13 +213,17 @@ export default function App() {
           setCurrentMedia((prev) => ({ ...prev, width: w, height: h }));
         }
 
-        // Create original canvas snapshot
+        // Create original canvas snapshot (scaled to safe preview bounds to prevent mobile GPU OOM crashes)
+        const maxDim = getMaxSafeDimension(false);
+        const { width: safeW, height: safeH } = getSafeDisplayDimensions(w, h, maxDim);
         const origCv = document.createElement('canvas');
-        origCv.width = w;
-        origCv.height = h;
+        origCv.width = safeW;
+        origCv.height = safeH;
         const ctx = origCv.getContext('2d');
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'medium';
+          ctx.drawImage(img, 0, 0, safeW, safeH);
           updateOriginalCanvas(origCv);
         }
 
