@@ -1,0 +1,8 @@
+{
+  "name": "EditorsHub",
+  "description": "Authentic frame-by-frame super-resolution and real pixel enhancement studio powered by advanced neural algorithms.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
