@@ -2,7 +2,7 @@ name: Build and Release Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, arena/43bd2fb5-editorshub ]
   workflow_dispatch:
 
 permissions:

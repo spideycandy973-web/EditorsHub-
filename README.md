@@ -32,4 +32,4 @@ npm install --legacy-peer-deps
 npm run android:apk
 ```
 
-The debug APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. GitHub Actions can also build the APK artifact when the `Build and Release Android APK` workflow is manually dispatched against a branch.
+The debug APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. GitHub Actions builds and uploads the APK artifact on pushes to `main`, `master`, or this working branch; the workflow can also be dispatched manually in GitHub Actions.
