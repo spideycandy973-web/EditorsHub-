@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">EditorsHub</string>
     <string name="title_activity_main">EditorsHub</string>
-    <string name="package_name">com.editorshub.enhancer</string>
-    <string name="custom_url_scheme">com.editorshub.enhancer</string>
+    <string name="package_name">com.editorshub.mr.arfat</string>
+    <string name="custom_url_scheme">com.editorshub.mr.arfat</string>
 </resources>

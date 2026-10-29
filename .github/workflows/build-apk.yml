@@ -23,11 +23,11 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Setup Java JDK 17
+      - name: Setup Java JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Accept Android SDK Licenses
         run: |
@@ -69,18 +69,17 @@ jobs:
           body: |
             ## 🚀 EditorsHub v1.0.${{ github.run_number }} Android Release
             
-            Authentic frame-by-frame super-resolution and real pixel enhancement studio powered by advanced neural algorithms.
+            EditorsHub Motion Studio is a mobile-first motion design workspace.
             
             ### 📱 Download & Install:
             - **[EditorsHub-v1.0.apk](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/EditorsHub-v1.0.apk)**
             
-            ### ✨ Features:
-            - Authentic pixel reconstruction (No fake smoothing or plastic filter)
-            - Interactive split-view comparison slider (Vertical & Horizontal)
-            - Automated Quality Analyzer (noise floor & optical sharpness scoring)
-            - 400% Sub-pixel Loupe Inspector
-            - Video frame-by-frame super-resolution engine
-            - Standalone APK with offline hardware-accelerated processing
+            ### ✨ Preview features:
+            - Project, template and element library
+            - Configurable composition ratios, resolution and frame rate
+            - Layered timeline with media, image, text, shape and audio layers
+            - Transform, color, effect-browser and project-package workflows
+            - Capacitor Android app ID: `com.editorshub.mr.arfat`
           files: release-output/EditorsHub-v1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

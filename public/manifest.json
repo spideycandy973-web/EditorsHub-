@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "EditorsHub - Authentic Super-Resolution",
+  "name": "EditorsHub Motion Studio",
   "short_name": "EditorsHub",
-  "description": "Authentic frame-by-frame super-resolution and real pixel enhancement studio powered by advanced neural algorithms.",
+  "description": "A mobile-first motion design and video editing studio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#101013",
+  "theme_color": "#101013",
   "orientation": "any",
   "icons": [
     {

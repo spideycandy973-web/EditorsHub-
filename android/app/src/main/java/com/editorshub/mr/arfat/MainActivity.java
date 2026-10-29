@@ -1,4 +1,4 @@
-package com.editorshub.enhancer;
+package com.editorshub.mr.arfat;
 
 import com.getcapacitor.BridgeActivity;
 

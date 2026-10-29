@@ -1,8 +1,10 @@
 {
   "name": "EditorsHub",
-  "description": "Authentic frame-by-frame super-resolution and real pixel enhancement studio powered by advanced neural algorithms.",
+  "description": "Mobile-first motion design workspace with a project library, layered timeline, effects browser and composition tools.",
   "requestFramePermissions": [],
   "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+    "PROJECT_EDITING",
+    "LAYERED_TIMELINE",
+    "MEDIA_IMPORT"
   ]
 }
