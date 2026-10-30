@@ -1,40 +1,40 @@
 /* EditorsHub Liquid Glass visual system */
 :root {
   color-scheme: dark;
-  --bg: #071019;
-  --bg-deep: #03080e;
-  --panel: rgba(18, 31, 44, .70);
-  --panel-soft: rgba(24, 40, 54, .62);
-  --panel-lift: rgba(35, 54, 70, .72);
-  --line: rgba(206, 237, 255, .14);
-  --muted: #9aabb8;
-  --dim: #70818e;
-  --text: #f3f8fc;
-  --mint: #78f8dc;
-  --mint-dark: #073a36;
-  --lavender: #d9efff;
-  --pink: #ff72c5;
-  --glass-edge: rgba(217, 244, 255, .2);
-  --glass-fill: rgba(12, 25, 39, .62);
+  --bg: #100d08;
+  --bg-deep: #080602;
+  --panel: rgba(40, 30, 14, .70);
+  --panel-soft: rgba(49, 38, 18, .62);
+  --panel-lift: rgba(67, 50, 22, .72);
+  --line: rgba(255, 226, 166, .16);
+  --muted: #b4a88f;
+  --dim: #89795c;
+  --text: #fff9ed;
+  --mint: #f6ca73;
+  --mint-dark: #4a2c08;
+  --lavender: #fff0cf;
+  --pink: #f29b57;
+  --glass-edge: rgba(255, 233, 185, .2);
+  --glass-fill: rgba(34, 24, 11, .68);
   font-synthesis: none;
 }
 
 html, body {
-  background-color: #071019;
+  background-color: #100d08;
   background-image:
-    radial-gradient(ellipse at 12% 4%, rgba(39, 221, 206, .17), transparent 34rem),
-    radial-gradient(ellipse at 92% 12%, rgba(128, 103, 255, .18), transparent 37rem),
-    radial-gradient(ellipse at 53% 96%, rgba(255, 90, 180, .11), transparent 42rem),
-    linear-gradient(145deg, #071019 0%, #0a1220 48%, #090b16 100%);
+    radial-gradient(ellipse at 12% 4%, rgba(247, 196, 91, .17), transparent 34rem),
+    radial-gradient(ellipse at 92% 12%, rgba(242, 155, 76, .15), transparent 37rem),
+    radial-gradient(ellipse at 53% 96%, rgba(190, 117, 44, .13), transparent 42rem),
+    linear-gradient(145deg, #100d08 0%, #19140b 48%, #100d0a 100%);
   background-attachment: fixed;
 }
 
 .app-shell, .editor-shell, .editor-screen {
   background-color: transparent;
   background-image:
-    radial-gradient(ellipse at 8% 8%, rgba(33, 215, 202, .1), transparent 35rem),
-    radial-gradient(ellipse at 92% 12%, rgba(132, 101, 255, .12), transparent 38rem),
-    radial-gradient(ellipse at 58% 100%, rgba(255, 86, 179, .07), transparent 42rem);
+    radial-gradient(ellipse at 8% 8%, rgba(247, 196, 91, .12), transparent 35rem),
+    radial-gradient(ellipse at 92% 12%, rgba(238, 148, 50, .1), transparent 38rem),
+    radial-gradient(ellipse at 58% 100%, rgba(180, 102, 37, .08), transparent 42rem);
 }
 
 /* Frosted surfaces: bright upper edge, translucent color and a soft inner reflection. */
@@ -60,47 +60,47 @@ html, body {
   border-color: var(--glass-edge);
   background-color: var(--glass-fill);
   background-image:
-    linear-gradient(135deg, rgba(244, 252, 255, .105), rgba(255, 255, 255, .025) 36%, rgba(107, 213, 255, .035) 72%, rgba(255, 255, 255, .045)),
-    linear-gradient(160deg, rgba(14, 31, 46, .76), rgba(9, 18, 31, .68));
+    linear-gradient(135deg, rgba(255, 250, 230, .12), rgba(255, 255, 255, .025) 36%, rgba(255, 204, 111, .055) 72%, rgba(255, 255, 255, .045)),
+    linear-gradient(160deg, rgba(46, 34, 16, .8), rgba(24, 18, 9, .72));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .2),
-    inset 0 0 0 1px rgba(175, 226, 255, .035),
-    0 22px 56px rgba(0, 4, 12, .33);
+    inset 0 0 0 1px rgba(255, 218, 142, .04),
+    0 22px 56px rgba(12, 7, 1, .36);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   backdrop-filter: blur(28px) saturate(160%);
 }
 
 .app-header {
-  background: linear-gradient(180deg, rgba(12, 28, 42, .72), rgba(10, 21, 34, .45));
+  background: linear-gradient(180deg, rgba(44, 32, 13, .72), rgba(22, 17, 8, .48));
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   backdrop-filter: blur(24px) saturate(160%);
 }
 
 .editor-header {
-  border-bottom-color: rgba(205, 236, 255, .16);
-  background: linear-gradient(120deg, rgba(14, 29, 43, .8), rgba(16, 27, 45, .62) 60%, rgba(31, 23, 53, .62));
+  border-bottom-color: rgba(255, 229, 177, .18);
+  background: linear-gradient(120deg, rgba(48, 34, 13, .82), rgba(42, 30, 14, .68) 60%, rgba(66, 40, 16, .65));
   box-shadow: 0 1px 0 rgba(255, 255, 255, .04), 0 12px 32px rgba(0, 0, 0, .18);
   -webkit-backdrop-filter: blur(26px) saturate(165%);
   backdrop-filter: blur(26px) saturate(165%);
 }
 
 .preview-column {
-  border-right-color: rgba(204, 232, 255, .13);
-  background: linear-gradient(145deg, rgba(10, 24, 37, .62), rgba(8, 17, 28, .72));
+  border-right-color: rgba(255, 221, 157, .15);
+  background: linear-gradient(145deg, rgba(37, 27, 12, .64), rgba(22, 17, 9, .74));
   -webkit-backdrop-filter: blur(22px) saturate(145%);
   backdrop-filter: blur(22px) saturate(145%);
 }
 
 .timeline-column {
-  background: linear-gradient(155deg, rgba(16, 29, 43, .76), rgba(10, 18, 31, .82));
+  background: linear-gradient(155deg, rgba(45, 33, 14, .76), rgba(24, 18, 9, .84));
   -webkit-backdrop-filter: blur(25px) saturate(150%);
   backdrop-filter: blur(25px) saturate(150%);
 }
 
 .stage-pill, .zoom-chip, .timecode, .track-menu, .effect-search,
 .effect-back, .package-scan, .search-filter {
-  border-color: rgba(206, 237, 255, .13);
-  background-color: rgba(173, 214, 245, .055);
+  border-color: rgba(255, 223, 164, .16);
+  background-color: rgba(255, 219, 149, .055);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .075);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   backdrop-filter: blur(18px) saturate(145%);
@@ -112,43 +112,43 @@ html, body {
 .export-render-settings select, .export-option, .add-cell, .add-quick-row button,
 .shape-grid button, .track-row, .background-select, .new-name-row,
 .custom-ratio-fields input {
-  border-color: rgba(206, 237, 255, .13);
-  background-color: rgba(173, 214, 245, .055);
+  border-color: rgba(255, 223, 164, .16);
+  background-color: rgba(255, 219, 149, .055);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .075);
 }
 
 .import-card:hover, .project-card:hover, .add-cell:hover, .shape-grid button:hover {
-  border-color: rgba(151, 248, 232, .34);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 20px 48px rgba(1, 12, 22, .4), 0 0 28px rgba(73, 221, 225, .08);
+  border-color: rgba(255, 218, 130, .38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 20px 48px rgba(20, 11, 1, .42), 0 0 28px rgba(242, 181, 67, .12);
 }
 
 .bottom-nav {
   background-image:
-    linear-gradient(110deg, rgba(219, 244, 255, .12), rgba(255, 255, 255, .025) 42%, rgba(153, 144, 255, .09)),
-    linear-gradient(160deg, rgba(21, 37, 53, .82), rgba(9, 17, 31, .78));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .21), 0 20px 54px rgba(0, 0, 0, .42), 0 0 34px rgba(105, 215, 235, .07);
+    linear-gradient(110deg, rgba(255, 236, 192, .14), rgba(255, 255, 255, .025) 42%, rgba(251, 176, 87, .11)),
+    linear-gradient(160deg, rgba(48, 34, 14, .86), rgba(22, 16, 8, .82));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .21), 0 20px 54px rgba(0, 0, 0, .42), 0 0 34px rgba(248, 195, 81, .1);
   -webkit-backdrop-filter: blur(34px) saturate(185%);
   backdrop-filter: blur(34px) saturate(185%);
 }
 
 .nav-create, .transport-main .play-button, .editor-export-button {
-  background: linear-gradient(135deg, #c7fff4 0%, #71f1dc 45%, #a0c9ff 100%);
-  color: #071a20;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .62), 0 8px 24px rgba(56, 220, 206, .24), 0 0 36px rgba(93, 225, 232, .14);
+  background: linear-gradient(135deg, #fff3cd 0%, #f6ca73 45%, #f4a65d 100%);
+  color: #281906;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .62), 0 8px 24px rgba(241, 174, 55, .26), 0 0 36px rgba(255, 212, 120, .16);
 }
 
 .primary-button, .import-button {
-  border: 1px solid rgba(234, 249, 255, .42);
-  background: linear-gradient(135deg, #e5f6ff 0%, #c1f6ee 52%, #d9d8ff 100%);
-  color: #0a1821;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 9px 26px rgba(100, 199, 226, .16);
+  border: 1px solid rgba(255, 236, 196, .42);
+  background: linear-gradient(135deg, #fff7df 0%, #ffe09b 52%, #ffd0a0 100%);
+  color: #251905;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 9px 26px rgba(225, 157, 49, .18);
 }
 
 .secondary-button, .welcome-create, .scan-button, .group-action,
 .track-more, .editor-back, .editor-head-tool, .editor-more,
 .transport-row button, .icon-button, .close-dialog, .back-link {
-  border-color: rgba(204, 237, 255, .14);
-  background-color: rgba(213, 238, 255, .045);
+  border-color: rgba(255, 224, 162, .16);
+  background-color: rgba(255, 223, 162, .055);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .09);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   backdrop-filter: blur(18px) saturate(145%);
@@ -160,44 +160,44 @@ html, body {
 }
 
 .modal-backdrop {
-  background: rgba(2, 7, 15, .56);
+  background: rgba(10, 7, 2, .62);
   -webkit-backdrop-filter: blur(18px) saturate(120%);
   backdrop-filter: blur(18px) saturate(120%);
 }
 
 .effect-browser-overlay {
-  background: linear-gradient(145deg, rgba(8, 19, 30, .94), rgba(13, 15, 30, .96));
+  background: linear-gradient(145deg, rgba(14, 10, 4, .96), rgba(23, 17, 8, .97));
   -webkit-backdrop-filter: blur(28px) saturate(155%);
   backdrop-filter: blur(28px) saturate(155%);
 }
 
 .effect-browser-header {
-  border-bottom-color: rgba(208, 238, 255, .14);
-  background: rgba(17, 31, 46, .68);
+  border-bottom-color: rgba(255, 226, 165, .16);
+  background: rgba(44, 31, 13, .72);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   backdrop-filter: blur(28px) saturate(160%);
 }
 
 .composition-stage {
-  border-color: rgba(229, 249, 255, .55);
-  box-shadow: 0 0 0 1px rgba(130, 229, 237, .13), 0 24px 68px rgba(0, 0, 0, .5), 0 0 44px rgba(94, 219, 226, .1);
+  border-color: rgba(255, 229, 170, .62);
+  box-shadow: 0 0 0 1px rgba(255, 213, 115, .16), 0 24px 68px rgba(0, 0, 0, .5), 0 0 44px rgba(245, 183, 69, .12);
 }
 
 .stage-empty-mark, .import-icon, .package-symbol, .add-cell-icon, .rendering-emblem {
-  border: 1px solid rgba(220, 247, 255, .15);
-  background-image: linear-gradient(145deg, rgba(226, 248, 255, .12), rgba(100, 192, 224, .035));
+  border: 1px solid rgba(255, 229, 170, .18);
+  background-image: linear-gradient(145deg, rgba(255, 235, 186, .14), rgba(230, 159, 59, .05));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
 }
 
-::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(153, 215, 233, .34), rgba(123, 140, 202, .26)); }
-::selection { background: rgba(92, 233, 219, .34); }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(242, 195, 103, .38), rgba(214, 146, 78, .28)); }
+::selection { background: rgba(243, 193, 86, .38); }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .import-card, .project-card, .bottom-nav, .settings-dialog, .export-dialog,
   .qr-dialog, .text-dialog, .new-project-sheet, .add-sheet, .shape-sheet,
   .project-settings-dialog, .drawing-dialog, .render-progress-dialog,
   .rendered-video-dialog, .inspector-panel, .timeline-column, .preview-column {
-    background-color: rgba(10, 23, 36, .96);
+    background-color: rgba(27, 20, 10, .97);
   }
 }
 
@@ -206,7 +206,7 @@ html, body {
   .qr-dialog, .text-dialog, .new-project-sheet, .add-sheet, .shape-sheet,
   .project-settings-dialog, .drawing-dialog, .render-progress-dialog,
   .rendered-video-dialog, .inspector-panel, .timeline-column, .preview-column {
-    background-color: rgba(9, 20, 32, .96);
+    background-color: rgba(24, 18, 9, .97);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

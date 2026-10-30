@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowUp,
   AudioLines,
+  Box,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -61,16 +62,18 @@ import samplePortraitUrl from './assets/images/sample_urban_portrait_17931707890
 import sampleCityUrl from './assets/images/sample_cyber_cityscape_1793170789915.jpg';
 import sampleAnimeUrl from './assets/images/sample_anime_mecha_1793170789185.jpg';
 import { blobToDataUrl, buildAudioWaveform, dataUrlToBlob, getMediaAsset, inspectMediaDuration, saveMediaAsset } from './mediaStore';
+import { createPrimitiveMesh, drawMesh3D, parseObjMesh, type Mesh3D } from './mesh3d';
 
 type ProjectKind = 'project' | 'template' | 'element';
 type Screen = 'home' | 'library' | 'editor';
-type LayerKind = 'image' | 'video' | 'audio' | 'text' | 'shape' | 'drawing' | 'group' | 'camera' | 'null';
+type LayerKind = 'image' | 'video' | 'audio' | 'text' | 'shape' | 'drawing' | '3d' | 'group' | 'camera' | 'null';
 type DrawPoint = { x: number; y: number };
 type ProjectRatio = '16:9' | '9:16' | '4:5' | '1:1' | '4:3' | 'Custom';
 type EasingPreset = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 type ExportFormat = 'auto' | 'mp4' | 'webm';
 type ExportQuality = 'balanced' | 'high';
-type LayerKeyframe = { time: number; x: number; y: number; scale: number; rotation: number; opacity: number; easing: EasingPreset };
+type LayerKeyframe = { time: number; x: number; y: number; scale: number; rotation: number; rotationX?: number; rotationY?: number; depth?: number; opacity: number; easing: EasingPreset };
+type SpeedKeyframe = { time: number; speed: number; easing: EasingPreset };
 type StageDrag = { id: string; pointerId: number; mode: 'move' | 'scale'; startX: number; startY: number; baseX: number; baseY: number; baseScale: number; currentX: number; currentY: number; currentScale: number; stageWidth: number; stageHeight: number; centerX: number; centerY: number; startDistance: number };
 
 type EditorLayer = {
@@ -88,6 +91,15 @@ type EditorLayer = {
   drawPoints?: DrawPoint[];
   brushSize?: number;
   groupId?: string;
+  mesh3d?: Mesh3D;
+  meshName?: 'Cube' | 'Sphere' | 'Pyramid' | 'Plane' | 'Torus' | 'Imported OBJ';
+  rotationX?: number;
+  rotationY?: number;
+  depth?: number;
+  frameBlend?: boolean;
+  restoreStrength?: number;
+  presetName?: string;
+  speedKeyframes?: SpeedKeyframe[];
   color: string;
   visible: boolean;
   duration: number;
@@ -158,8 +170,28 @@ const ratioDimensions: Record<Exclude<ProjectRatio, 'Custom'>, [number, number]>
   '4:3': [1440, 1080],
 };
 
-const colorSwatches = ['#0b0c0e', '#d9d9dc', '#f1f1f2', '#85868d', '#fa3f9c', '#18e3ad', '#ffd05b', '#77a8ff', '#8d70ff'];
+const resolutionScale = (preset: string, width: number, height: number) => /2k/i.test(preset)
+  ? 2048 / Math.max(width, height, 1)
+  : (Number.parseInt(preset, 10) || 1080) / 1080;
+
+const colorSwatches = ['#0b0c0e', '#d9d1c3', '#fff4dd', '#81745e', '#b8662d', '#e7ad42', '#ffd478', '#9c7a42', '#f0e1bd'];
 const ratios: ProjectRatio[] = ['16:9', '9:16', '4:5', '1:1', '4:3', 'Custom'];
+
+const presetRecipes = [
+  ['Studio Lift', 'Brightness / Contrast'], ['Sunset Exposure', 'Exposure'], ['Prism Hue', 'Hue / Saturation'],
+  ['Golden Glow', 'Glow'], ['Soft Focus', 'Gaussian Blur'], ['Motion Streak', 'Motion Blur'],
+  ['Vintage Warmth', 'Sepia'], ['Silver Mono', 'Grayscale'], ['Negative Space', 'Invert'],
+  ['Detail Pop', 'Sharpen'], ['Analog Tape', 'VHS'], ['Fine Grain', 'Film Grain'],
+  ['Chromatic Shift', 'RGB Split'], ['Soft Shadow', 'Drop Shadow'], ['Rain Glass', 'Rain'],
+  ['Winter Dust', 'Snow'], ['Dream Haze', 'Fog'], ['Liquid Ripple', 'Ripple'],
+  ['Wide Lens', 'Lens Distortion'], ['Afterimage', 'Echo'], ['Soft Fade', 'Fade In / Out'],
+  ['Night Noise', 'Noise'], ['Fluid Warp', 'Turbulent Displace'], ['Cloud Field', 'Fractal Noise'],
+  ['Color Harmony', 'Color Balance'], ['Graphic Ink', 'Posterize'], ['Solar Rays', 'Light Rays'],
+] as const;
+const effectPresets = presetRecipes.flatMap(([title, effect], recipeIndex) => Array.from({ length: 100 }, (_, level) => ({
+  id: `eh-preset-${recipeIndex}-${level + 1}`, title: `${title} ${String(level + 1).padStart(2, '0')}`,
+  effect, strength: level + 1,
+})));
 
 const initialEffects = [
   { title: 'Color & Light', tint: 'effect-color', effects: ['Brightness / Contrast', 'Exposure', 'Curves', 'Hue / Saturation', 'Color Balance'] },
@@ -206,25 +238,32 @@ const fmtTime = (seconds: number, fps = 30) => {
 
 const makeLayer = (partial: Partial<EditorLayer> & Pick<EditorLayer, 'name' | 'kind'>): EditorLayer => ({
   id: `layer-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-  color: '#f23e98', visible: true, duration: 5, start: 0, x: 50, y: 50, scale: 100, rotation: 0, opacity: 100, effects: [],
+  color: '#e5b653', visible: true, duration: 5, start: 0, x: 50, y: 50, scale: 100, rotation: 0, rotationX: 0, rotationY: 0, depth: 0, opacity: 100, effects: [],
   ...partial,
 });
 
 function getLayerTransformAt(layer: EditorLayer, time: number) {
   const frames = [...(layer.keyframes ?? [])].sort((a, b) => a.time - b.time);
-  if (!frames.length) return { x: layer.x, y: layer.y, scale: layer.scale, rotation: layer.rotation, opacity: layer.opacity };
-  if (time <= frames[0].time) return frames[0];
-  if (time >= frames[frames.length - 1].time) return frames[frames.length - 1];
+  const baseline = { x: layer.x, y: layer.y, scale: layer.scale, rotation: layer.rotation, rotationX: layer.rotationX ?? 0, rotationY: layer.rotationY ?? 0, depth: layer.depth ?? 0, opacity: layer.opacity };
+  const complete = (frame: LayerKeyframe) => ({ x: frame.x, y: frame.y, scale: frame.scale, rotation: frame.rotation, rotationX: frame.rotationX ?? baseline.rotationX, rotationY: frame.rotationY ?? baseline.rotationY, depth: frame.depth ?? baseline.depth, opacity: frame.opacity });
+  if (!frames.length) return baseline;
+  if (time <= frames[0].time) return complete(frames[0]);
+  if (time >= frames[frames.length - 1].time) return complete(frames[frames.length - 1]);
   const rightIndex = frames.findIndex((frame) => frame.time >= time);
-  const left = frames[Math.max(0, rightIndex - 1)];
-  const right = frames[rightIndex];
-  const raw = (time - left.time) / Math.max(.0001, right.time - left.time);
-  const amount = left.easing === 'easeIn' ? raw * raw : left.easing === 'easeOut' ? 1 - (1 - raw) * (1 - raw) : left.easing === 'easeInOut' ? raw < .5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2 : raw;
+  const leftFrame = frames[Math.max(0, rightIndex - 1)];
+  const rightFrame = frames[rightIndex];
+  const left = complete(leftFrame);
+  const right = complete(rightFrame);
+  const raw = (time - leftFrame.time) / Math.max(.0001, rightFrame.time - leftFrame.time);
+  const amount = leftFrame.easing === 'easeIn' ? raw * raw : leftFrame.easing === 'easeOut' ? 1 - (1 - raw) * (1 - raw) : leftFrame.easing === 'easeInOut' ? raw < .5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2 : raw;
   return {
     x: left.x + (right.x - left.x) * amount,
     y: left.y + (right.y - left.y) * amount,
     scale: left.scale + (right.scale - left.scale) * amount,
     rotation: left.rotation + (right.rotation - left.rotation) * amount,
+    rotationX: left.rotationX + (right.rotationX - left.rotationX) * amount,
+    rotationY: left.rotationY + (right.rotationY - left.rotationY) * amount,
+    depth: left.depth + (right.depth - left.depth) * amount,
     opacity: left.opacity + (right.opacity - left.opacity) * amount,
   };
 }
@@ -266,7 +305,7 @@ function parseXMLProject(xml: string, fileName: string): Project {
   };
   const width = Math.max(1, Math.round(parseNumber(property(projectNode, 'width', 'canvasWidth', 'frameWidth'), 1080)));
   const height = Math.max(1, Math.round(parseNumber(property(projectNode, 'height', 'canvasHeight', 'frameHeight'), 1920)));
-  const fps = Math.max(1, Math.min(120, parseNumber(property(projectNode, 'fps', 'frameRate', 'frame_rate'), 30)));
+  const fps = Math.max(1, Math.min(99, parseNumber(property(projectNode, 'fps', 'frameRate', 'frame_rate'), 30)));
   const aspect = width / height;
   const ratio = (Object.entries(ratioDimensions).find(([, dimensions]) => Math.abs(dimensions[0] / dimensions[1] - aspect) < .025)?.[0] as ProjectRatio | undefined) ?? 'Custom';
   const projectDuration = Math.max(.1, parseTime(property(projectNode, 'duration', 'length', 'totalDuration'), fps, 15));
@@ -358,6 +397,79 @@ function parseXMLProject(xml: string, fileName: string): Project {
   };
 }
 
+function getLayerSpeedAt(layer: EditorLayer, time: number) {
+  const frames = [...(layer.speedKeyframes ?? [])].sort((a, b) => a.time - b.time);
+  const fallback = Math.max(.1, Math.min(8, layer.speed ?? 1));
+  if (!frames.length) return fallback;
+  const ease = (value: number, preset: EasingPreset) => preset === 'easeIn' ? value * value : preset === 'easeOut' ? 1 - (1 - value) ** 2 : preset === 'easeInOut' ? value < .5 ? 2 * value * value : 1 - (-2 * value + 2) ** 2 / 2 : value;
+  if (time <= frames[0].time) return frames[0].speed;
+  if (time >= frames[frames.length - 1].time) return frames[frames.length - 1].speed;
+  const rightIndex = frames.findIndex((frame) => frame.time >= time);
+  const left = frames[rightIndex - 1]; const right = frames[rightIndex];
+  const amount = ease((time - left.time) / Math.max(.0001, right.time - left.time), left.easing);
+  return left.speed + (right.speed - left.speed) * amount;
+}
+
+function easingIntegral(value: number, preset: EasingPreset) {
+  const t = Math.max(0, Math.min(1, value));
+  if (preset === 'easeIn') return t ** 3 / 3;
+  if (preset === 'easeOut') return t ** 2 - t ** 3 / 3;
+  if (preset === 'easeInOut') return t <= .5 ? 2 * t ** 3 / 3 : -t + 2 * t ** 2 - 2 * t ** 3 / 3 + 1 / 6;
+  return t ** 2 / 2;
+}
+
+function getLayerSourceTime(layer: EditorLayer, timelineTime: number) {
+  const start = layer.start;
+  const end = Math.max(start, timelineTime);
+  const frames = [...(layer.speedKeyframes ?? [])].sort((a, b) => a.time - b.time);
+  const points = [start, ...frames.map((frame) => frame.time).filter((value) => value > start && value < end), end].sort((a, b) => a - b);
+  let elapsed = 0;
+  for (let index = 1; index < points.length; index++) {
+    const leftTime = points[index - 1]; const rightTime = points[index];
+    if (rightTime <= leftTime) continue;
+    const midpoint = (leftTime + rightTime) / 2;
+    const segment = frames.find((frame, frameIndex) => frameIndex < frames.length - 1 && midpoint >= frame.time && midpoint <= frames[frameIndex + 1].time);
+    if (!segment) { elapsed += getLayerSpeedAt(layer, midpoint) * (rightTime - leftTime); continue; }
+    const next = frames[frames.indexOf(segment) + 1];
+    const span = Math.max(.0001, next.time - segment.time);
+    const u0 = (leftTime - segment.time) / span; const u1 = (rightTime - segment.time) / span;
+    const normalizedArea = (easingIntegral(u1, segment.easing) - easingIntegral(u0, segment.easing)) / Math.max(.0001, u1 - u0);
+    const averageSpeed = segment.speed + (next.speed - segment.speed) * normalizedArea;
+    elapsed += averageSpeed * (rightTime - leftTime);
+  }
+  return (layer.sourceOffset ?? 0) + elapsed;
+}
+
+function applyLocalDetailRecovery(image: HTMLImageElement, strength: number, outputWidth = image.naturalWidth, outputHeight = image.naturalHeight): HTMLCanvasElement | HTMLImageElement {
+  if (strength <= 0) return image;
+  const targetWidth = Math.max(1, Math.round(outputWidth));
+  const targetHeight = Math.max(1, Math.round(outputHeight));
+  const scale = Math.min(1, 2560 / Math.max(targetWidth, targetHeight, 1));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(targetWidth * scale));
+  canvas.height = Math.max(1, Math.round(targetHeight * scale));
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return image;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  try {
+    const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+    const source = new Uint8ClampedArray(frame.data);
+    const amount = Math.max(0, Math.min(1, strength / 100)) * .72;
+    for (let y = 1; y < canvas.height - 1; y++) for (let x = 1; x < canvas.width - 1; x++) {
+      const pixel = (y * canvas.width + x) * 4;
+      for (let channel = 0; channel < 3; channel++) {
+        const center = source[pixel + channel];
+        const neighbors = (source[pixel - 4 + channel] + source[pixel + 4 + channel] + source[pixel - canvas.width * 4 + channel] + source[pixel + canvas.width * 4 + channel]) / 4;
+        frame.data[pixel + channel] = Math.max(0, Math.min(255, center + (center - neighbors) * amount));
+      }
+    }
+    context.putImageData(frame, 0, 0);
+  } catch { return image; }
+  return canvas;
+}
+
 const isLayerVisible = (layer: EditorLayer, layers: EditorLayer[]) => {
   if (!layer.visible) return false;
   if (!layer.groupId) return true;
@@ -433,7 +545,7 @@ const cssFilterForEffects = (effects: string[], strengths: Record<string, number
 async function renderCompositionVideo(project: Project, layers: EditorLayer[], onProgress: (progress: number) => void, format: ExportFormat = 'auto', quality: ExportQuality = 'balanced'): Promise<Blob> {
   if (typeof MediaRecorder === 'undefined') throw new Error('Video rendering is not supported by this browser.');
   const longestSide = Math.max(project.width, project.height, 1);
-  const renderScale = Math.min(1, (quality === 'high' ? 2560 : 1920) / longestSide);
+  const renderScale = Math.min(1, (quality === 'high' ? 2560 : 2048) / longestSide);
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(2, Math.round(project.width * renderScale));
   canvas.height = Math.max(2, Math.round(project.height * renderScale));
@@ -493,7 +605,17 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
   }
 
   if (typeof canvas.captureStream !== 'function') throw new Error('Canvas video recording is not supported by this browser.');
-  const stream = canvas.captureStream(Math.max(1, Math.min(project.fps, 60)));
+  const captureRate = Math.max(1, Math.min(project.fps, 99));
+  let stream: MediaStream;
+  let manualFrameCapture = false;
+  try {
+    const manual = canvas.captureStream(0);
+    const track = manual.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack | undefined;
+    if (track && typeof track.requestFrame === 'function') { stream = manual; manualFrameCapture = true; }
+    else { manual.getTracks().forEach((item) => item.stop()); stream = canvas.captureStream(captureRate); }
+  } catch { stream = canvas.captureStream(captureRate); }
+  const videoCaptureTrack = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack | undefined;
+  const requestCaptureFrame = () => { if (manualFrameCapture) videoCaptureTrack?.requestFrame(); };
   audioDestination?.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
   const mp4Types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E', 'video/mp4'];
   const webmTypes = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
@@ -502,7 +624,7 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
   let recorder: MediaRecorder;
   try {
     recorder = mimeType
-      ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: quality === 'high' ? 12_000_000 : 6_000_000, audioBitsPerSecond: 192_000 })
+      ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: Math.min(40_000_000, Math.round((quality === 'high' ? 14_000_000 : 9_000_000) * captureRate / 30)), audioBitsPerSecond: 192_000 })
       : new MediaRecorder(stream);
   } catch {
     stream.getTracks().forEach((track) => track.stop());
@@ -511,6 +633,8 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
   }
 
   const duration = Math.max(0.5, project.duration);
+  const restoredImages = new Map<string, CanvasImageSource>();
+  const previousVideoFrames = new Map<string, HTMLCanvasElement>();
   const drawFrame = (time: number) => {
     context.fillStyle = project.background;
     context.fillRect(0, 0, canvas.width, canvas.height);
@@ -527,10 +651,25 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
       context.rotate(animated.rotation * Math.PI / 180);
       if ((layer.kind === 'image' || layer.kind === 'video') && resource) {
         if (resource instanceof HTMLVideoElement && resource.readyState < 2) { context.restore(); continue; }
-        const drawable = resource as CanvasImageSource;
+        let drawable = resource as CanvasImageSource;
+        if (layer.kind === 'image' && resource instanceof HTMLImageElement && (layer.restoreStrength ?? 0) > 0) {
+          const cached = restoredImages.get(layer.id);
+          if (cached) drawable = cached;
+          else { const restored = applyLocalDetailRecovery(resource, layer.restoreStrength ?? 0, canvas.width, canvas.height); restoredImages.set(layer.id, restored); drawable = restored; }
+        }
         const filter = cssFilterForEffects(layer.effects, layer.effectStrengths);
         if (filter !== 'none') context.filter = filter;
-        context.drawImage(drawable, -canvas.width * animated.scale / 200, -canvas.height * animated.scale / 200, canvas.width * animated.scale / 100, canvas.height * animated.scale / 100);
+        const drawX = -canvas.width * animated.scale / 200; const drawY = -canvas.height * animated.scale / 200;
+        const drawWidth = canvas.width * animated.scale / 100; const drawHeight = canvas.height * animated.scale / 100;
+        if (layer.kind === 'video' && layer.frameBlend && resource instanceof HTMLVideoElement) {
+          const previous = previousVideoFrames.get(layer.id);
+          if (previous) { context.save(); context.globalAlpha *= .28; context.drawImage(previous, drawX, drawY, drawWidth, drawHeight); context.restore(); }
+          context.drawImage(resource, drawX, drawY, drawWidth, drawHeight);
+          let buffer = previous;
+          if (!buffer) { buffer = document.createElement('canvas'); buffer.width = Math.min(1024, canvas.width); buffer.height = Math.min(1024, canvas.height); previousVideoFrames.set(layer.id, buffer); }
+          const bufferContext = buffer.getContext('2d');
+          if (bufferContext) bufferContext.drawImage(resource, 0, 0, buffer.width, buffer.height);
+        } else context.drawImage(drawable, drawX, drawY, drawWidth, drawHeight);
       } else if (layer.kind === 'text' && layer.text) {
         context.scale(animated.scale / 100, animated.scale / 100);
         context.fillStyle = layer.color;
@@ -560,6 +699,9 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
         context.strokeStyle = layer.color;
         const side = Math.min(canvas.width, canvas.height) * .26 * animated.scale / 100;
         traceCanvasShape(context, layer.shape ?? 'Rounded Rectangle', side);
+      } else if (layer.kind === '3d') {
+        const mesh = layer.mesh3d ?? createPrimitiveMesh(layer.meshName && layer.meshName !== 'Imported OBJ' ? layer.meshName : 'Cube');
+        drawMesh3D(context, mesh, { size: Math.min(canvas.width, canvas.height) * .38 * animated.scale / 100, color: layer.color, rotationX: animated.rotationX, rotationY: animated.rotationY, depth: animated.depth });
       }
       context.restore();
     }
@@ -569,10 +711,10 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
     for (const layer of soundLayers) {
       const resource = resources.get(layer.id);
       if (!(resource instanceof HTMLMediaElement)) continue;
-      const localTime = (layer.sourceOffset ?? 0) + Math.max(0, time - layer.start) * Math.max(.25, Math.min(4, layer.speed ?? 1));
+      const localTime = getLayerSourceTime(layer, time);
       const active = isLayerVisible(layer, layers) && time >= layer.start && time < layer.start + layer.duration;
       resource.volume = Math.max(0, Math.min(1, (layer.volume ?? 100) / 100));
-      resource.playbackRate = Math.max(.25, Math.min(4, layer.speed ?? 1));
+      resource.playbackRate = Math.max(.1, Math.min(8, getLayerSpeedAt(layer, time)));
       if (resource instanceof HTMLVideoElement) {
         const sourceDuration = Number.isFinite(resource.duration) && resource.duration > 0 ? resource.duration : 1;
         if (active) {
@@ -595,6 +737,7 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
     const chunks: BlobPart[] = [];
     let failure: Error | null = null;
     let animation = 0;
+    let timer = 0;
     let lastProgress = -1;
     let cleaned = false;
     const startTime = performance.now();
@@ -602,6 +745,7 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
       if (cleaned) return;
       cleaned = true;
       cancelAnimationFrame(animation);
+      window.clearTimeout(timer);
       stream.getTracks().forEach((track) => track.stop());
       for (const resource of resources.values()) if (resource instanceof HTMLMediaElement) { resource.pause(); resource.removeAttribute('src'); resource.load(); }
       if (audioContext) void audioContext.close();
@@ -619,16 +763,24 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
     };
     try {
       recorder.start(500);
-      const render = (now: number) => {
+      const frameInterval = 1000 / captureRate;
+      let lastFrameTime = -frameInterval;
+      const render = () => {
+        const now = performance.now();
         const elapsed = Math.min(duration, (now - startTime) / 1000);
-        try { syncMedia(elapsed); drawFrame(elapsed); }
+        if (now - lastFrameTime >= frameInterval || elapsed >= duration) {
+        try { syncMedia(elapsed); drawFrame(elapsed); requestCaptureFrame(); }
         catch (error) { failure = error instanceof Error ? error : new Error('Could not draw the video frame.'); if (recorder.state !== 'inactive') recorder.stop(); else { cleanup(); reject(failure); } return; }
         const percentage = Math.floor(elapsed / duration * 100);
         if (percentage !== lastProgress) { lastProgress = percentage; onProgress(percentage); }
+        lastFrameTime = now;
         if (elapsed >= duration) { recorder.stop(); return; }
-        animation = requestAnimationFrame(render);
+        }
+        if (elapsed >= duration) { recorder.stop(); return; }
+        timer = window.setTimeout(render, Math.max(1, frameInterval - (performance.now() - now)));
       };
-      animation = requestAnimationFrame(render);
+      drawFrame(0); requestCaptureFrame();
+      timer = window.setTimeout(render, frameInterval);
     } catch (error) {
       failure = error instanceof Error ? error : new Error('Could not start video recording.');
       if (recorder.state !== 'inactive') recorder.stop(); else { cleanup(); reject(failure); }
@@ -670,7 +822,7 @@ export default function App() {
   const [createRatio, setCreateRatio] = useState<ProjectRatio>('1:1');
   const [createResolution, setCreateResolution] = useState('1080p (FHD)');
   const [createFps, setCreateFps] = useState(60);
-  const [createBackground, setCreateBackground] = useState('#d9d9dc');
+  const [createBackground, setCreateBackground] = useState('#d9d1c3');
   const [customRatio, setCustomRatio] = useState('3:2');
 
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -815,7 +967,7 @@ export default function App() {
         }
         return next;
       });
-    }, Math.max(16, 1000 / Math.max(currentProject.fps, 1)));
+    }, Math.max(1, 1000 / Math.max(currentProject.fps, 1)));
     return () => window.clearInterval(timer);
   }, [isPlaying, currentProject]);
 
@@ -823,9 +975,9 @@ export default function App() {
     const activeVideo = layers.find((layer) => layer.kind === 'video' && isLayerVisible(layer, layers) && time >= layer.start && time < layer.start + layer.duration);
     const video = videoRef.current;
     if (!video || !activeVideo) { video?.pause(); return; }
-    video.playbackRate = Math.max(.25, Math.min(4, activeVideo.speed ?? 1));
+    video.playbackRate = Math.max(.1, Math.min(8, getLayerSpeedAt(activeVideo, time)));
     video.volume = Math.max(0, Math.min(1, (activeVideo.volume ?? 100) / 100));
-    const targetTime = (activeVideo.sourceOffset ?? 0) + Math.max(0, time - activeVideo.start) * (activeVideo.speed ?? 1);
+    const targetTime = getLayerSourceTime(activeVideo, time);
     if (Number.isFinite(video.duration) && video.duration > 0 && Math.abs(video.currentTime - targetTime) > .7) {
       video.currentTime = targetTime % video.duration;
     }
@@ -846,7 +998,7 @@ export default function App() {
     setCreateRatio('1:1');
     setCreateResolution('1080p (FHD)');
     setCreateFps(60);
-    setCreateBackground(kind === 'element' ? '#050506' : '#d9d9dc');
+    setCreateBackground(kind === 'element' ? '#0b0c0e' : '#d9d1c3');
     setNewProjectOpen(true);
   };
 
@@ -874,7 +1026,7 @@ export default function App() {
   const updateLayer = (id: string, patch: Partial<EditorLayer>) => {
     const target = layers.find((layer) => layer.id === id);
     if (!target) return;
-    const transformKeys = ['x', 'y', 'scale', 'rotation', 'opacity'] as const;
+    const transformKeys = ['x', 'y', 'scale', 'rotation', 'rotationX', 'rotationY', 'depth', 'opacity'] as const;
     const transformPatch: Partial<LayerKeyframe> = {};
     for (const key of transformKeys) if (patch[key] !== undefined) transformPatch[key] = patch[key] as number;
     if (Object.keys(transformPatch).length && target.keyframes?.length) {
@@ -886,7 +1038,7 @@ export default function App() {
         frames.push({ time, ...current, ...transformPatch, easing: 'easeInOut' });
         frames.sort((a, b) => a.time - b.time);
       }
-      const { x: _x, y: _y, scale: _scale, rotation: _rotation, opacity: _opacity, ...otherPatch } = patch;
+      const { x: _x, y: _y, scale: _scale, rotation: _rotation, rotationX: _rotationX, rotationY: _rotationY, depth: _depth, opacity: _opacity, ...otherPatch } = patch;
       commitLayerList(layers.map((layer) => layer.id === id ? { ...layer, ...otherPatch, keyframes: frames } : layer));
       return;
     }
@@ -925,7 +1077,7 @@ export default function App() {
     const customHeight = Number.isFinite(customParts[1]) && customParts[1] > 0 ? customParts[1] : 2;
     const [baseWidth, baseHeight] = createRatio === 'Custom' ? (customWidth >= customHeight ? [1440, Math.round(1440 * customHeight / customWidth)] : [Math.round(1080 * customWidth / customHeight), 1080]) : ratioDimensions[createRatio];
     const resolutionNumber = Number.parseInt(createResolution, 10) || 1080;
-    const scale = resolutionNumber / 1080;
+    const scale = resolutionScale(createResolution, baseWidth, baseHeight);
     const width = Math.round(baseWidth * scale);
     const height = Math.round(baseHeight * scale);
     const project: Project = {
@@ -935,8 +1087,8 @@ export default function App() {
       ratio: createRatio,
       width,
       height,
-      resolution: `${resolutionNumber}p`,
-      fps: createFps,
+      resolution: /2k/i.test(createResolution) ? '2K' : `${resolutionNumber}p`,
+      fps: Math.max(1, Math.min(99, createFps)),
       background: createBackground,
       updatedAt: dateLabel,
       duration: 15,
@@ -999,6 +1151,17 @@ export default function App() {
     }
 
     const extension = file.name.toLowerCase().split('.').pop() ?? '';
+    if (extension === 'obj') {
+      try {
+        const mesh3d = parseObjMesh(await file.text());
+        const start = screen === 'editor' ? time : 0;
+        const layer = makeLayer({ name: file.name.replace(/\.obj$/i, ''), kind: '3d', mesh3d, meshName: 'Imported OBJ', color: '#e5b653', rotationX: 18, rotationY: 26, start, duration: currentProject?.duration ?? 10 });
+        if (screen === 'editor' && currentProject) { addLayer(layer); setAddSheetOpen(false); notify('OBJ model imported into the 3D scene'); return; }
+        const project: Project = { id: `model-${Date.now()}`, name: file.name.replace(/\.obj$/i, ''), kind: 'project', ratio: '9:16', width: 1080, height: 1920, resolution: '1080p', fps: 30, background: '#100d08', updatedAt: dateLabel, duration: 10, layers: [layer] };
+        setProjects((list) => [project, ...list]); openEditor(project); notify('OBJ model opened in a new 3D project');
+      } catch (error) { notify(error instanceof Error ? error.message : 'Could not import this OBJ model'); }
+      return;
+    }
     const kind: LayerKind = file.type.startsWith('video/') || ['mp4', 'mov', 'webm', 'mkv', 'm4v'].includes(extension)
       ? 'video'
       : file.type.startsWith('audio/') || ['mp3', 'wav', 'aac', 'm4a', 'ogg', 'flac'].includes(extension)
@@ -1006,7 +1169,7 @@ export default function App() {
         : file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'heic'].includes(extension)
           ? 'image'
           : 'null';
-    if (kind === 'null') { notify('Choose an image, video, audio file, or .ehproj package'); return; }
+    if (kind === 'null') { notify('Choose an image, video, audio file, .obj model, or .ehproj package'); return; }
 
     try {
       if (relinkLayerId) {
@@ -1131,7 +1294,7 @@ export default function App() {
 
   const makeShape = (shapeName: string) => {
     const defaultDuration = Math.min(Number.parseInt(layerDuration, 10) || 2, currentProject?.duration ?? 15);
-    const layer = makeLayer({ name: shapeName, kind: 'shape', shape: shapeName, color: '#f23e98', start: time, duration: defaultDuration });
+    const layer = makeLayer({ name: shapeName, kind: 'shape', shape: shapeName, color: '#e5b653', start: time, duration: defaultDuration });
     addLayer(layer);
     setShapeSheetOpen(false);
     setAddSheetOpen(false);
@@ -1151,9 +1314,14 @@ export default function App() {
     const leftFrames = sourceFrames.filter((frame) => frame.time <= splitAt);
     let rightFrames = sourceFrames.filter((frame) => frame.time >= splitAt);
     if (sourceFrames.length && !rightFrames.some((frame) => Math.abs(frame.time - splitAt) < .001)) rightFrames = [{ time: splitAt, ...splitTransform, easing: 'easeInOut' }, ...rightFrames];
-    const left = { ...selectedLayer, duration: splitAt - selectedLayer.start, keyframes: sourceFrames.length ? leftFrames : undefined };
-    const sourceOffset = (selectedLayer.sourceOffset ?? 0) + (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? (splitAt - selectedLayer.start) * (selectedLayer.speed ?? 1) : 0);
-    const right = { ...selectedLayer, ...splitTransform, id: `layer-split-${Date.now()}`, name: `${selectedLayer.name} 2`, start: splitAt, duration: layerEnd - splitAt, sourceOffset, keyframes: sourceFrames.length ? rightFrames : undefined };
+    const sourceSpeedFrames = [...(selectedLayer.speedKeyframes ?? [])];
+    const splitSpeed = getLayerSpeedAt(selectedLayer, splitAt);
+    let leftSpeedFrames = sourceSpeedFrames.filter((frame) => frame.time <= splitAt);
+    let rightSpeedFrames = sourceSpeedFrames.filter((frame) => frame.time >= splitAt);
+    if (sourceSpeedFrames.length && !rightSpeedFrames.some((frame) => Math.abs(frame.time - splitAt) < .001)) rightSpeedFrames = [{ time: splitAt, speed: splitSpeed, easing: 'easeInOut' }, ...rightSpeedFrames];
+    const left = { ...selectedLayer, duration: splitAt - selectedLayer.start, keyframes: sourceFrames.length ? leftFrames : undefined, speedKeyframes: sourceSpeedFrames.length ? leftSpeedFrames : undefined };
+    const sourceOffset = selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? getLayerSourceTime(selectedLayer, splitAt) : selectedLayer.sourceOffset;
+    const right = { ...selectedLayer, ...splitTransform, id: `layer-split-${Date.now()}`, name: `${selectedLayer.name} 2`, start: splitAt, duration: layerEnd - splitAt, sourceOffset, speed: splitSpeed, keyframes: sourceFrames.length ? rightFrames : undefined, speedKeyframes: sourceSpeedFrames.length ? rightSpeedFrames : undefined };
     const index = layers.findIndex((layer) => layer.id === selectedLayer.id);
     const next = [...layers];
     next.splice(index, 1, left, right);
@@ -1168,7 +1336,7 @@ export default function App() {
     const children = selected.filter((layer) => layer.kind !== 'group');
     if (!selectedGroup && !allowEmpty && children.length < 2) { notify('Select at least two layers to group them'); return; }
     if (selectedGroup && !children.length && !allowEmpty) { notify('Shift-select layers with the group, then choose Group selected'); return; }
-    const group = selectedGroup ?? makeLayer({ id: `group-${Date.now()}`, name: `Group ${layers.filter((layer) => layer.kind === 'group').length + 1}`, kind: 'group', color: '#13e6aa', start: 0, duration: currentProject?.duration ?? 5 });
+    const group = selectedGroup ?? makeLayer({ id: `group-${Date.now()}`, name: `Group ${layers.filter((layer) => layer.kind === 'group').length + 1}`, kind: 'group', color: '#e5b653', start: 0, duration: currentProject?.duration ?? 5 });
     const childIds = new Set(children.map((layer) => layer.id));
     const otherLayers = layers.filter((layer) => !childIds.has(layer.id) && layer.id !== selectedGroup?.id);
     const firstOriginalIndex = Math.min(...[...children.map((layer) => layers.indexOf(layer)), selectedGroup ? layers.indexOf(selectedGroup) : layers.length].filter((index) => index >= 0));
@@ -1206,6 +1374,32 @@ export default function App() {
     rest.splice(Math.max(0, Math.min(rest.length, target)), 0, ...block);
     commitLayerList(rest);
     notify(direction === 'up' ? 'Layer moved forward' : 'Layer moved backward');
+  };
+
+  const setSpeedAtPlayhead = (layer: EditorLayer, speed: number) => {
+    const value = Math.max(.1, Math.min(8, speed));
+    const frames = [...(layer.speedKeyframes ?? [])];
+    if (!frames.length) { updateLayer(layer.id, { speed: value }); return; }
+    const existing = frames.findIndex((frame) => Math.abs(frame.time - time) < .04);
+    if (existing >= 0) frames[existing] = { ...frames[existing], speed: value };
+    else frames.push({ time, speed: value, easing: 'easeInOut' });
+    frames.sort((a, b) => a.time - b.time);
+    updateLayer(layer.id, { speedKeyframes: frames });
+  };
+
+  const toggleSpeedKeyframe = (layer: EditorLayer) => {
+    const frames = [...(layer.speedKeyframes ?? [])];
+    const existing = frames.findIndex((frame) => Math.abs(frame.time - time) < .04);
+    if (existing >= 0) frames.splice(existing, 1);
+    else frames.push({ time, speed: getLayerSpeedAt(layer, time), easing: 'easeInOut' });
+    frames.sort((a, b) => a.time - b.time);
+    updateLayer(layer.id, { speedKeyframes: frames });
+    notify(existing >= 0 ? 'Speed keyframe removed' : 'Velocity keyframe added');
+  };
+
+  const setSpeedKeyframeEasing = (layer: EditorLayer, easing: EasingPreset) => {
+    const frames = (layer.speedKeyframes ?? []).map((frame) => Math.abs(frame.time - time) < .04 ? { ...frame, easing } : frame);
+    updateLayer(layer.id, { speedKeyframes: frames });
   };
 
   const toggleKeyframe = (layer: EditorLayer) => {
@@ -1370,6 +1564,15 @@ export default function App() {
         context.rotate(animated.rotation * Math.PI / 180);
         traceCanvasShape(context, layer.shape ?? 'Rounded Rectangle', size);
         context.restore();
+      } else if (layer.kind === '3d') {
+        context.save();
+        const animated = getLayerTransformAt(layer, time);
+        context.globalAlpha = animated.opacity / 100;
+        context.translate(canvas.width * animated.x / 100, canvas.height * animated.y / 100);
+        context.rotate(animated.rotation * Math.PI / 180);
+        const mesh = layer.mesh3d ?? createPrimitiveMesh(layer.meshName && layer.meshName !== 'Imported OBJ' ? layer.meshName : 'Cube');
+        drawMesh3D(context, mesh, { size: Math.min(canvas.width, canvas.height) * .38 * animated.scale / 100, color: layer.color, rotationX: animated.rotationX, rotationY: animated.rotationY, depth: animated.depth });
+        context.restore();
       } else if (layer.src && (layer.kind === 'image' || layer.kind === 'video')) {
         try {
           let drawable: CanvasImageSource;
@@ -1379,7 +1582,7 @@ export default function App() {
             const image = new window.Image();
             image.src = layer.src;
             await new Promise<void>((resolve) => { image.onload = () => resolve(); image.onerror = () => resolve(); });
-            drawable = image;
+            drawable = layer.kind === 'image' && (layer.restoreStrength ?? 0) > 0 ? applyLocalDetailRecovery(image, layer.restoreStrength ?? 0, canvas.width, canvas.height) : image;
           }
           context.save();
           const animated = getLayerTransformAt(layer, time);
@@ -1469,6 +1672,7 @@ export default function App() {
           onPlay={() => setIsPlaying((value) => !value)}
           onSeek={(value) => { setTime(value); if (videoRef.current) { const end = Number.isFinite(videoRef.current.duration) ? videoRef.current.duration : value; videoRef.current.currentTime = Math.min(value, end); } }}
           selectedLayerIds={selectedLayerIds}
+          lowQualityPreview={showLowQuality}
           onSelectLayer={selectLayer}
           onGroup={() => createGroup()}
           onUngroup={ungroup}
@@ -1481,6 +1685,9 @@ export default function App() {
           onMoveLayer={moveLayer}
           onRelink={requestRelink}
           onKeyframe={toggleKeyframe}
+          onSpeedValue={setSpeedAtPlayhead}
+          onSpeedKeyframe={toggleSpeedKeyframe}
+          onSpeedEasing={setSpeedKeyframeEasing}
           onSetEasing={setKeyframeEasing}
           onDuplicateLayer={duplicateLayer}
           onSaveElement={(layer) => {
@@ -1532,7 +1739,7 @@ export default function App() {
         </>
       )}
 
-      <input ref={mediaInputRef} type="file" accept="image/*,video/*,audio/*,.ehproj,application/json" className="visually-hidden" onChange={handleMediaFile} />
+      <input ref={mediaInputRef} type="file" accept="image/*,video/*,audio/*,.ehproj,.obj,application/json,model/obj" className="visually-hidden" onChange={handleMediaFile} />
       <input ref={xmlInputRef} type="file" accept=".xml,text/xml,application/xml" className="visually-hidden" onChange={handleXmlFile} />
       <input ref={qrInputRef} type="file" accept="image/*" className="visually-hidden" onChange={handleQrImage} />
 
@@ -1576,8 +1783,12 @@ export default function App() {
               return;
             }
             if (name === 'Empty Group') { setAddSheetOpen(false); createGroup(true); return; }
+            if (name === '3D Object') {
+              addLayer(makeLayer({ name: '3D Cube', kind: '3d', mesh3d: createPrimitiveMesh('Cube'), meshName: 'Cube', color: '#e5b653', rotationX: 22, rotationY: 32, start: time, duration: currentProject?.duration ?? 5 }));
+              setAddSheetOpen(false); notify('3D cube added · open 3D Lab to edit'); return;
+            }
             const kind: LayerKind = name === 'Camera' ? 'camera' : 'null';
-            addLayer(makeLayer({ name: name === 'Camera' ? 'Camera 1' : 'Null 1', kind, color: '#14e6aa', start: time, duration: currentProject?.duration ?? 5 }));
+            addLayer(makeLayer({ name: name === 'Camera' ? 'Camera 1' : 'Null 1', kind, color: '#e5b653', start: time, duration: currentProject?.duration ?? 5 }));
             setAddSheetOpen(false);
             notify(`${name} layer added`);
           }}
@@ -1590,6 +1801,11 @@ export default function App() {
           query={effectQuery} onQuery={setEffectQuery}
           category={effectCategory} onCategory={setEffectCategory}
           onClose={() => setEffectBrowserOpen(false)}
+          onSelectPreset={(preset) => {
+            if (!selectedLayer) { notify('Select a layer before applying a look preset'); return; }
+            updateLayer(selectedLayer.id, { effects: [...new Set([...selectedLayer.effects, preset.effect])], effectStrengths: { ...selectedLayer.effectStrengths, [preset.effect]: preset.strength }, presetName: preset.title });
+            setEffectBrowserOpen(false); notify(`${preset.title} applied`);
+          }}
           onSelect={(effect) => {
             if (!selectedLayer) { notify('Select a layer before adding an effect'); return; }
             updateLayer(selectedLayer.id, { effects: [...new Set([...selectedLayer.effects, effect])], effectStrengths: { ...selectedLayer.effectStrengths, [effect]: selectedLayer.effectStrengths?.[effect] ?? 75 } });
@@ -1765,7 +1981,7 @@ function SettingsDialog({
       <section className="settings-dialog" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dialog-heading"><div><span className="eyebrow">EDITOR PREFERENCES</span><h2>Settings</h2></div><button className="icon-button" onClick={onClose} aria-label="Close settings"><X size={21} /></button></div>
         <div className="settings-list">
-          <SettingToggle label="Low quality preview" note="Use less memory while editing" checked={lowQuality} onChange={onLowQuality} />
+          <SettingToggle label="Performance preview" note="Lower 3D preview raster and simplify display; exports stay full quality" checked={lowQuality} onChange={onLowQuality} />
           <SettingToggle label="Show off timeline" note="Keep the timeline visible while browsing" checked={showTimeline} onChange={onShowTimeline} />
           <SettingToggle label="Remember Add page" note="Reopen the last add panel" checked={rememberAdd} onChange={onRememberAdd} />
           <div className="setting-row"><div><strong>Default layer duration</strong><small>For new text, shapes and null layers</small></div><select value={duration} onChange={(event) => onDuration(event.target.value)}><option>2s</option><option>5s</option><option>10s</option><option>15s</option></select></div>
@@ -1796,18 +2012,27 @@ function ProjectSettingsDialog({ project, onClose, onSave }: { project: Project;
   const [duration, setDuration] = useState(project.duration);
   const [background, setBackground] = useState(project.background);
   const [resolution, setResolution] = useState(project.resolution);
+  const updateOutputResolution = (preset: string) => {
+    setResolution(preset);
+    if (preset === 'Custom') return;
+    const baseSize: [number, number] = ratio === 'Custom'
+      ? (width >= height ? [1440, Math.round(1440 * height / Math.max(width, 1))] : [Math.round(1080 * width / Math.max(height, 1)), 1080])
+      : ratioDimensions[ratio];
+    const factor = Math.max(.25, resolutionScale(preset, baseSize[0], baseSize[1]));
+    setWidth(Math.max(16, Math.round(baseSize[0] * factor))); setHeight(Math.max(16, Math.round(baseSize[1] * factor)));
+  };
   const updateRatio = (nextRatio: ProjectRatio) => {
     setRatio(nextRatio);
     if (nextRatio !== 'Custom') {
       const [baseWidth, baseHeight] = ratioDimensions[nextRatio];
-      const scale = Math.max(.25, (Number.parseInt(resolution, 10) || 1080) / 1080);
+      const scale = Math.max(.25, resolutionScale(resolution, baseWidth, baseHeight));
       setWidth(Math.round(baseWidth * scale));
       setHeight(Math.round(baseHeight * scale));
     }
   };
   const apply = () => onSave({
     name: name.trim() || 'Untitled project', ratio, width: Math.min(7680, Math.max(16, Math.round(width))), height: Math.min(7680, Math.max(16, Math.round(height))),
-    fps: Math.max(1, Math.min(120, fps)), duration: Math.min(600, Math.max(.1, duration)), background, resolution: `${Math.round(Math.max(width, height) / 120) * 120}p`,
+    fps: Math.max(1, Math.min(99, fps)), duration: Math.min(600, Math.max(.1, duration)), background, resolution: resolution === 'Custom' ? 'Custom' : /2k/i.test(resolution) ? '2K' : `${Number.parseInt(resolution, 10) || 1080}p`,
   });
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
@@ -1815,8 +2040,9 @@ function ProjectSettingsDialog({ project, onClose, onSave }: { project: Project;
         <div className="dialog-heading"><div><span className="eyebrow">COMPOSITION</span><h2>Project settings</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div>
         <label className="project-setting-field">Project name<input value={name} maxLength={64} onChange={(event) => setName(event.target.value)} /></label>
         <label className="project-setting-field">Aspect ratio<select value={ratio} onChange={(event) => updateRatio(event.target.value as ProjectRatio)}>{ratios.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <div className="project-dimensions"><label className="project-setting-field">Width<input type="number" min={16} max={7680} value={width} onChange={(event) => { setWidth(Number(event.target.value)); setRatio('Custom'); }} /></label><span>×</span><label className="project-setting-field">Height<input type="number" min={16} max={7680} value={height} onChange={(event) => { setHeight(Number(event.target.value)); setRatio('Custom'); }} /></label></div>
-        <div className="project-settings-row"><label className="project-setting-field">Frame rate<select value={fps} onChange={(event) => setFps(Number(event.target.value))}>{[24,30,48,60,90,120].map((value) => <option key={value} value={value}>{value} fps</option>)}</select></label><label className="project-setting-field">Duration (s)<input type="number" min={.1} max={600} step={.1} value={duration} onChange={(event) => setDuration(Number(event.target.value))} /></label></div>
+        <label className="project-setting-field">Output resolution<select value={resolution === '2K' ? '2K (2048px long edge)' : resolution === '2160p' || resolution === '4K' ? '2160p (4K)' : resolution === '1440p' ? '1440p (QHD)' : resolution === '720p' ? '720p (HD)' : resolution === '1080p' ? '1080p (FHD)' : resolution} onChange={(event) => updateOutputResolution(event.target.value)}><option>720p (HD)</option><option>1080p (FHD)</option><option>1440p (QHD)</option><option>2K (2048px long edge)</option><option>2160p (4K)</option><option>Custom</option></select></label>
+        <div className="project-dimensions"><label className="project-setting-field">Width<input type="number" min={16} max={7680} value={width} onChange={(event) => { setWidth(Number(event.target.value)); setRatio('Custom'); setResolution('Custom'); }} /></label><span>×</span><label className="project-setting-field">Height<input type="number" min={16} max={7680} value={height} onChange={(event) => { setHeight(Number(event.target.value)); setRatio('Custom'); setResolution('Custom'); }} /></label></div>
+        <div className="project-settings-row"><label className="project-setting-field">Frame rate (1–99 fps)<input type="number" min={1} max={99} step={1} value={fps} onChange={(event) => setFps(Number(event.target.value))} /></label><label className="project-setting-field">Duration (s)<input type="number" min={.1} max={600} step={.1} value={duration} onChange={(event) => setDuration(Number(event.target.value))} /></label></div>
         <div className="project-settings-row"><label className="project-setting-field">Background color</label><label className="project-background-picker"><span style={{ background }} /><input type="color" value={background} onChange={(event) => setBackground(event.target.value)} /><span>{background.toUpperCase()}</span></label></div>
         <div className="project-settings-actions"><button className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={apply}>Save settings</button></div>
       </section>
@@ -1833,6 +2059,12 @@ function NewProjectSheet({
   fps: number; onFps: (value: number) => void; background: string; onBackground: (value: string) => void;
   customRatio: string; onCustomRatio: (value: string) => void; onClose: () => void; onCreate: () => void;
 }) {
+  const customParts = customRatio.split(':').map((part) => Number.parseFloat(part));
+  const baseSize: [number, number] = ratio === 'Custom'
+    ? (customParts[0] >= customParts[1] ? [1440, Math.round(1440 * (customParts[1] || 2) / (customParts[0] || 3))] : [Math.round(1080 * (customParts[0] || 3) / (customParts[1] || 2)), 1080])
+    : ratioDimensions[ratio];
+  const sizeScale = resolutionScale(resolution, baseSize[0], baseSize[1]);
+  const sizeLabel = `${Math.round(baseSize[0] * sizeScale)} × ${Math.round(baseSize[1] * sizeScale)}${/2k/i.test(resolution) ? ' · 2K' : ''}`;
   return (
     <div className="modal-backdrop sheet-backdrop" onMouseDown={onClose}>
       <section className="new-project-sheet" onMouseDown={(event) => event.stopPropagation()}>
@@ -1844,11 +2076,11 @@ function NewProjectSheet({
         </div>
         {ratio === 'Custom' && <div className="custom-ratio-fields"><input value={customRatio.split(':')[0]} onChange={(event) => onCustomRatio(`${event.target.value}:${customRatio.split(':')[1] ?? '2'}`)} aria-label="Ratio width" /><span>:</span><input value={customRatio.split(':')[1] ?? '2'} onChange={(event) => onCustomRatio(`${customRatio.split(':')[0] ?? '3'}:${event.target.value}`)} aria-label="Ratio height" /></div>}
         <div className="creation-settings">
-          <div className="creation-label"><strong>Resolution</strong><small>Composition size<br />{ratio === 'Custom' ? `${customRatio} · Custom` : ratioDimensions[ratio].join(' × ')}</small></div>
-          <select value={resolution} onChange={(event) => onResolution(event.target.value)} aria-label="Resolution"><option>720p (HD)</option><option>1080p (FHD)</option><option>1440p (QHD)</option><option>2160p (4K)</option></select>
+          <div className="creation-label"><strong>Resolution</strong><small>Composition size<br />{sizeLabel}</small></div>
+          <select value={resolution} onChange={(event) => onResolution(event.target.value)} aria-label="Resolution"><option>720p (HD)</option><option>1080p (FHD)</option><option>1440p (QHD)</option><option>2K (2048px long edge)</option><option>2160p (4K)</option></select>
         </div>
-        <div className="creation-settings compact-creation"><div className="creation-label"><strong>Frame rate</strong></div><select value={fps} onChange={(event) => onFps(Number(event.target.value))} aria-label="Frame rate"><option value={24}>24 fps</option><option value={30}>30 fps</option><option value={60}>60 fps</option><option value={120}>120 fps</option></select></div>
-        <div className={`creation-settings compact-creation ${kind === 'element' ? 'disabled-setting' : ''}`}><div className="creation-label"><strong>Background</strong></div><div className="background-select"><span style={{ background: background }} /><select disabled={kind === 'element'} value={background} onChange={(event) => onBackground(event.target.value)} aria-label="Background">{colorSwatches.map((color) => <option key={color} value={color}>{color === '#0b0c0e' ? 'Black' : color === '#f1f1f2' ? 'White' : color === '#d9d9dc' ? 'Light grey' : 'Custom color'}</option>)}</select><ChevronDown size={17} /></div></div>
+        <div className="creation-settings compact-creation"><div className="creation-label"><strong>Frame rate</strong><small>Manual · 1–99 fps</small></div><input className="fps-input" aria-label="Frame rate" type="number" min={1} max={99} step={1} value={fps} onChange={(event) => onFps(Number(event.target.value))} /></div>
+        <div className={`creation-settings compact-creation ${kind === 'element' ? 'disabled-setting' : ''}`}><div className="creation-label"><strong>Background</strong></div><div className="background-select"><span style={{ background: background }} /><select disabled={kind === 'element'} value={background} onChange={(event) => onBackground(event.target.value)} aria-label="Background">{colorSwatches.map((color) => <option key={color} value={color}>{color === '#0b0c0e' ? 'Black' : color === '#fff4dd' ? 'White' : color === '#d9d1c3' ? 'Light grey' : 'Warm color'}</option>)}</select><ChevronDown size={17} /></div></div>
         <button className="primary-button create-project-button" onClick={onCreate}>Create {kind === 'element' ? 'Element' : kind === 'template' ? 'Template' : 'Project'} <ChevronRight size={18} /></button>
       </section>
     </div>
@@ -1865,6 +2097,7 @@ function AddSheet({ onClose, onMedia, onText, onShape, onAudio, onAction }: {
     { label: 'Audio', icon: Music2, action: onAudio, subtitle: 'Music & sound' },
     { label: 'Freehand drawing', icon: Pencil, action: () => onAction('Freehand Drawing'), subtitle: 'Sketch a path' },
     { label: 'Vector drawing', icon: Move, action: () => onAction('Vector Drawing'), subtitle: 'Pen tool' },
+    { label: '3D object', icon: Box, action: () => onAction('3D Object'), subtitle: 'Build a 3D primitive' },
     { label: 'Element / Project', icon: Layers, action: () => onAction('Element / Project'), subtitle: 'Reuse a layer' },
     { label: 'Template', icon: Grid2X2, action: () => onAction('Template'), subtitle: 'Start from a design' },
   ];
@@ -1884,7 +2117,7 @@ function DrawingDialog({ mode, projectWidth, onClose, onSave }: { mode: 'freehan
   const pointsRef = useRef<DrawPoint[]>([]);
   const activePointerRef = useRef<number | null>(null);
   const [points, setPoints] = useState<DrawPoint[]>([]);
-  const [color, setColor] = useState('#f23e98');
+  const [color, setColor] = useState('#e5b653');
   const [brushSize, setBrushSize] = useState(8);
   const [drawing, setDrawing] = useState(false);
   const setPath = (next: DrawPoint[]) => { pointsRef.current = next; setPoints(next); };
@@ -1965,23 +2198,36 @@ function ShapeSheet({ onClose, onSelect }: { onClose: () => void; onSelect: (sha
   );
 }
 
-function EffectBrowser({ query, onQuery, category, onCategory, onClose, onSelect }: {
+function EffectBrowser({ query, onQuery, category, onCategory, onClose, onSelect, onSelectPreset }: {
   query: string; onQuery: (value: string) => void; category: string | null; onCategory: (value: string | null) => void;
-  onClose: () => void; onSelect: (effect: string) => void;
+  onClose: () => void; onSelect: (effect: string) => void; onSelectPreset: (preset: (typeof effectPresets)[number]) => void;
 }) {
+  const [catalogTab, setCatalogTab] = useState<'effects' | 'presets'>('effects');
+  const [presetPage, setPresetPage] = useState(0);
   const filteredCategories = initialEffects.map((item) => ({ ...item, effects: item.effects.filter((effect) => effect.toLowerCase().includes(query.toLowerCase())) })).filter((item) => (!category || item.title === category) && (query ? item.effects.length > 0 : true));
+  const filteredPresets = effectPresets.filter((preset) => `${preset.title} ${preset.effect}`.toLowerCase().includes(query.toLowerCase()));
+  const pageSize = 48;
+  const visiblePresets = filteredPresets.slice(presetPage * pageSize, (presetPage + 1) * pageSize);
   return (
     <div className="effect-browser-overlay">
-      <header className="effect-browser-header"><button className="icon-button" onClick={onClose} aria-label="Close effect browser"><X size={24} /></button><div><span className="eyebrow">EDITORS HUB LIBRARY</span><h2>{category ?? 'Effect browser'}</h2></div><label className="effect-search"><Search size={19} /><input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search effects" /></label></header>
+      <header className="effect-browser-header"><button className="icon-button" onClick={onClose} aria-label="Close effect browser"><X size={24} /></button><div><span className="eyebrow">EDITORS HUB LIBRARY</span><h2>{catalogTab === 'presets' ? 'Look presets' : category ?? 'Effect browser'}</h2></div><label className="effect-search"><Search size={19} /><input value={query} onChange={(event) => { onQuery(event.target.value); setPresetPage(0); }} placeholder={catalogTab === 'presets' ? 'Search 2,700 presets' : 'Search effects'} /></label></header>
       <main className="effect-browser-content">
-        {category && <button className="effect-back" onClick={() => onCategory(null)}><ArrowLeft size={16} /> All categories</button>}
-        <div className="effect-category-grid">{filteredCategories.map((item, index) => (
-          <section className={`effect-category ${item.tint}`} key={item.title}>
-            {!category && <button className="effect-category-title" onClick={() => onCategory(item.title)}><span>{item.title}</span><ChevronRight size={16} /></button>}
-            {category && <h3>{item.title}</h3>}
-            {(category || query) && <div className="effect-list">{item.effects.map((effect, effectIndex) => <button key={effect} onClick={() => onSelect(effect)}><span className="effect-mini-symbol">{effectIndex % 2 === 0 ? <Sparkles size={16} /> : <Zap size={16} />}</span><span>{effect}</span><Plus size={16} /></button>)}</div>}
-          </section>
-        ))}</div>
+        <div className="effect-catalog-tabs"><button className={catalogTab === 'effects' ? 'selected' : ''} onClick={() => setCatalogTab('effects')}>Effects</button><button className={catalogTab === 'presets' ? 'selected' : ''} onClick={() => { setCatalogTab('presets'); onCategory(null); }}>Presets <span>2,700</span></button></div>
+        {catalogTab === 'effects' ? <>
+          {category && <button className="effect-back" onClick={() => onCategory(null)}><ArrowLeft size={16} /> All categories</button>}
+          <div className="effect-category-grid">{filteredCategories.map((item) => (
+            <section className={`effect-category ${item.tint}`} key={item.title}>
+              {!category && <button className="effect-category-title" onClick={() => onCategory(item.title)}><span>{item.title}</span><ChevronRight size={16} /></button>}
+              {category && <h3>{item.title}</h3>}
+              {(category || query) && <div className="effect-list">{item.effects.map((effect, effectIndex) => <button key={effect} onClick={() => onSelect(effect)}><span className="effect-mini-symbol">{effectIndex % 2 === 0 ? <Sparkles size={16} /> : <Zap size={16} />}</span><span>{effect}</span><Plus size={16} /></button>)}</div>}
+            </section>
+          ))}</div>
+        </> : <>
+          <div className="preset-catalog-heading"><span>{filteredPresets.length.toLocaleString()} looks</span><small>27 effect recipes × 100 intensity variants · effects remain editable</small></div>
+          <div className="preset-grid">{visiblePresets.map((preset, index) => <button className={`preset-card preset-tone-${index % 6}`} key={preset.id} onClick={() => onSelectPreset(preset)}><span className="preset-card-icon"><Sparkles size={17} /></span><span><strong>{preset.title}</strong><small>{preset.effect} · {preset.strength}%</small></span><Plus size={15} /></button>)}</div>
+          {visiblePresets.length < filteredPresets.length && <button className="preset-load-more" onClick={() => setPresetPage((page) => page + 1)}>Show next {Math.min(pageSize, filteredPresets.length - visiblePresets.length)} presets</button>}
+          {!filteredPresets.length && <p className="preset-empty">No presets match that search.</p>}
+        </>}
       </main>
     </div>
   );
@@ -1996,7 +2242,7 @@ function ExportDialog({ project, onClose, onPackage, onPreview, onRender, render
       <section className="export-dialog" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dialog-heading"><div><span className="eyebrow">DELIVER YOUR WORK</span><h2>Export</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={21} /></button></div>
         <div className="export-summary"><div className="export-summary-icon"><Film size={22} /></div><div><strong>{project?.name ?? 'Untitled project'}</strong><small>{project?.width} × {project?.height} · {project?.fps} fps · {fmtTime(project?.duration ?? 0, project?.fps ?? 30)}</small></div></div>
-        <div className="export-render-settings"><label>Format<select value={renderFormat} onChange={(event) => onFormat(event.target.value as ExportFormat)}><option value="auto">Best supported</option><option value="mp4">Prefer MP4</option><option value="webm">Prefer WebM</option></select></label><label>Quality<select value={renderQuality} onChange={(event) => onQuality(event.target.value as ExportQuality)}><option value="balanced">Balanced · 1080p</option><option value="high">High · up to 1440p</option></select></label></div>
+        <div className="export-render-settings"><label>Format<select value={renderFormat} onChange={(event) => onFormat(event.target.value as ExportFormat)}><option value="auto">Best supported</option><option value="mp4">Prefer MP4</option><option value="webm">Prefer WebM</option></select></label><label>Quality<select value={renderQuality} onChange={(event) => onQuality(event.target.value as ExportQuality)}><option value="balanced">Balanced · up to 2K</option><option value="high">High · up to 2560px</option></select></label></div>
         <button className="export-option" onClick={onPackage}><span className="export-option-icon"><FilePlus2 size={21} /></span><span><strong>Save project package</strong><small>Editable timeline · .ehproj</small></span><ChevronRight size={18} /></button>
         <button className="export-option" onClick={onPreview}><span className="export-option-icon"><ImageIcon size={21} /></span><span><strong>Export frame as PNG</strong><small>Capture the current composition</small></span><ChevronRight size={18} /></button>
         <button className="export-option" onClick={() => onRender(renderFormat, renderQuality)}><span className="export-option-icon"><Video size={21} /></span><span><strong>Render video</strong><small>MP4 when supported · WebM fallback</small></span><ChevronRight size={18} /></button>
@@ -2035,11 +2281,11 @@ function RenderedVideoDialog({ src, name, format, onClose, onDownload }: { src: 
 }
 
 function EditorScreen({
-  project, layers, selectedLayerId, selectedLayerIds, selectedLayer, time, isPlaying, editorTool, stageStyle, formattedRatio, videoRef, canvasZoom, onProjectSettings, onGroup, onUngroup,
+  project, layers, selectedLayerId, selectedLayerIds, selectedLayer, time, isPlaying, editorTool, stageStyle, formattedRatio, videoRef, canvasZoom, lowQualityPreview, onProjectSettings, onGroup, onUngroup,
   panelSlider, canUndo, canRedo, onUndo, onRedo, onBack, onPlay, onSeek, onSelectLayer, onAdd, onSetTool, onSetContext, onUpdateLayer, onDeleteLayer,
-  onDuplicateLayer, onSaveElement, onSplit, onMoveLayer, onRelink, onKeyframe, onSetEasing, onOpenEffects, onExport, onZoom, onPanelSlider, onRename, onNotify, contextLayerId,
+  onDuplicateLayer, onSaveElement, onSplit, onMoveLayer, onRelink, onKeyframe, onSetEasing, onSpeedValue, onSpeedKeyframe, onSpeedEasing, onOpenEffects, onExport, onZoom, onPanelSlider, onRename, onNotify, contextLayerId,
 }: {
-  project: Project; layers: EditorLayer[]; selectedLayerId: string | null; selectedLayerIds: string[]; selectedLayer: EditorLayer | null; time: number; isPlaying: boolean; onProjectSettings: () => void;
+  project: Project; layers: EditorLayer[]; selectedLayerId: string | null; selectedLayerIds: string[]; selectedLayer: EditorLayer | null; time: number; isPlaying: boolean; lowQualityPreview: boolean; onProjectSettings: () => void;
   onGroup: () => void; onUngroup: (id: string) => void;
   editorTool: string | null; stageStyle: CSSProperties; formattedRatio: string; videoRef: RefObject<HTMLVideoElement | null>; canvasZoom: number;
   panelSlider: number; canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void;
@@ -2047,7 +2293,7 @@ function EditorScreen({
   onSelectLayer: (id: string | null, additive?: boolean) => void; onAdd: () => void; onSetTool: (tool: string) => void; onSetContext: (id: string | null) => void;
   onUpdateLayer: (id: string, patch: Partial<EditorLayer>) => void; onDeleteLayer: (id: string) => void;
   onDuplicateLayer: (layer: EditorLayer) => void; onSaveElement: (layer: EditorLayer) => void; onSplit: () => void;
-  onMoveLayer: (id: string, direction: 'up' | 'down') => void; onRelink: (id: string) => void; onKeyframe: (layer: EditorLayer) => void; onSetEasing: (layer: EditorLayer, easing: EasingPreset) => void; onOpenEffects: () => void;
+  onMoveLayer: (id: string, direction: 'up' | 'down') => void; onRelink: (id: string) => void; onKeyframe: (layer: EditorLayer) => void; onSetEasing: (layer: EditorLayer, easing: EasingPreset) => void; onSpeedValue: (layer: EditorLayer, speed: number) => void; onSpeedKeyframe: (layer: EditorLayer) => void; onSpeedEasing: (layer: EditorLayer, easing: EasingPreset) => void; onOpenEffects: () => void;
   onExport: () => void; onZoom: (value: number) => void; onPanelSlider: (value: number) => void; onRename: () => void; onNotify: (message: string) => void;
   contextLayerId: string | null;
 }) {
@@ -2064,9 +2310,9 @@ function EditorScreen({
       const audio = audioRefs.current.get(layer.id);
       if (!audio) continue;
       const active = isLayerVisible(layer, layers) && time >= layer.start && time < layer.start + layer.duration;
-      const target = (layer.sourceOffset ?? 0) + Math.max(0, time - layer.start) * Math.max(.25, Math.min(4, layer.speed ?? 1));
+      const target = getLayerSourceTime(layer, time);
       audio.volume = Math.max(0, Math.min(1, (layer.volume ?? 100) / 100));
-      audio.playbackRate = Math.max(.25, Math.min(4, layer.speed ?? 1));
+      audio.playbackRate = Math.max(.1, Math.min(8, getLayerSpeedAt(layer, time)));
       if (active && Number.isFinite(audio.duration) && target < audio.duration) {
         if (Math.abs(audio.currentTime - target) > .45) audio.currentTime = target;
         if (isPlaying && audio.paused) void audio.play().catch(() => undefined);
@@ -2135,15 +2381,16 @@ function EditorScreen({
         <section className="preview-column">
           <div className="stage-toolbar"><div className="stage-pill"><span className="live-dot" /> Preview <span className="stage-divider" /> {project.resolution} · {project.fps} fps</div><button className="zoom-chip" onClick={() => onZoom(canvasZoom >= 150 ? 75 : canvasZoom + 25)}><Maximize2 size={14} /> {canvasZoom}% <ChevronDown size={13} /></button></div>
           <div className="preview-stage-wrap">
-            <div ref={stageRef} className="composition-stage" style={{ ...stageStyle, transform: `scale(${Math.min(canvasZoom, 125) / 100})` }}>
+            <div ref={stageRef} className={`composition-stage ${lowQualityPreview ? 'preview-low-quality' : ''}`} style={{ ...stageStyle, transform: `scale(${Math.min(canvasZoom, 125) / 100})` }}>
               <div className="composition-grid" />
               {stageLayers.map((layer) => {
                 const baseAnimated = getLayerTransformAt(layer, time);
                 const animated = dragPreview?.id === layer.id ? { ...baseAnimated, x: dragPreview.x, y: dragPreview.y, scale: dragPreview.scale } : baseAnimated;
-                const layerStyle: CSSProperties = { left: `${animated.x}%`, top: `${animated.y}%`, transform: `translate(-50%, -50%) rotate(${animated.rotation}deg) scale(${animated.scale / 100})`, opacity: animated.opacity / 100 };
+                const layerStyle: CSSProperties = { left: `${animated.x}%`, top: `${animated.y}%`, transform: `translate(-50%, -50%) translateZ(${animated.depth}px) rotate(${animated.rotation}deg) scale(${animated.scale / 100})`, opacity: animated.opacity / 100 };
+                if (layer.kind === '3d') return <div className={`stage-3d-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={layerStyle} key={layer.id} onClick={() => onSelectLayer(layer.id)} onPointerDown={(event) => beginStageDrag(event, layer, animated)} onPointerMove={moveStageDrag} onPointerUp={finishStageDrag} onPointerCancel={finishStageDrag}><StageMeshCanvas layer={layer} transform={animated} lowQuality={lowQualityPreview} />{selectedLayerId === layer.id && <SelectionHandles />}</div>;
                 if ((layer.kind === 'image' || layer.kind === 'video') && layer.src) {
                   return <div className={`stage-media-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={layerStyle} key={layer.id} onClick={() => onSelectLayer(layer.id)} onPointerDown={(event) => beginStageDrag(event, layer, animated)} onPointerMove={moveStageDrag} onPointerUp={finishStageDrag} onPointerCancel={finishStageDrag}>
-                    {layer.kind === 'video' ? <video ref={layer.id === activeVideo?.id ? videoRef : undefined} src={layer.src} muted={!isPlaying} playsInline loop className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects, layer.effectStrengths) }} /> : <img src={layer.src} alt={layer.name} className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects, layer.effectStrengths) }} />}
+                    {layer.kind === 'video' ? <video ref={layer.id === activeVideo?.id ? videoRef : undefined} src={layer.src} muted={!isPlaying} playsInline loop className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects, layer.effectStrengths), imageRendering: lowQualityPreview ? 'pixelated' : 'auto' }} /> : <img src={layer.src} alt={layer.name} className="stage-media-content" style={{ filter: `${cssFilterForEffects(layer.effects, layer.effectStrengths)}${(layer.restoreStrength ?? 0) > 0 ? ` contrast(${1 + (layer.restoreStrength ?? 0) / 500}) saturate(${1 + (layer.restoreStrength ?? 0) / 700})` : ''}`, imageRendering: lowQualityPreview ? 'pixelated' : 'auto' }} />}
                     {selectedLayerId === layer.id && <SelectionHandles />}
                   </div>;
                 }
@@ -2176,11 +2423,12 @@ function EditorScreen({
               <div className="track-list">
                 {layers.map((layer, index) => (
                   <div className={`track-row ${layer.kind === 'group' ? 'track-group-row' : ''} ${layer.groupId ? 'track-child-row' : ''} ${selectedLayerIds.includes(layer.id) ? 'track-selected' : ''}`} key={layer.id} onClick={(event) => onSelectLayer(layer.id, event.shiftKey)}>
-                    <div className="track-controls"><button className="track-eye" onClick={(event) => { event.stopPropagation(); onUpdateLayer(layer.id, { visible: !layer.visible }); }} aria-label={layer.visible ? 'Hide layer' : 'Show layer'}>{layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}</button><span className="track-swatch" style={{ background: layer.color }}>{layer.kind === 'video' ? <Video size={12} /> : layer.kind === 'audio' ? <Music2 size={12} /> : layer.kind === 'text' ? <Type size={12} /> : layer.kind === 'image' ? <ImageIcon size={12} /> : layer.kind === 'drawing' ? <Pencil size={12} /> : layer.kind === 'group' ? <Layers size={12} /> : null}</span></div>
+                    <div className="track-controls"><button className="track-eye" onClick={(event) => { event.stopPropagation(); onUpdateLayer(layer.id, { visible: !layer.visible }); }} aria-label={layer.visible ? 'Hide layer' : 'Show layer'}>{layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}</button><span className="track-swatch" style={{ background: layer.color }}>{layer.kind === 'video' ? <Video size={12} /> : layer.kind === 'audio' ? <Music2 size={12} /> : layer.kind === 'text' ? <Type size={12} /> : layer.kind === 'image' ? <ImageIcon size={12} /> : layer.kind === 'drawing' ? <Pencil size={12} /> : layer.kind === '3d' ? <Box size={12} /> : layer.kind === 'group' ? <Layers size={12} /> : null}</span></div>
                     <div className={`track-clip clip-${index % 4}`} style={{ marginLeft: `${Math.min(75, layer.start / Math.max(project.duration, 1) * 100)}%`, width: `${Math.min(100, Math.max(12, layer.duration / Math.max(project.duration, 1) * 100))}%` }}>
                       {layer.src && layer.kind !== 'audio' && <span className="clip-thumbnail" style={{ backgroundImage: `url(${layer.src})` }} />}{layer.externalPath && <span className="missing-media-chip" title={`Relink media: ${layer.externalPath}`}><Link2 size={11} /></span>}
                       {layer.kind === 'audio' && <span className="waveform">{(layer.waveform?.length ? layer.waveform : [0.18,.34,.72,.4,.85,.48,.62,.26,.94,.39,.7,.25,.8,.48,.32,.72,.42,.9,.36,.62,.2,.74,.48,.82]).map((value, waveIndex) => <i key={waveIndex} style={{ height: `${Math.max(8, value * 100)}%` }} />)}</span>}
                       {layer.keyframes?.map((frame, frameIndex) => <span className="keyframe-diamond" key={`${layer.id}-key-${frameIndex}`} style={{ left: `${Math.max(0, Math.min(100, (frame.time - layer.start) / Math.max(layer.duration, .01) * 100))}%` }} />)}
+                      {layer.speedKeyframes?.map((frame, frameIndex) => <span className="speed-keyframe-diamond" key={`${layer.id}-speed-${frameIndex}`} style={{ left: `${Math.max(0, Math.min(100, (frame.time - layer.start) / Math.max(layer.duration, .01) * 100))}%` }} />)}
                       <span className="clip-name">{layer.name}</span>
                       {layer.effects.length > 0 && <span className="clip-effects"><Sparkles size={11} />{layer.effects.length}</span>}
                     </div>
@@ -2201,21 +2449,23 @@ function EditorScreen({
             <button onClick={onSplit}><span><SlidersHorizontal size={20} /></span><small>Split</small></button>
             <button onClick={() => onSetTool('Volume')}><span><AudioLines size={20} /></span><small>Volume</small></button>
             <button className={editorTool === 'Move & Transform' ? 'tool-active' : ''} onClick={() => onSetTool('Move & Transform')}><span><Move size={21} /></span><small>Move & transform</small></button>
+            <button className={editorTool === '3D Lab' ? 'tool-active' : ''} onClick={() => onSetTool('3D Lab')}><span><Box size={21} /></span><small>3D Lab</small></button>
             <button className={editorTool === 'Color & Fill' ? 'tool-active' : ''} onClick={() => onSetTool('Color & Fill')}><span><Circle size={21} /></span><small>Color & fill</small></button>
             <button className={editorTool === 'Effects' ? 'tool-active' : ''} onClick={addEffect}><span><Sparkles size={21} /></span><small>Effects</small></button>
+            <button className={editorTool === 'Enhance' ? 'tool-active' : ''} onClick={() => onSetTool('Enhance')}><span><ScanLine size={21} /></span><small>Enhance</small></button>
             <button className={editorTool === 'Layer settings' ? 'tool-active' : ''} onClick={() => onSetTool('Layer settings')}><span><SlidersHorizontal size={21} /></span><small>Layer settings</small></button>
           </div>
           {editorTool && (
             <div className="inspector-panel">
               <div className="inspector-header"><div><span className="eyebrow">{selectedLayer?.name ?? 'PROJECT'}</span><strong>{editorTool}</strong></div><button className="icon-button" onClick={() => onSetTool(editorTool)} aria-label="Close panel"><X size={18} /></button></div>
-              {selectedLayer?.kind === 'group' ? <div className="group-inspector"><Layers size={20} /><strong>{layers.filter((layer) => layer.groupId === selectedLayer.id).length} layers in this group</strong><small>Shift-select additional timeline layers, then use Group to add them. Groups organize the stack; child layers remain independently editable.</small><button className="secondary-button" onClick={() => onUngroup(selectedLayer.id)}>Ungroup layers</button></div> : editorTool === 'Move & Transform' && selectedLayer ? <>
+              {selectedLayer?.kind === 'group' ? <div className="group-inspector"><Layers size={20} /><strong>{layers.filter((layer) => layer.groupId === selectedLayer.id).length} layers in this group</strong><small>Shift-select additional timeline layers, then use Group to add them. Groups organize the stack; child layers remain independently editable.</small><button className="secondary-button" onClick={() => onUngroup(selectedLayer.id)}>Ungroup layers</button></div> : editorTool === '3D Lab' && selectedLayer?.kind === '3d' ? <div className="model-inspector"><label className="project-setting-field">Primitive / mesh<select value={selectedLayer.meshName ?? 'Cube'} onChange={(event) => { const meshName = event.target.value as 'Cube' | 'Sphere' | 'Pyramid' | 'Plane' | 'Torus'; onUpdateLayer(selectedLayer.id, { meshName, mesh3d: createPrimitiveMesh(meshName) }); }}>{['Cube','Sphere','Pyramid','Plane','Torus'].map((mesh) => <option key={mesh}>{mesh}</option>)}{selectedLayer.meshName === 'Imported OBJ' && <option value="Imported OBJ" disabled>Imported OBJ file</option>}</select></label><p>Import Wavefront `.obj` through Add → Media. Meshes stay local to the project.</p><button className={selectedLayer.keyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onKeyframe(selectedLayer)}><Plus size={13} /> {selectedLayer.keyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'Remove 3D keyframe' : 'Keyframe 3D pose'}</button><label className="range-setting">Pitch <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationX)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationX: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationX)}°</span></label><label className="range-setting">Yaw <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationY)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationY: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationY)}°</span></label><label className="range-setting">Depth <input type="range" min={-300} max={300} value={Math.round(getLayerTransformAt(selectedLayer, time).depth)} onChange={(event) => onUpdateLayer(selectedLayer.id, { depth: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).depth)}px</span></label></div> : editorTool === 'Enhance' && selectedLayer ? <div className="enhance-panel"><strong>Local detail recovery</strong>{selectedLayer.kind === 'image' ? <label className="range-setting">Sharpen / restore <input type="range" min={0} max={100} value={selectedLayer.restoreStrength ?? 0} onChange={(event) => onUpdateLayer(selectedLayer.id, { restoreStrength: Number(event.target.value) })} /><span>{selectedLayer.restoreStrength ?? 0}%</span></label> : <p>Detail recovery currently targets still images. Use Motion Frame Blend on video layers for approximate slow-motion smoothing.</p>}<small>Export resamples to the render size and applies a local unsharp mask. Preview is a lightweight tonal approximation. No cloud upload or generative AI model is used; source media remains unchanged.</small></div> : editorTool === 'Move & Transform' && selectedLayer ? <>
                 {(() => {
                   const frameAtPlayhead = selectedLayer.keyframes?.find((frame) => Math.abs(frame.time - time) < .04);
                   return <div className="keyframe-controls"><button className={frameAtPlayhead ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onKeyframe(selectedLayer)}><Plus size={14} /> {frameAtPlayhead ? 'Remove keyframe' : 'Add keyframe'}</button><span>{selectedLayer.keyframes?.length ?? 0} keyframes</span>{Boolean(selectedLayer.keyframes?.length) && <><select aria-label="Keyframe easing" value={frameAtPlayhead?.easing ?? 'easeInOut'} disabled={!frameAtPlayhead} onChange={(event) => onSetEasing(selectedLayer, event.target.value as EasingPreset)}><option value="linear">Linear</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="easeInOut">Ease in-out</option></select>{frameAtPlayhead && <svg className={`easing-mini-graph easing-${frameAtPlayhead.easing}`} viewBox="0 0 80 42" aria-label="Easing curve"><path d={frameAtPlayhead.easing === 'linear' ? 'M5 37 L75 5' : frameAtPlayhead.easing === 'easeIn' ? 'M5 37 C52 37 67 24 75 5' : frameAtPlayhead.easing === 'easeOut' ? 'M5 37 C13 18 28 5 75 5' : 'M5 37 C30 37 28 5 75 5'} /></svg>}</>}</div>;
                 })()}
                 <div className="transform-readouts"><label>X <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).x * 10)} onChange={(event) => onUpdateLayer(selectedLayer.id, { x: Number(event.target.value) / 10 })} /></label><label>Y <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).y * 10)} onChange={(event) => onUpdateLayer(selectedLayer.id, { y: Number(event.target.value) / 10 })} /></label><label>Scale <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).scale)} onChange={(event) => onUpdateLayer(selectedLayer.id, { scale: Number(event.target.value) })} /></label></div>
-                <label className="range-setting">Rotation <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotation)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotation: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotation)}°</span></label>
-              </> : editorTool === 'Speed' && selectedLayer ? <label className="range-setting">Playback speed <input type="range" min={25} max={400} value={Math.round((selectedLayer.speed ?? 1) * 100)} onChange={(event) => onUpdateLayer(selectedLayer.id, { speed: Number(event.target.value) / 100 })} /><span>{(selectedLayer.speed ?? 1).toFixed(2)}×</span></label> : editorTool === 'Trim start' && selectedLayer ? <div className="trim-controls"><p>Clip range · {fmtTime(selectedLayer.start, project.fps)} – {fmtTime(selectedLayer.start + selectedLayer.duration, project.fps)}</p><label className="range-setting">Position <input type="range" min={0} max={Math.max(0, project.duration - selectedLayer.duration)} step={.01} value={Math.min(selectedLayer.start, Math.max(0, project.duration - selectedLayer.duration))} onChange={(event) => onUpdateLayer(selectedLayer.id, { start: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.start, project.fps)}</span></label>{selectedLayer.sourceDuration && (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video') && <label className="range-setting">Source in <input type="range" min={0} max={Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1))} step={.01} value={Math.min(selectedLayer.sourceOffset ?? 0, Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1)))} onChange={(event) => onUpdateLayer(selectedLayer.id, { sourceOffset: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.sourceOffset ?? 0, project.fps)}</span></label>}<label className="range-setting">Length <input type="range" min={.1} max={Math.max(.1, Math.min(project.duration - selectedLayer.start, selectedLayer.sourceDuration ? (selectedLayer.sourceDuration - (selectedLayer.sourceOffset ?? 0)) / Math.max(.25, selectedLayer.speed ?? 1) : project.duration - selectedLayer.start))} step={.01} value={Math.min(selectedLayer.duration, project.duration - selectedLayer.start)} onChange={(event) => onUpdateLayer(selectedLayer.id, { duration: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.duration, project.fps)}</span></label></div> : editorTool === 'Volume' && selectedLayer ? <>{selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? <label className="range-setting">Volume <input type="range" min={0} max={100} value={selectedLayer.volume ?? 100} onChange={(event) => onUpdateLayer(selectedLayer.id, { volume: Number(event.target.value) })} /><span>{selectedLayer.volume ?? 100}%</span></label> : <div className="inspector-empty"><Info size={17} /> Volume is available on audio and video layers.</div>}</> : editorTool === 'Color & Fill' && selectedLayer ? <div className="inspector-swatches">{colorSwatches.map((color) => <button key={color} className={selectedLayer.color === color ? 'swatch-selected' : ''} style={{ background: color }} onClick={() => onUpdateLayer(selectedLayer.id, { color })} aria-label={`Set color ${color}`} />)}<label className="color-custom"><Pencil size={15} /><input type="color" value={selectedLayer.color} onChange={(event) => onUpdateLayer(selectedLayer.id, { color: event.target.value })} /></label></div> : editorTool === 'Effects' ? <div className="effect-inspector-list">{selectedLayer?.effects.length ? selectedLayer.effects.map((effect, index) => <div className="effect-control" key={`${effect}-${index}`}><div className="effect-control-heading"><Sparkles size={15} /><span>{effect}</span><button onClick={() => selectedLayer && onUpdateLayer(selectedLayer.id, { effects: selectedLayer.effects.filter((_, itemIndex) => itemIndex !== index) })} aria-label={`Remove ${effect}`}><X size={15} /></button></div><label className="effect-strength"><input type="range" min={0} max={100} value={selectedLayer.effectStrengths?.[effect] ?? 75} onChange={(event) => selectedLayer && onUpdateLayer(selectedLayer.id, { effectStrengths: { ...selectedLayer.effectStrengths, [effect]: Number(event.target.value) } })} /><span>{selectedLayer.effectStrengths?.[effect] ?? 75}%</span></label></div>) : <p>No effects yet. Browse the library to add a look.</p>}<button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Browse effects</button></div> : selectedLayer ? <>
+                <label className="range-setting">Rotation <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotation)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotation: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotation)}°</span></label>{selectedLayer.kind === '3d' && <><label className="range-setting">3D Pitch <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationX)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationX: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationX)}°</span></label><label className="range-setting">3D Yaw <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationY)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationY: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationY)}°</span></label><label className="range-setting">Depth <input type="range" min={-300} max={300} value={Math.round(getLayerTransformAt(selectedLayer, time).depth)} onChange={(event) => onUpdateLayer(selectedLayer.id, { depth: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).depth)}px</span></label></>}
+              </> : editorTool === 'Speed' && selectedLayer ? <div className="speed-ramp-panel"><div className="speed-ramp-heading"><button className={selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onSpeedKeyframe(selectedLayer)}><Plus size={13} /> {selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'Remove speed key' : 'Add speed key'}</button><span>{selectedLayer.speedKeyframes?.length ?? 0} velocity keys</span></div><label className="range-setting">Playback speed <input type="range" min={10} max={800} value={Math.round(getLayerSpeedAt(selectedLayer, time) * 100)} onChange={(event) => onSpeedValue(selectedLayer, Number(event.target.value) / 100)} /><span>{getLayerSpeedAt(selectedLayer, time).toFixed(2)}×</span></label>{selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) && <label className="project-setting-field">Ramp easing<select value={selectedLayer.speedKeyframes.find((frame) => Math.abs(frame.time-time) < .04)?.easing ?? 'easeInOut'} onChange={(event) => onSpeedEasing(selectedLayer, event.target.value as EasingPreset)}><option value="linear">Linear</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="easeInOut">Ease in-out</option></select></label>}{selectedLayer.kind === 'video' && <label className="motion-blend-setting"><input type="checkbox" checked={Boolean(selectedLayer.frameBlend)} onChange={(event) => onUpdateLayer(selectedLayer.id, { frameBlend: event.target.checked })} /><span><strong>Export frame blending</strong><small>Faintly blends an adjacent frame for smoother slow motion. Basic ghosting only—not vector optical flow; preview stays real-time.</small></span></label>}</div> : editorTool === 'Trim start' && selectedLayer ? <div className="trim-controls"><p>Clip range · {fmtTime(selectedLayer.start, project.fps)} – {fmtTime(selectedLayer.start + selectedLayer.duration, project.fps)}</p><label className="range-setting">Position <input type="range" min={0} max={Math.max(0, project.duration - selectedLayer.duration)} step={.01} value={Math.min(selectedLayer.start, Math.max(0, project.duration - selectedLayer.duration))} onChange={(event) => onUpdateLayer(selectedLayer.id, { start: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.start, project.fps)}</span></label>{selectedLayer.sourceDuration && (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video') && <label className="range-setting">Source in <input type="range" min={0} max={Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1))} step={.01} value={Math.min(selectedLayer.sourceOffset ?? 0, Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1)))} onChange={(event) => onUpdateLayer(selectedLayer.id, { sourceOffset: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.sourceOffset ?? 0, project.fps)}</span></label>}<label className="range-setting">Length <input type="range" min={.1} max={Math.max(.1, Math.min(project.duration - selectedLayer.start, selectedLayer.sourceDuration ? (selectedLayer.sourceDuration - (selectedLayer.sourceOffset ?? 0)) / Math.max(.25, selectedLayer.speed ?? 1) : project.duration - selectedLayer.start))} step={.01} value={Math.min(selectedLayer.duration, project.duration - selectedLayer.start)} onChange={(event) => onUpdateLayer(selectedLayer.id, { duration: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.duration, project.fps)}</span></label></div> : editorTool === 'Volume' && selectedLayer ? <>{selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? <label className="range-setting">Volume <input type="range" min={0} max={100} value={selectedLayer.volume ?? 100} onChange={(event) => onUpdateLayer(selectedLayer.id, { volume: Number(event.target.value) })} /><span>{selectedLayer.volume ?? 100}%</span></label> : <div className="inspector-empty"><Info size={17} /> Volume is available on audio and video layers.</div>}</> : editorTool === 'Color & Fill' && selectedLayer ? <div className="inspector-swatches">{colorSwatches.map((color) => <button key={color} className={selectedLayer.color === color ? 'swatch-selected' : ''} style={{ background: color }} onClick={() => onUpdateLayer(selectedLayer.id, { color })} aria-label={`Set color ${color}`} />)}<label className="color-custom"><Pencil size={15} /><input type="color" value={selectedLayer.color} onChange={(event) => onUpdateLayer(selectedLayer.id, { color: event.target.value })} /></label></div> : editorTool === 'Effects' ? <div className="effect-inspector-list">{selectedLayer?.presetName && <span className="preset-applied-tag">LOOK · {selectedLayer.presetName}</span>}{selectedLayer?.effects.length ? selectedLayer.effects.map((effect, index) => <div className="effect-control" key={`${effect}-${index}`}><div className="effect-control-heading"><Sparkles size={15} /><span>{effect}</span><button onClick={() => selectedLayer && onUpdateLayer(selectedLayer.id, { effects: selectedLayer.effects.filter((_, itemIndex) => itemIndex !== index) })} aria-label={`Remove ${effect}`}><X size={15} /></button></div><label className="effect-strength"><input type="range" min={0} max={100} value={selectedLayer.effectStrengths?.[effect] ?? 75} onChange={(event) => selectedLayer && onUpdateLayer(selectedLayer.id, { effectStrengths: { ...selectedLayer.effectStrengths, [effect]: Number(event.target.value) } })} /><span>{selectedLayer.effectStrengths?.[effect] ?? 75}%</span></label></div>) : <p>No effects yet. Browse the library to add a look.</p>}<button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Browse effects</button></div> : selectedLayer ? <>
                 <label className="range-setting">Opacity <input type="range" min={0} max={100} value={Math.round(getLayerTransformAt(selectedLayer, time).opacity)} onChange={(event) => onUpdateLayer(selectedLayer.id, { opacity: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).opacity)}%</span></label>
                 <label className="range-setting">Intensity <input type="range" min={0} max={100} value={panelSlider} onChange={(event) => onPanelSlider(Number(event.target.value))} /><span>{panelSlider}%</span></label>
                 <button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Add effect</button>
@@ -2228,6 +2478,24 @@ function EditorScreen({
       <div className="media-preload-bin" aria-hidden="true">{layers.filter((layer) => layer.kind === 'audio' && layer.src).map((layer) => <audio key={layer.id} ref={(element) => { if (element) audioRefs.current.set(layer.id, element); else audioRefs.current.delete(layer.id); }} src={layer.src} preload="auto" />)}</div>
     </div>
   );
+}
+
+function StageMeshCanvas({ layer, transform, lowQuality }: { layer: EditorLayer; transform: ReturnType<typeof getLayerTransformAt>; lowQuality: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+    const resolution = lowQuality ? 240 : 640;
+    if (canvas.width !== resolution || canvas.height !== resolution) { canvas.width = resolution; canvas.height = resolution; }
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.save();
+    context.translate(canvas.width / 2, canvas.height / 2);
+    const mesh = layer.mesh3d ?? createPrimitiveMesh(layer.meshName && layer.meshName !== 'Imported OBJ' ? layer.meshName : 'Cube');
+    drawMesh3D(context, mesh, { size: resolution * .78, color: layer.color, rotationX: transform.rotationX, rotationY: transform.rotationY, depth: transform.depth });
+    context.restore();
+  }, [layer.mesh3d, layer.meshName, layer.color, transform.rotationX, transform.rotationY, transform.depth, lowQuality]);
+  return <canvas ref={canvasRef} className={`stage-3d-canvas ${lowQuality ? 'stage-mesh-low' : ''}`} aria-label={`${layer.meshName ?? '3D'} model preview`} />;
 }
 
 function SelectionHandles() {
