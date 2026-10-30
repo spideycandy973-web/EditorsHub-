@@ -1,7 +1,9 @@
-import { ChangeEvent, CSSProperties, RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, CSSProperties, PointerEvent as ReactPointerEvent, RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowDown,
   ArrowDownToLine,
   ArrowLeft,
+  ArrowUp,
   AudioLines,
   Check,
   ChevronDown,
@@ -58,21 +60,34 @@ import sampleCarUrl from './assets/images/sample_vintage_car_1793170788562.jpg';
 import samplePortraitUrl from './assets/images/sample_urban_portrait_1793170789024.jpg';
 import sampleCityUrl from './assets/images/sample_cyber_cityscape_1793170789915.jpg';
 import sampleAnimeUrl from './assets/images/sample_anime_mecha_1793170789185.jpg';
+import { blobToDataUrl, buildAudioWaveform, dataUrlToBlob, getMediaAsset, inspectMediaDuration, saveMediaAsset } from './mediaStore';
 
 type ProjectKind = 'project' | 'template' | 'element';
 type Screen = 'home' | 'library' | 'editor';
-type LayerKind = 'image' | 'video' | 'audio' | 'text' | 'shape' | 'camera' | 'null';
+type LayerKind = 'image' | 'video' | 'audio' | 'text' | 'shape' | 'drawing' | 'group' | 'camera' | 'null';
+type DrawPoint = { x: number; y: number };
 type ProjectRatio = '16:9' | '9:16' | '4:5' | '1:1' | '4:3' | 'Custom';
 type EasingPreset = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
+type ExportFormat = 'auto' | 'mp4' | 'webm';
+type ExportQuality = 'balanced' | 'high';
 type LayerKeyframe = { time: number; x: number; y: number; scale: number; rotation: number; opacity: number; easing: EasingPreset };
+type StageDrag = { id: string; pointerId: number; mode: 'move' | 'scale'; startX: number; startY: number; baseX: number; baseY: number; baseScale: number; currentX: number; currentY: number; currentScale: number; stageWidth: number; stageHeight: number; centerX: number; centerY: number; startDistance: number };
 
 type EditorLayer = {
   id: string;
   name: string;
   kind: LayerKind;
   src?: string;
+  assetId?: string;
+  sourceOffset?: number;
+  sourceDuration?: number;
+  externalPath?: string;
+  waveform?: number[];
   text?: string;
   shape?: string;
+  drawPoints?: DrawPoint[];
+  brushSize?: number;
+  groupId?: string;
   color: string;
   visible: boolean;
   duration: number;
@@ -83,6 +98,7 @@ type EditorLayer = {
   rotation: number;
   opacity: number;
   effects: string[];
+  effectStrengths?: Record<string, number>;
   speed?: number;
   volume?: number;
   keyframes?: LayerKeyframe[];
@@ -101,6 +117,7 @@ type Project = {
   updatedAt: string;
   duration: number;
   thumbnail?: string;
+  thumbnailAssetId?: string;
   layers?: EditorLayer[];
 };
 
@@ -179,11 +196,11 @@ const initialEffects = [
   { title: 'Shake & Transform', tint: 'effect-move', effects: ['Camera Shake', 'Wiggle', 'Jitter'] },
 ];
 
-const fmtTime = (seconds: number) => {
+const fmtTime = (seconds: number, fps = 30) => {
   const safe = Math.max(0, seconds);
   const mins = Math.floor(safe / 60).toString().padStart(2, '0');
   const secs = Math.floor(safe % 60).toString().padStart(2, '0');
-  const frames = Math.floor((safe % 1) * 30).toString().padStart(2, '0');
+  const frames = Math.min(Math.max(1, fps) - 1, Math.floor((safe % 1) * Math.max(1, fps))).toString().padStart(2, '0');
   return `${mins}:${secs}:${frames}`;
 };
 
@@ -212,26 +229,211 @@ function getLayerTransformAt(layer: EditorLayer, time: number) {
   };
 }
 
-const cssFilterForEffects = (effects: string[]) => {
+function parseXMLProject(xml: string, fileName: string): Project {
+  const document = new DOMParser().parseFromString(xml, 'application/xml');
+  if (document.getElementsByTagName('parsererror').length) throw new Error('This XML file is malformed or unsupported.');
+  const elements = Array.from(document.getElementsByTagName('*'));
+  const projectNode = elements.find((element) => /project|composition|timeline|movie/i.test(element.localName)) ?? document.documentElement;
+  const attribute = (node: Element, ...names: string[]) => {
+    for (const name of names) {
+      const value = node.getAttribute(name) ?? node.getAttribute(name.toLowerCase());
+      if (value?.trim()) return value.trim();
+    }
+    return '';
+  };
+  const property = (node: Element, ...names: string[]) => {
+    const own = attribute(node, ...names);
+    if (own) return own;
+    for (const child of Array.from(node.getElementsByTagName('*'))) {
+      const childValue = attribute(child, ...names);
+      if (childValue) return childValue;
+      if (names.some((name) => child.localName.toLowerCase() === name.toLowerCase()) && child.textContent?.trim()) return child.textContent.trim();
+    }
+    return '';
+  };
+  const parseNumber = (value: string, fallback: number) => {
+    const parsed = Number.parseFloat(value.replace(/[^0-9.+-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const parseTime = (value: string, fps: number, fallback: number) => {
+    if (!value) return fallback;
+    const parts = value.split(':').map((part) => Number.parseFloat(part));
+    if (parts.length >= 2 && parts.every(Number.isFinite)) {
+      const [minutes = 0, seconds = 0, frames = 0] = parts;
+      return minutes * 60 + seconds + frames / Math.max(1, fps);
+    }
+    return parseNumber(value, fallback);
+  };
+  const width = Math.max(1, Math.round(parseNumber(property(projectNode, 'width', 'canvasWidth', 'frameWidth'), 1080)));
+  const height = Math.max(1, Math.round(parseNumber(property(projectNode, 'height', 'canvasHeight', 'frameHeight'), 1920)));
+  const fps = Math.max(1, Math.min(120, parseNumber(property(projectNode, 'fps', 'frameRate', 'frame_rate'), 30)));
+  const aspect = width / height;
+  const ratio = (Object.entries(ratioDimensions).find(([, dimensions]) => Math.abs(dimensions[0] / dimensions[1] - aspect) < .025)?.[0] as ProjectRatio | undefined) ?? 'Custom';
+  const projectDuration = Math.max(.1, parseTime(property(projectNode, 'duration', 'length', 'totalDuration'), fps, 15));
+  const isLayerCandidate = (element: Element) => {
+    const tag = element.localName.toLowerCase();
+    const explicitType = attribute(element, 'type', 'kind', 'mediaType');
+    const hasSource = property(element, 'src', 'source', 'path', 'file', 'url');
+    const hasText = attribute(element, 'text', 'content') || tag === 'text';
+    const typedLayer = /layer|clip|media|footage|item/.test(tag) && (explicitType || hasSource || hasText);
+    return Boolean(typedLayer || /^(image|video|audio|text|shape|solid|rectangle|circle)$/i.test(tag));
+  };
+  const candidates = elements.filter((element) => {
+    if (!isLayerCandidate(element)) return false;
+    let parent = element.parentElement;
+    while (parent && parent !== projectNode) {
+      const parentTag = parent.localName.toLowerCase();
+      if (/layer|clip|media|footage|item/.test(parentTag) && attribute(parent, 'type', 'kind', 'mediaType')) return false;
+      parent = parent.parentElement;
+    }
+    return true;
+  });
+  const layers: EditorLayer[] = [];
+  const seen = new Set<Element>();
+  for (const node of candidates) {
+    if (seen.has(node)) continue;
+    const tag = node.localName.toLowerCase();
+    const type = `${attribute(node, 'type', 'kind', 'mediaType')} ${tag}`.toLowerCase();
+    let kind: LayerKind | null = null;
+    if (/audio|music|sound/.test(type)) kind = 'audio';
+    else if (/video|movie|footage/.test(type)) kind = 'video';
+    else if (/image|photo|bitmap/.test(type)) kind = 'image';
+    else if (/text|title|caption/.test(type)) kind = 'text';
+    else if (/shape|solid|rectangle|circle|vector/.test(type)) kind = 'shape';
+    if (!kind) continue;
+    const source = property(node, 'src', 'source', 'path', 'file', 'url', 'href');
+    const text = attribute(node, 'text', 'content', 'value') || (kind === 'text' ? node.textContent?.trim() ?? '' : '');
+    const rawX = parseNumber(property(node, 'x', 'positionX', 'posX', 'left'), 50);
+    const rawY = parseNumber(property(node, 'y', 'positionY', 'posY', 'top'), 50);
+    const normalizePosition = (value: number, dimension: number) => value >= 0 && value <= 1 ? value * 100 : value > 100 ? value / dimension * 100 : value;
+    const sourceIsRemote = /^(https?:|data:|blob:)/i.test(source);
+    const duration = Math.max(.1, parseTime(property(node, 'duration', 'length', 'out'), fps, 5));
+    const opacityValue = parseNumber(property(node, 'opacity', 'alpha'), 100);
+    const layer = makeLayer({
+      id: `xml-layer-${layers.length + 1}`,
+      name: attribute(node, 'name', 'label', 'title') || `${kind[0].toUpperCase()}${kind.slice(1)} ${layers.length + 1}`,
+      kind,
+      src: source && sourceIsRemote ? source : undefined,
+      externalPath: source && !sourceIsRemote ? source : undefined,
+      text: text || undefined,
+      shape: kind === 'shape' ? attribute(node, 'shape', 'shapeType') || tag : undefined,
+      color: attribute(node, 'color', 'fill', 'hex') || '#f23e98',
+      visible: !/^(false|0|no|hidden)$/i.test(attribute(node, 'visible', 'enabled')),
+      start: Math.max(0, parseTime(property(node, 'start', 'in', 'startTime', 'offset'), fps, 0)),
+      duration,
+      x: normalizePosition(rawX, width),
+      y: normalizePosition(rawY, height),
+      scale: parseNumber(property(node, 'scale', 'zoom'), 100) <= 4 ? parseNumber(property(node, 'scale', 'zoom'), 1) * 100 : parseNumber(property(node, 'scale', 'zoom'), 100),
+      rotation: parseNumber(property(node, 'rotation', 'rotate', 'angle'), 0),
+      opacity: Math.max(0, Math.min(100, opacityValue <= 1 ? opacityValue * 100 : opacityValue)),
+      effects: Array.from(node.getElementsByTagName('*')).filter((child) => /effect|filter|fx/i.test(child.localName)).map((child) => attribute(child, 'name', 'type', 'id') || child.textContent?.trim() || '').filter(Boolean),
+    });
+    const keyframeNodes = Array.from(node.getElementsByTagName('*')).filter((child) => /^(keyframe|key|point)$/i.test(child.localName));
+    if (keyframeNodes.length) {
+      layer.keyframes = keyframeNodes.map((frame) => {
+        const easingValue = attribute(frame, 'easing', 'ease').toLowerCase();
+        const easing: EasingPreset = easingValue.includes('linear') ? 'linear' : easingValue.includes('inout') || easingValue.includes('in-out') ? 'easeInOut' : easingValue.includes('out') ? 'easeOut' : 'easeIn';
+        return {
+          time: Math.max(0, parseTime(attribute(frame, 'time', 't'), fps, 0)),
+          x: normalizePosition(parseNumber(attribute(frame, 'x', 'positionX'), layer.x), width),
+          y: normalizePosition(parseNumber(attribute(frame, 'y', 'positionY'), layer.y), height),
+          scale: parseNumber(attribute(frame, 'scale'), layer.scale),
+          rotation: parseNumber(attribute(frame, 'rotation', 'angle'), layer.rotation),
+          opacity: parseNumber(attribute(frame, 'opacity'), layer.opacity),
+          easing,
+        };
+      }).sort((a, b) => a.time - b.time);
+    }
+    layers.push(layer);
+    seen.add(node);
+  }
+  const duration = Math.max(projectDuration, ...layers.map((layer) => layer.start + layer.duration));
+  return {
+    id: `xml-${Date.now()}`,
+    name: attribute(projectNode, 'name', 'title', 'label') || fileName.replace(/\.xml$/i, ''),
+    kind: 'project', ratio, width, height,
+    resolution: `${Math.round(Math.min(width, height) / 120) * 120}p`, fps,
+    background: property(projectNode, 'background', 'backgroundColor', 'bgColor') || '#08090c',
+    updatedAt: dateLabel, duration, layers,
+  };
+}
+
+const isLayerVisible = (layer: EditorLayer, layers: EditorLayer[]) => {
+  if (!layer.visible) return false;
+  if (!layer.groupId) return true;
+  return layers.find((candidate) => candidate.id === layer.groupId)?.visible !== false;
+};
+
+function traceCanvasShape(context: CanvasRenderingContext2D, shapeName: string, size: number) {
+  const shape = shapeName.toLowerCase();
+  context.beginPath();
+  if (shape === 'circle' || shape === 'ring') {
+    context.arc(0, 0, size / 2, 0, Math.PI * 2);
+    if (shape === 'ring') { context.lineWidth = Math.max(2, size * .1); context.stroke(); } else context.fill();
+    return;
+  }
+  if (shape === 'line' || shape === 'wave') {
+    context.lineWidth = Math.max(2, size * .07);
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    if (shape === 'line') { context.moveTo(-size / 2, 0); context.lineTo(size / 2, 0); }
+    else for (let step = 0; step <= 32; step++) { const x = -size / 2 + size * step / 32; const y = Math.sin(step / 32 * Math.PI * 4) * size * .16; if (step === 0) context.moveTo(x, y); else context.lineTo(x, y); }
+    context.stroke();
+    return;
+  }
+  if (shape === 'triangle') {
+    context.moveTo(0, -size / 2); context.lineTo(size / 2, size / 2); context.lineTo(-size / 2, size / 2);
+  } else if (shape === 'star') {
+    for (let point = 0; point < 10; point++) { const radius = point % 2 === 0 ? size / 2 : size / 4; const angle = point * Math.PI / 5 - Math.PI / 2; const x = Math.cos(angle) * radius; const y = Math.sin(angle) * radius; if (point === 0) context.moveTo(x, y); else context.lineTo(x, y); }
+  } else if (shape === 'hexagon') {
+    for (let point = 0; point < 6; point++) { const angle = point * Math.PI / 3 - Math.PI / 6; const x = Math.cos(angle) * size / 2; const y = Math.sin(angle) * size / 2; if (point === 0) context.moveTo(x, y); else context.lineTo(x, y); }
+  } else if (shape === 'polygon') {
+    for (let point = 0; point < 5; point++) { const angle = point * Math.PI * 2 / 5 - Math.PI / 2; const x = Math.cos(angle) * size / 2; const y = Math.sin(angle) * size / 2; if (point === 0) context.moveTo(x, y); else context.lineTo(x, y); }
+  } else if (shape === 'diamond') {
+    context.moveTo(0, -size / 2); context.lineTo(size / 2, 0); context.lineTo(0, size / 2); context.lineTo(-size / 2, 0);
+  } else if (shape === 'arrow') {
+    context.moveTo(-size / 2, -size * .16); context.lineTo(size * .08, -size * .16); context.lineTo(size * .08, -size * .38); context.lineTo(size / 2, 0); context.lineTo(size * .08, size * .38); context.lineTo(size * .08, size * .16); context.lineTo(-size / 2, size * .16);
+  } else if (shape === 'speech bubble') {
+    context.moveTo(-size * .42, -size * .33); context.lineTo(size * .42, -size * .33); context.lineTo(size * .42, size * .2); context.lineTo(size * .05, size * .2); context.lineTo(-size * .15, size * .43); context.lineTo(-size * .13, size * .2); context.lineTo(-size * .42, size * .2);
+  } else {
+    context.roundRect(-size / 2, -size / 2, size, size, Math.min(28, size * .12));
+  }
+  context.closePath();
+  context.fill();
+}
+
+const cssFilterForEffects = (effects: string[], strengths: Record<string, number> = {}) => {
   const filters: string[] = [];
   for (const effect of effects) {
     const name = effect.toLowerCase();
-    if (name.includes('blur')) filters.push('blur(3px)');
-    else if (name.includes('brightness') || name.includes('exposure')) filters.push('brightness(1.12) contrast(1.08)');
-    else if (name.includes('saturation')) filters.push('saturate(1.45)');
-    else if (name.includes('sepia') || name.includes('vintage') || name.includes('film grade')) filters.push('sepia(.28) contrast(1.08)');
-    else if (name.includes('vhs') || name.includes('glitch')) filters.push('saturate(.78) contrast(1.16) hue-rotate(8deg)');
-    else if (name.includes('sharpen') || name.includes('edge')) filters.push('contrast(1.22) saturate(1.06)');
-    else if (name.includes('glow')) filters.push('brightness(1.08) saturate(1.16)');
-    else if (name.includes('grayscale') || name.includes('mono')) filters.push('grayscale(1)');
+    const amount = Math.max(0, Math.min(1, (strengths[effect] ?? 75) / 100));
+    if (name.includes('brightness')) filters.push(`brightness(${1 + amount * .4}) contrast(${1 + amount * .18})`);
+    else if (name.includes('exposure')) filters.push(`brightness(${1 + amount * .85})`);
+    else if (name.includes('contrast') || name.includes('curves')) filters.push(`contrast(${1 + amount * .5})`);
+    else if (name.includes('hue')) filters.push(`hue-rotate(${Math.round(amount * 180)}deg)`);
+    else if (name.includes('saturation') || name.includes('color balance')) filters.push(`saturate(${1 + amount * 1.4})`);
+    else if (name.includes('sepia') || name.includes('vintage') || name.includes('film grade')) filters.push(`sepia(${amount * .68}) contrast(${1 + amount * .16})`);
+    else if (name.includes('grayscale') || name.includes('mono')) filters.push(`grayscale(${amount})`);
+    else if (name.includes('invert')) filters.push(`invert(${amount})`);
+    else if (name.includes('blur') || name.includes('focus')) filters.push(`blur(${(amount * (name.includes('motion') ? 5 : 8)).toFixed(1)}px)`);
+    else if (name.includes('sharpen') || name.includes('edge') || name.includes('outline') || name.includes('posterize')) filters.push(`contrast(${1 + amount * .72}) saturate(${1 + amount * .22})`);
+    else if (name.includes('glow') || name.includes('bloom') || name.includes('flare') || name.includes('light ray')) filters.push(`brightness(${1 + amount * .2}) drop-shadow(0 0 ${(amount * 12).toFixed(1)}px rgba(255,255,255,${(amount * .48).toFixed(2)}))`);
+    else if (name.includes('vhs') || name.includes('crt') || name.includes('retro') || name.includes('scanline')) filters.push(`saturate(${1 - amount * .35}) contrast(${1 + amount * .32}) hue-rotate(${Math.round(amount * 12)}deg)`);
+    else if (name.includes('glitch') || name.includes('channel') || name.includes('rgb split') || name.includes('datamosh')) filters.push(`saturate(${1 + amount * .55}) contrast(${1 + amount * .25}) hue-rotate(${Math.round(amount * 18)}deg)`);
+    else if (name.includes('shadow') || name.includes('bevel')) filters.push(`drop-shadow(0 3px ${(amount * 16).toFixed(1)}px rgba(0,0,0,${(amount * .8).toFixed(2)}))`);
+    else if (name.includes('rain') || name.includes('snow') || name.includes('fog') || name.includes('cloud')) filters.push(`contrast(${1 - amount * .12}) saturate(${1 - amount * .2})`);
+    else if (name.includes('warp') || name.includes('ripple') || name.includes('lens') || name.includes('fisheye')) filters.push(`saturate(${1 + amount * .2}) contrast(${1 + amount * .12})`);
+    else if (name.includes('echo') || name.includes('trail') || name.includes('wipe') || name.includes('fade')) filters.push(`opacity(${1 - amount * .18})`);
+    else if (name.includes('grain') || name.includes('noise') || name.includes('texture')) filters.push(`contrast(${1 + amount * .16}) saturate(${1 - amount * .12})`);
+    else filters.push(`saturate(${1 + amount * .12}) contrast(${1 + amount * .08})`);
   }
   return filters.length ? filters.join(' ') : 'none';
 };
 
-async function renderCompositionVideo(project: Project, layers: EditorLayer[], onProgress: (progress: number) => void): Promise<Blob> {
+async function renderCompositionVideo(project: Project, layers: EditorLayer[], onProgress: (progress: number) => void, format: ExportFormat = 'auto', quality: ExportQuality = 'balanced'): Promise<Blob> {
   if (typeof MediaRecorder === 'undefined') throw new Error('Video rendering is not supported by this browser.');
   const longestSide = Math.max(project.width, project.height, 1);
-  const renderScale = Math.min(1, 2560 / longestSide);
+  const renderScale = Math.min(1, (quality === 'high' ? 2560 : 1920) / longestSide);
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(2, Math.round(project.width * renderScale));
   canvas.height = Math.max(2, Math.round(project.height * renderScale));
@@ -293,11 +495,14 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
   if (typeof canvas.captureStream !== 'function') throw new Error('Canvas video recording is not supported by this browser.');
   const stream = canvas.captureStream(Math.max(1, Math.min(project.fps, 60)));
   audioDestination?.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
-  const mimeType = typeof MediaRecorder.isTypeSupported === 'function' ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type)) : undefined;
+  const mp4Types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E', 'video/mp4'];
+  const webmTypes = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  const preferredTypes = format === 'mp4' ? [...mp4Types, ...webmTypes] : format === 'webm' ? [...webmTypes, ...mp4Types] : [...mp4Types, ...webmTypes];
+  const mimeType = typeof MediaRecorder.isTypeSupported === 'function' ? preferredTypes.find((type) => MediaRecorder.isTypeSupported(type)) : undefined;
   let recorder: MediaRecorder;
   try {
     recorder = mimeType
-      ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 })
+      ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: quality === 'high' ? 12_000_000 : 6_000_000, audioBitsPerSecond: 192_000 })
       : new MediaRecorder(stream);
   } catch {
     stream.getTracks().forEach((track) => track.stop());
@@ -310,7 +515,7 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
     context.fillStyle = project.background;
     context.fillRect(0, 0, canvas.width, canvas.height);
     for (const layer of layers) {
-      if (!layer.visible || time < layer.start || time >= layer.start + layer.duration) continue;
+      if (!isLayerVisible(layer, layers) || layer.kind === 'group' || time < layer.start || time >= layer.start + layer.duration) continue;
       const resource = resources.get(layer.id);
       const animated = getLayerTransformAt(layer, time);
       const centerX = canvas.width * animated.x / 100;
@@ -323,10 +528,11 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
       if ((layer.kind === 'image' || layer.kind === 'video') && resource) {
         if (resource instanceof HTMLVideoElement && resource.readyState < 2) { context.restore(); continue; }
         const drawable = resource as CanvasImageSource;
-        const filter = cssFilterForEffects(layer.effects);
+        const filter = cssFilterForEffects(layer.effects, layer.effectStrengths);
         if (filter !== 'none') context.filter = filter;
         context.drawImage(drawable, -canvas.width * animated.scale / 200, -canvas.height * animated.scale / 200, canvas.width * animated.scale / 100, canvas.height * animated.scale / 100);
       } else if (layer.kind === 'text' && layer.text) {
+        context.scale(animated.scale / 100, animated.scale / 100);
         context.fillStyle = layer.color;
         context.textAlign = 'center';
         context.textBaseline = 'middle';
@@ -334,28 +540,26 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
         context.shadowColor = 'rgba(0,0,0,.42)';
         context.shadowBlur = Math.max(0, canvas.width * .012);
         context.fillText(layer.text, 0, 0, canvas.width * .9);
+      } else if (layer.kind === 'drawing' && layer.drawPoints?.length) {
+        context.scale(animated.scale / 100, animated.scale / 100);
+        context.strokeStyle = layer.color;
+        context.fillStyle = layer.color;
+        context.lineWidth = Math.max(1, (layer.brushSize ?? 8) * renderScale);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.beginPath();
+        layer.drawPoints.forEach((point, pointIndex) => {
+          const x = point.x / 100 * canvas.width - centerX;
+          const y = point.y / 100 * canvas.height - centerY;
+          if (pointIndex === 0) context.moveTo(x, y); else context.lineTo(x, y);
+        });
+        if (layer.drawPoints.length === 1) { context.arc(layer.drawPoints[0].x / 100 * canvas.width - centerX, layer.drawPoints[0].y / 100 * canvas.height - centerY, Math.max(1, (layer.brushSize ?? 8) * renderScale / 2), 0, Math.PI * 2); context.fill(); }
+        else context.stroke();
       } else if (layer.kind === 'shape') {
         context.fillStyle = layer.color;
+        context.strokeStyle = layer.color;
         const side = Math.min(canvas.width, canvas.height) * .26 * animated.scale / 100;
-        if (layer.shape === 'Circle' || layer.shape === 'Ring') {
-          context.beginPath(); context.arc(0, 0, side / 2, 0, Math.PI * 2); context.fill();
-        } else if (layer.shape === 'Triangle') {
-          context.beginPath(); context.moveTo(0, -side / 2); context.lineTo(side / 2, side / 2); context.lineTo(-side / 2, side / 2); context.closePath(); context.fill();
-        } else if (layer.shape === 'Star') {
-          context.beginPath();
-          for (let point = 0; point < 10; point++) {
-            const radius = point % 2 === 0 ? side / 2 : side / 4;
-            const angle = point * Math.PI / 5 - Math.PI / 2;
-            const x = Math.cos(angle) * radius; const y = Math.sin(angle) * radius;
-            if (point === 0) context.moveTo(x, y); else context.lineTo(x, y);
-          }
-          context.closePath(); context.fill();
-        } else {
-          context.beginPath();
-          if (typeof context.roundRect === 'function') context.roundRect(-side / 2, -side / 2, side, side, Math.min(28, side * .12));
-          else context.rect(-side / 2, -side / 2, side, side);
-          context.fill();
-        }
+        traceCanvasShape(context, layer.shape ?? 'Rounded Rectangle', side);
       }
       context.restore();
     }
@@ -365,8 +569,8 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
     for (const layer of soundLayers) {
       const resource = resources.get(layer.id);
       if (!(resource instanceof HTMLMediaElement)) continue;
-      const localTime = Math.max(0, time - layer.start) * Math.max(.25, Math.min(4, layer.speed ?? 1));
-      const active = layer.visible && time >= layer.start && time < layer.start + layer.duration;
+      const localTime = (layer.sourceOffset ?? 0) + Math.max(0, time - layer.start) * Math.max(.25, Math.min(4, layer.speed ?? 1));
+      const active = isLayerVisible(layer, layers) && time >= layer.start && time < layer.start + layer.duration;
       resource.volume = Math.max(0, Math.min(1, (layer.volume ?? 100) / 100));
       resource.playbackRate = Math.max(.25, Math.min(4, layer.speed ?? 1));
       if (resource instanceof HTMLVideoElement) {
@@ -436,14 +640,20 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [libraryTab, setLibraryTab] = useState<ProjectKind>('project');
   const [projects, setProjects] = useState<Project[]>(seedProjects);
+  const [projectsHydrated, setProjectsHydrated] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [shapeSheetOpen, setShapeSheetOpen] = useState(false);
+  const [drawingMode, setDrawingMode] = useState<'freehand' | 'vector' | null>(null);
   const [effectBrowserOpen, setEffectBrowserOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
   const [renderProgress, setRenderProgress] = useState<number | null>(null);
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
+  const [renderedVideoType, setRenderedVideoType] = useState('video/webm');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('auto');
+  const [exportQuality, setExportQuality] = useState<ExportQuality>('balanced');
   const [qrOpen, setQrOpen] = useState(false);
   const [packageUrl, setPackageUrl] = useState('');
   const [query, setQuery] = useState('');
@@ -466,10 +676,12 @@ export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [layers, setLayers] = useState<EditorLayer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [selectedLayerIds, setSelectedLayerIds] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [editorTool, setEditorTool] = useState<string | null>(null);
   const [contextLayerId, setContextLayerId] = useState<string | null>(null);
+  const [relinkLayerId, setRelinkLayerId] = useState<string | null>(null);
   const [searchLibrary, setSearchLibrary] = useState('');
   const [effectQuery, setEffectQuery] = useState('');
   const [effectCategory, setEffectCategory] = useState<string | null>(null);
@@ -487,8 +699,15 @@ export default function App() {
   const qrInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const toastTimerRef = useRef<number | undefined>(undefined);
+  const mediaUrlCacheRef = useRef(new Map<string, string>());
 
   const selectedLayer = layers.find((layer) => layer.id === selectedLayerId) ?? null;
+
+  const selectLayer = (id: string | null, additive = false) => {
+    setSelectedLayerId(id);
+    if (!id) { setSelectedLayerIds([]); return; }
+    setSelectedLayerIds((current) => additive ? current.includes(id) ? current.filter((item) => item !== id) : [...current, id] : [id]);
+  };
 
   const notify = (message: string) => {
     setToast(message);
@@ -496,38 +715,94 @@ export default function App() {
     toastTimerRef.current = window.setTimeout(() => setToast(''), 2800);
   };
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('editorshub-projects-v1');
-      if (stored) {
-        const parsed = JSON.parse(stored) as Project[];
-        if (Array.isArray(parsed) && parsed.length) {
-          const demos = seedProjects.filter((project) => !parsed.some((saved) => saved.id === project.id));
-          setProjects([...parsed, ...demos]);
-        }
+  const getMediaUrl = async (assetId: string) => {
+    const cachedUrl = mediaUrlCacheRef.current.get(assetId);
+    if (cachedUrl) return cachedUrl;
+    const storedAsset = await getMediaAsset(assetId);
+    if (!storedAsset) return null;
+    const url = URL.createObjectURL(storedAsset.blob);
+    mediaUrlCacheRef.current.set(assetId, url);
+    return url;
+  };
+
+  const hydrateProjectAssets = async (project: Project): Promise<Project> => {
+    const reusedAssets = new Map<string, string>();
+    const hydrateLayer = async (layer: EditorLayer): Promise<EditorLayer> => {
+      let assetId = layer.assetId;
+      if (layer.src?.startsWith('data:') && ['image', 'video', 'audio'].includes(layer.kind)) {
+        assetId = reusedAssets.get(layer.src) ?? await saveMediaAsset(await dataUrlToBlob(layer.src), layer.name);
+        reusedAssets.set(layer.src, assetId);
       }
-    } catch (error) {
-      console.warn('Could not restore saved project list', error);
+      const src = assetId ? await getMediaUrl(assetId) : layer.src;
+      if (assetId && !src) return { ...layer, src: undefined, assetId: undefined };
+      const next = { ...layer, src: src ?? undefined, assetId };
+      if (src && (next.kind === 'audio' || next.kind === 'video') && !next.sourceDuration) {
+        next.sourceDuration = await inspectMediaDuration(src, next.kind);
+      }
+      if (next.kind === 'audio' && !next.waveform && src) {
+        const media = assetId ? await getMediaAsset(assetId) : null;
+        if (media) next.waveform = await buildAudioWaveform(media.blob);
+      }
+      return next;
+    };
+    const nextLayers = await Promise.all((project.layers ?? []).map(hydrateLayer));
+    let thumbnail = project.thumbnail;
+    let thumbnailAssetId = project.thumbnailAssetId;
+    if (thumbnail?.startsWith('data:image/')) {
+      thumbnailAssetId = reusedAssets.get(thumbnail) ?? await saveMediaAsset(await dataUrlToBlob(thumbnail), `${project.name} thumbnail`);
     }
+    if (thumbnailAssetId) thumbnail = await getMediaUrl(thumbnailAssetId) ?? undefined;
+    return { ...project, thumbnail, thumbnailAssetId, layers: nextLayers };
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const restoreProjects = async () => {
+      try {
+        const stored = localStorage.getItem('editorshub-projects-v1');
+        if (stored) {
+          const parsed = JSON.parse(stored) as Project[];
+          if (Array.isArray(parsed) && parsed.length) {
+            const restored = await Promise.all(parsed.map((project) => hydrateProjectAssets(project)));
+            if (!cancelled) {
+              const demos = seedProjects.filter((project) => !restored.some((saved) => saved.id === project.id));
+              setProjects([...restored, ...demos]);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Could not restore saved project list', error);
+      } finally {
+        if (!cancelled) setProjectsHydrated(true);
+      }
+    };
+    void restoreProjects();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => () => {
+    for (const url of mediaUrlCacheRef.current.values()) URL.revokeObjectURL(url);
+    mediaUrlCacheRef.current.clear();
   }, []);
 
   useEffect(() => {
-    if (!currentProject) return;
+    if (!projectsHydrated || !currentProject) return;
     setProjects((list) => list.map((project) => project.id === currentProject.id ? { ...currentProject, layers } : project));
-  }, [currentProject, layers]);
+  }, [currentProject, layers, projectsHydrated]);
 
   useEffect(() => {
+    if (!projectsHydrated) return;
     try {
       const safeProjects = projects.map((project) => ({
         ...project,
-        thumbnail: project.thumbnail?.startsWith('blob:') ? undefined : project.thumbnail,
-        layers: project.layers?.filter((layer) => !layer.src?.startsWith('blob:')),
+        thumbnail: project.thumbnailAssetId || project.thumbnail?.startsWith('blob:') ? undefined : project.thumbnail,
+        layers: project.layers?.map((layer) => layer.assetId ? { ...layer, src: undefined } : layer),
       }));
       localStorage.setItem('editorshub-projects-v1', JSON.stringify(safeProjects));
     } catch (error) {
       console.warn('Could not save project list', error);
     }
-  }, [projects]);
+  }, [projects, projectsHydrated]);
 
   useEffect(() => {
     if (!isPlaying || !currentProject) return;
@@ -545,12 +820,12 @@ export default function App() {
   }, [isPlaying, currentProject]);
 
   useEffect(() => {
-    const activeVideo = layers.find((layer) => layer.kind === 'video' && layer.visible && time >= layer.start && time < layer.start + layer.duration);
+    const activeVideo = layers.find((layer) => layer.kind === 'video' && isLayerVisible(layer, layers) && time >= layer.start && time < layer.start + layer.duration);
     const video = videoRef.current;
     if (!video || !activeVideo) { video?.pause(); return; }
     video.playbackRate = Math.max(.25, Math.min(4, activeVideo.speed ?? 1));
     video.volume = Math.max(0, Math.min(1, (activeVideo.volume ?? 100) / 100));
-    const targetTime = Math.max(0, time - activeVideo.start) * (activeVideo.speed ?? 1);
+    const targetTime = (activeVideo.sourceOffset ?? 0) + Math.max(0, time - activeVideo.start) * (activeVideo.speed ?? 1);
     if (Number.isFinite(video.duration) && video.duration > 0 && Math.abs(video.currentTime - targetTime) > .7) {
       video.currentTime = targetTime % video.duration;
     }
@@ -582,6 +857,7 @@ export default function App() {
     setRedoStack([]);
     setLayers(projectLayers);
     setSelectedLayerId(projectLayers[0]?.id ?? null);
+    setSelectedLayerIds(projectLayers[0]?.id ? [projectLayers[0].id] : []);
     setTime(0);
     setIsPlaying(false);
     setScreen('editor');
@@ -623,7 +899,10 @@ export default function App() {
     setRedoStack((stack) => [...stack, layers]);
     setUndoStack((stack) => stack.slice(0, -1));
     setLayers(previous);
-    if (!previous.some((layer) => layer.id === selectedLayerId)) setSelectedLayerId(previous.at(-1)?.id ?? null);
+    const validSelection = selectedLayerIds.filter((id) => previous.some((layer) => layer.id === id));
+    const nextSelectedId = previous.some((layer) => layer.id === selectedLayerId) ? selectedLayerId : validSelection[0] ?? previous.at(-1)?.id ?? null;
+    setSelectedLayerId(nextSelectedId);
+    setSelectedLayerIds(validSelection.length ? validSelection : nextSelectedId ? [nextSelectedId] : []);
     notify('Edit undone');
   };
 
@@ -633,7 +912,10 @@ export default function App() {
     setUndoStack((stack) => [...stack, layers]);
     setRedoStack((stack) => stack.slice(0, -1));
     setLayers(next);
-    if (!next.some((layer) => layer.id === selectedLayerId)) setSelectedLayerId(next.at(-1)?.id ?? null);
+    const validSelection = selectedLayerIds.filter((id) => next.some((layer) => layer.id === id));
+    const nextSelectedId = next.some((layer) => layer.id === selectedLayerId) ? selectedLayerId : validSelection[0] ?? next.at(-1)?.id ?? null;
+    setSelectedLayerId(nextSelectedId);
+    setSelectedLayerIds(validSelection.length ? validSelection : nextSelectedId ? [nextSelectedId] : []);
     notify('Edit restored');
   };
 
@@ -665,58 +947,115 @@ export default function App() {
     setRedoStack([]);
     setLayers([]);
     setSelectedLayerId(null);
+    setSelectedLayerIds([]);
     setTime(0);
     setNewProjectOpen(false);
     setScreen('editor');
     notify(`${createKind === 'element' ? 'Element' : createKind === 'template' ? 'Template' : 'Project'} canvas created`);
   };
 
+  const saveProjectSettings = (patch: Partial<Project>) => {
+    setCurrentProject((project) => project ? { ...project, ...patch, updatedAt: dateLabel } : project);
+    if (typeof patch.duration === 'number') {
+      setTime((value) => Math.min(value, patch.duration ?? value));
+      setIsPlaying(false);
+    }
+    setProjectSettingsOpen(false);
+    notify('Composition settings saved');
+  };
+
   const addLayer = (layer: EditorLayer) => {
     commitLayerList([...layers, layer]);
-    setSelectedLayerId(layer.id);
+    selectLayer(layer.id);
     setEditorTool(null);
     if (currentProject) {
-      setCurrentProject((project) => project ? { ...project, duration: Math.max(project.duration, layer.duration) } : project);
+      setCurrentProject((project) => project ? { ...project, duration: Math.max(project.duration, layer.start + layer.duration) } : project);
     }
   };
 
-  const handleMediaFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const importProjectPackage = async (packageData: Project, idPrefix: string) => {
+    if (!packageData.name || !packageData.ratio || !packageData.width || !packageData.height) {
+      throw new Error('This file does not contain a valid EditorsHub project package.');
+    }
+    const imported = await hydrateProjectAssets({ ...packageData, id: `${idPrefix}-${Date.now()}`, updatedAt: dateLabel });
+    setProjects((list) => [imported, ...list]);
+    setAddSheetOpen(false);
+    openEditor(imported);
+    notify('Project package imported');
+  };
+
+  const handleMediaFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = '';
     if (!file) return;
     if (file.type === 'application/json' || file.name.toLowerCase().endsWith('.ehproj')) {
-      void file.text().then((text) => {
-        try {
-          const parsed = JSON.parse(text) as Project & { layers?: EditorLayer[] };
-          const imported: Project = { ...parsed, id: `import-${Date.now()}`, updatedAt: dateLabel };
-          if (!imported.name || !imported.ratio) throw new Error('Invalid project package');
-          setProjects((list) => [imported, ...list]);
-          setAddSheetOpen(false);
-          openEditor(imported);
-          notify('Project package imported');
-        } catch {
-          notify('That file is not a valid EditorsHub project package');
+      setRelinkLayerId(null);
+      try {
+        await importProjectPackage(JSON.parse(await file.text()) as Project, 'import');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'That file is not a valid EditorsHub project package');
+      }
+      return;
+    }
+
+    const extension = file.name.toLowerCase().split('.').pop() ?? '';
+    const kind: LayerKind = file.type.startsWith('video/') || ['mp4', 'mov', 'webm', 'mkv', 'm4v'].includes(extension)
+      ? 'video'
+      : file.type.startsWith('audio/') || ['mp3', 'wav', 'aac', 'm4a', 'ogg', 'flac'].includes(extension)
+        ? 'audio'
+        : file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'heic'].includes(extension)
+          ? 'image'
+          : 'null';
+    if (kind === 'null') { notify('Choose an image, video, audio file, or .ehproj package'); return; }
+
+    try {
+      if (relinkLayerId) {
+        const targetLayer = layers.find((layer) => layer.id === relinkLayerId);
+        if (targetLayer && targetLayer.kind !== kind) {
+          setRelinkLayerId(null);
+          notify(`Choose a ${targetLayer.kind} file to relink this layer`);
+          return;
         }
+        const assetId = await saveMediaAsset(file, file.name);
+        const src = await getMediaUrl(assetId);
+        if (!src || !targetLayer) throw new Error('The layer could not be relinked.');
+        const sourceDuration = kind === 'audio' || kind === 'video' ? await inspectMediaDuration(src, kind) : undefined;
+        const waveform = kind === 'audio' ? await buildAudioWaveform(file) : undefined;
+        updateLayer(targetLayer.id, { src, assetId, externalPath: undefined, sourceOffset: 0, sourceDuration, duration: sourceDuration && sourceDuration > 0 ? Math.min(targetLayer.duration, sourceDuration) : targetLayer.duration, waveform, name: file.name.replace(/\.[^/.]+$/, '') });
+        setRelinkLayerId(null);
+        notify('Media source relinked');
+        return;
+      }
+      const assetId = await saveMediaAsset(file, file.name);
+      const src = await getMediaUrl(assetId);
+      if (!src) throw new Error('The imported file could not be reopened from local storage.');
+      const sourceDuration = kind === 'audio' || kind === 'video' ? await inspectMediaDuration(src, kind) : undefined;
+      const waveform = kind === 'audio' ? await buildAudioWaveform(file) : undefined;
+      const start = screen === 'editor' ? time : 0;
+      const duration = sourceDuration && sourceDuration > 0 ? sourceDuration : currentProject?.duration ?? 10;
+      const layer = makeLayer({
+        name: file.name.replace(/\.[^/.]+$/, ''), kind, src, assetId, start, duration,
+        sourceOffset: 0, sourceDuration, waveform,
       });
-      return;
+      if (screen === 'editor' && currentProject) {
+        setAddSheetOpen(false);
+        addLayer(layer);
+        notify(`${kind === 'audio' ? 'Audio' : kind === 'video' ? 'Video' : 'Image'} added to timeline`);
+        return;
+      }
+      const project: Project = {
+        id: `import-${Date.now()}`, name: file.name.replace(/\.[^/.]+$/, ''), kind: 'project', ratio: '9:16', width: 1080,
+        height: 1920, resolution: '1080p', fps: 30, background: '#08090c', updatedAt: dateLabel,
+        duration: Math.max(10, duration), thumbnail: kind === 'image' ? src : undefined,
+        thumbnailAssetId: kind === 'image' ? assetId : undefined, layers: [layer],
+      };
+      setProjects((list) => [project, ...list]);
+      openEditor(project);
+      notify('Media opened in a new project');
+    } catch (error) {
+      setRelinkLayerId(null);
+      notify(error instanceof Error ? error.message : 'Could not import this media file');
     }
-    const kind: LayerKind = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
-    const src = URL.createObjectURL(file);
-    const layer = makeLayer({ name: file.name.replace(/\.[^/.]+$/, ''), kind, src, duration: currentProject?.duration ?? 10 });
-    if (screen === 'editor' && currentProject) {
-      setAddSheetOpen(false);
-      addLayer(layer);
-      notify(`${kind === 'audio' ? 'Audio' : 'Media'} added to timeline`);
-      return;
-    }
-    const project: Project = {
-      id: `import-${Date.now()}`, name: file.name.replace(/\.[^/.]+$/, ''), kind: 'project', ratio: '9:16', width: 1080,
-      height: 1920, resolution: '1080p', fps: 30, background: '#08090c', updatedAt: dateLabel, duration: 10,
-      thumbnail: kind === 'image' ? src : undefined, layers: [layer],
-    };
-    setProjects((list) => [project, ...list]);
-    openEditor(project);
-    notify('Media opened in a new project');
   };
 
   const handleXmlFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -724,15 +1063,16 @@ export default function App() {
     event.currentTarget.value = '';
     if (!file) return;
     void file.text().then((xml) => {
-      const titleMatch = xml.match(/(?:name|title)=["']([^"']+)["']/i);
-      const project: Project = {
-        id: `xml-${Date.now()}`, name: titleMatch?.[1] ?? file.name.replace(/\.xml$/i, ''), kind: 'project', ratio: '9:16', width: 1080,
-        height: 1920, resolution: '1080p', fps: 30, background: '#08090c', updatedAt: dateLabel, duration: 15,
-      };
-      setProjects((list) => [project, ...list]);
-      openEditor(project);
-      notify('XML project imported — review the timeline before editing');
-    });
+      try {
+        const project = parseXMLProject(xml, file.name);
+        setProjects((list) => [project, ...list]);
+        openEditor(project);
+        const unresolved = project.layers?.filter((layer) => layer.externalPath).length ?? 0;
+        notify(unresolved ? `XML imported with ${project.layers?.length ?? 0} layers · ${unresolved} media path${unresolved === 1 ? '' : 's'} need relinking` : `XML imported · ${project.layers?.length ?? 0} layers found`);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Could not import this XML project');
+      }
+    }).catch(() => notify('Could not read that XML file'));
   };
 
   const importProjectFromLink = async () => {
@@ -744,15 +1084,9 @@ export default function App() {
       const url = new URL(packageUrl.trim());
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error(`Request failed (${response.status})`);
-      const packageData = await response.json() as Project & { layers?: EditorLayer[] };
-      if (!packageData.name || !packageData.ratio || !packageData.width || !packageData.height) {
-        throw new Error('This link does not contain an EditorsHub project package');
-      }
-      const imported: Project = { ...packageData, id: `link-${Date.now()}`, updatedAt: dateLabel };
-      setProjects((list) => [imported, ...list]);
-      openEditor(imported);
+      const packageData = await response.json() as Project;
+      await importProjectPackage(packageData, 'link');
       setPackageUrl('');
-      notify('Project package imported');
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'The project could not be imported';
       notify(reason.includes('Failed to fetch') ? 'Could not fetch this link. Check its sharing permissions and CORS settings.' : reason);
@@ -788,7 +1122,7 @@ export default function App() {
 
   const finishTextLayer = () => {
     const defaultDuration = Math.min(Number.parseInt(layerDuration, 10) || 2, currentProject?.duration ?? 15);
-    const layer = makeLayer({ name: textDraft.trim() || 'Text', kind: 'text', text: textDraft.trim() || 'Your text', color: '#ffffff', duration: defaultDuration });
+    const layer = makeLayer({ name: textDraft.trim() || 'Text', kind: 'text', text: textDraft.trim() || 'Your text', color: '#ffffff', start: time, duration: defaultDuration });
     addLayer(layer);
     setTextModalOpen(false);
     setAddSheetOpen(false);
@@ -797,7 +1131,7 @@ export default function App() {
 
   const makeShape = (shapeName: string) => {
     const defaultDuration = Math.min(Number.parseInt(layerDuration, 10) || 2, currentProject?.duration ?? 15);
-    const layer = makeLayer({ name: shapeName, kind: 'shape', shape: shapeName, color: '#f23e98', duration: defaultDuration });
+    const layer = makeLayer({ name: shapeName, kind: 'shape', shape: shapeName, color: '#f23e98', start: time, duration: defaultDuration });
     addLayer(layer);
     setShapeSheetOpen(false);
     setAddSheetOpen(false);
@@ -818,13 +1152,60 @@ export default function App() {
     let rightFrames = sourceFrames.filter((frame) => frame.time >= splitAt);
     if (sourceFrames.length && !rightFrames.some((frame) => Math.abs(frame.time - splitAt) < .001)) rightFrames = [{ time: splitAt, ...splitTransform, easing: 'easeInOut' }, ...rightFrames];
     const left = { ...selectedLayer, duration: splitAt - selectedLayer.start, keyframes: sourceFrames.length ? leftFrames : undefined };
-    const right = { ...selectedLayer, ...splitTransform, id: `layer-split-${Date.now()}`, name: `${selectedLayer.name} 2`, start: splitAt, duration: layerEnd - splitAt, keyframes: sourceFrames.length ? rightFrames : undefined };
+    const sourceOffset = (selectedLayer.sourceOffset ?? 0) + (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? (splitAt - selectedLayer.start) * (selectedLayer.speed ?? 1) : 0);
+    const right = { ...selectedLayer, ...splitTransform, id: `layer-split-${Date.now()}`, name: `${selectedLayer.name} 2`, start: splitAt, duration: layerEnd - splitAt, sourceOffset, keyframes: sourceFrames.length ? rightFrames : undefined };
     const index = layers.findIndex((layer) => layer.id === selectedLayer.id);
     const next = [...layers];
     next.splice(index, 1, left, right);
     commitLayerList(next);
-    setSelectedLayerId(right.id);
+    selectLayer(right.id);
     notify('Clip split at the playhead');
+  };
+
+  const createGroup = (allowEmpty = false) => {
+    const selected = allowEmpty ? [] : layers.filter((layer) => selectedLayerIds.includes(layer.id));
+    const selectedGroup = selected.find((layer) => layer.kind === 'group');
+    const children = selected.filter((layer) => layer.kind !== 'group');
+    if (!selectedGroup && !allowEmpty && children.length < 2) { notify('Select at least two layers to group them'); return; }
+    if (selectedGroup && !children.length && !allowEmpty) { notify('Shift-select layers with the group, then choose Group selected'); return; }
+    const group = selectedGroup ?? makeLayer({ id: `group-${Date.now()}`, name: `Group ${layers.filter((layer) => layer.kind === 'group').length + 1}`, kind: 'group', color: '#13e6aa', start: 0, duration: currentProject?.duration ?? 5 });
+    const childIds = new Set(children.map((layer) => layer.id));
+    const otherLayers = layers.filter((layer) => !childIds.has(layer.id) && layer.id !== selectedGroup?.id);
+    const firstOriginalIndex = Math.min(...[...children.map((layer) => layers.indexOf(layer)), selectedGroup ? layers.indexOf(selectedGroup) : layers.length].filter((index) => index >= 0));
+    const insertAt = Math.max(0, Math.min(otherLayers.length, firstOriginalIndex));
+    const groupedChildren = children.map((layer) => ({ ...layer, groupId: group.id }));
+    const groupStart = groupedChildren.length ? Math.min(...groupedChildren.map((layer) => layer.start)) : 0;
+    const groupEnd = groupedChildren.length ? Math.max(...groupedChildren.map((layer) => layer.start + layer.duration)) : currentProject?.duration ?? 5;
+    const groupedLayer = { ...group, start: groupStart, duration: Math.max(.1, groupEnd - groupStart) };
+    const next = [...otherLayers];
+    next.splice(insertAt, 0, groupedLayer, ...groupedChildren);
+    commitLayerList(next);
+    selectLayer(groupedLayer.id);
+    notify(selectedGroup ? `${children.length} layer${children.length === 1 ? '' : 's'} added to group` : allowEmpty ? 'Empty group created' : `${children.length} layers grouped`);
+  };
+
+  const ungroup = (id: string) => {
+    const group = layers.find((layer) => layer.id === id && layer.kind === 'group');
+    if (!group) return;
+    const next = layers.filter((layer) => layer.id !== id).map((layer) => layer.groupId === id ? { ...layer, groupId: undefined } : layer);
+    commitLayerList(next);
+    selectLayer(null);
+    notify('Group dissolved; layers kept in the timeline');
+  };
+
+  const moveLayer = (id: string, direction: 'up' | 'down') => {
+    const layer = layers.find((candidate) => candidate.id === id);
+    if (!layer) return;
+    const groupId = layer.kind === 'group' ? layer.id : layer.groupId;
+    const block = groupId ? layers.filter((candidate) => candidate.id === groupId || candidate.groupId === groupId) : [layer];
+    const blockIds = new Set(block.map((candidate) => candidate.id));
+    const start = Math.min(...block.map((candidate) => layers.indexOf(candidate)));
+    const target = start + (direction === 'up' ? -1 : 1);
+    if (target < 0 || target + block.length > layers.length) return;
+    const rest = layers.filter((candidate) => !blockIds.has(candidate.id));
+    rest.splice(Math.max(0, Math.min(rest.length, target)), 0, ...block);
+    commitLayerList(rest);
+    notify(direction === 'up' ? 'Layer moved forward' : 'Layer moved backward');
   };
 
   const toggleKeyframe = (layer: EditorLayer) => {
@@ -847,25 +1228,90 @@ export default function App() {
     updateLayer(layer.id, { keyframes: frames });
   };
 
-  const removeLayer = (id: string) => {
-    commitLayerList(layers.filter((layer) => layer.id !== id));
-    if (selectedLayerId === id) setSelectedLayerId(null);
+  const requestRelink = (id: string) => {
+    setRelinkLayerId(id);
     setContextLayerId(null);
-    setEditorTool(null);
-    notify('Layer removed');
+    mediaInputRef.current?.click();
   };
 
-  const exportProjectPackage = () => {
+  const removeLayer = (id: string) => {
+    const target = layers.find((layer) => layer.id === id);
+    const next = layers.filter((layer) => layer.id !== id).map((layer) => target?.kind === 'group' && layer.groupId === id ? { ...layer, groupId: undefined } : layer);
+    commitLayerList(next);
+    if (selectedLayerIds.includes(id) || selectedLayerId === id) selectLayer(null);
+    setContextLayerId(null);
+    setEditorTool(null);
+    notify(target?.kind === 'group' ? 'Group removed; child layers kept' : 'Layer removed');
+  };
+
+  const duplicateLayer = (layer: EditorLayer) => {
+    const suffix = Date.now();
+    if (layer.kind === 'group') {
+      const newGroupId = `group-copy-${suffix}`;
+      const originalChildren = layers.filter((item) => item.groupId === layer.id);
+      const copiedGroup = { ...layer, id: newGroupId, name: `${layer.name} copy` };
+      const copiedChildren = originalChildren.map((item, index) => ({ ...item, id: `layer-copy-${suffix}-${index}`, groupId: newGroupId, name: `${item.name} copy`, x: Math.min(90, item.x + 5), y: Math.min(90, item.y + 5) }));
+      const afterIndex = Math.max(...[layers.findIndex((item) => item.id === layer.id), ...originalChildren.map((item) => layers.findIndex((child) => child.id === item.id))]);
+      const next = [...layers];
+      next.splice(afterIndex + 1, 0, copiedGroup, ...copiedChildren);
+      commitLayerList(next);
+      selectLayer(newGroupId);
+    } else if (layer.groupId) {
+      const copy = { ...layer, id: `layer-copy-${suffix}`, name: `${layer.name} copy`, x: Math.min(90, layer.x + 5), y: Math.min(90, layer.y + 5) };
+      const siblingIndexes = layers.map((item, index) => item.groupId === layer.groupId ? index : -1).filter((index) => index >= 0);
+      const next = [...layers];
+      next.splice(Math.max(...siblingIndexes) + 1, 0, copy);
+      commitLayerList(next);
+      selectLayer(copy.id);
+    } else {
+      addLayer({ ...layer, id: `layer-copy-${suffix}`, name: `${layer.name} copy`, x: Math.min(90, layer.x + 5), y: Math.min(90, layer.y + 5) });
+    }
+    notify('Layer duplicated');
+  };
+
+  const exportProjectPackage = async () => {
     if (!currentProject) return;
-    const packageData = { ...currentProject, layers, packageVersion: 1, app: 'EditorsHub' };
-    const blob = new Blob([JSON.stringify(packageData, null, 2)], { type: 'application/json' });
-    const href = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = href;
-    anchor.download = `${currentProject.name.replace(/[^a-z0-9-_]+/gi, '_')}.ehproj`;
-    anchor.click();
-    URL.revokeObjectURL(href);
-    notify('Project package saved');
+    notify('Preparing a portable project package…');
+    try {
+      const embedLayer = async (layer: EditorLayer): Promise<EditorLayer> => {
+        if (!layer.src || !['image', 'video', 'audio'].includes(layer.kind)) return layer;
+        let media: Blob | null = null;
+        if (layer.assetId) media = (await getMediaAsset(layer.assetId))?.blob ?? null;
+        if (!media && layer.src.startsWith('data:')) return { ...layer, assetId: undefined };
+        if (!media) {
+          try {
+            const response = await fetch(layer.src);
+            if (response.ok) media = await response.blob();
+          } catch { /* external sources without CORS remain linked in the package */ }
+        }
+        return media ? { ...layer, src: await blobToDataUrl(media), assetId: undefined } : { ...layer, assetId: undefined };
+      };
+      const packagedLayers = await Promise.all(layers.map(embedLayer));
+      let thumbnail = currentProject.thumbnail;
+      if (currentProject.thumbnailAssetId) {
+        const image = await getMediaAsset(currentProject.thumbnailAssetId);
+        if (image) thumbnail = await blobToDataUrl(image.blob);
+      }
+      const packageData = {
+        ...currentProject,
+        thumbnail,
+        thumbnailAssetId: undefined,
+        layers: packagedLayers,
+        packageVersion: 2,
+        app: 'EditorsHub',
+        mediaEmbedded: true,
+      };
+      const blob = new Blob([JSON.stringify(packageData)], { type: 'application/json' });
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = href;
+      anchor.download = `${currentProject.name.replace(/[^a-z0-9-_]+/gi, '_')}.ehproj`;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(href), 1500);
+      notify(`Portable project package saved · ${(blob.size / 1024 / 1024).toFixed(1)} MB`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Could not package this project');
+    }
   };
 
   const exportPreview = async () => {
@@ -878,7 +1324,7 @@ export default function App() {
     if (!context) return;
     context.fillStyle = currentProject.background;
     context.fillRect(0, 0, canvas.width, canvas.height);
-    for (const layer of layers.filter((item) => item.visible && time >= item.start && time < item.start + item.duration)) {
+    for (const layer of layers.filter((item) => isLayerVisible(item, layers) && item.kind !== 'group' && time >= item.start && time < item.start + item.duration)) {
       if (layer.kind === 'text' && layer.text) {
         context.save();
         const animated = getLayerTransformAt(layer, time);
@@ -889,25 +1335,40 @@ export default function App() {
         context.font = `700 ${Math.max(34, canvas.width * 0.075)}px sans-serif`;
         context.translate(canvas.width * animated.x / 100, canvas.height * animated.y / 100);
         context.rotate(animated.rotation * Math.PI / 180);
+        context.scale(animated.scale / 100, animated.scale / 100);
         context.fillText(layer.text, 0, 0, canvas.width * .9);
+        context.restore();
+      } else if (layer.kind === 'drawing' && layer.drawPoints?.length) {
+        context.save();
+        const animated = getLayerTransformAt(layer, time);
+        context.globalAlpha = animated.opacity / 100;
+        context.strokeStyle = layer.color;
+        context.fillStyle = layer.color;
+        context.lineWidth = Math.max(1, (layer.brushSize ?? 8) * previewScale);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.translate(canvas.width * animated.x / 100, canvas.height * animated.y / 100);
+        context.rotate(animated.rotation * Math.PI / 180);
+        context.scale(animated.scale / 100, animated.scale / 100);
+        context.beginPath();
+        layer.drawPoints.forEach((point, pointIndex) => {
+          const x = point.x / 100 * canvas.width - canvas.width / 2;
+          const y = point.y / 100 * canvas.height - canvas.height / 2;
+          if (pointIndex === 0) context.moveTo(x, y); else context.lineTo(x, y);
+        });
+        if (layer.drawPoints.length === 1) { context.arc(layer.drawPoints[0].x / 100 * canvas.width - canvas.width / 2, layer.drawPoints[0].y / 100 * canvas.height - canvas.height / 2, Math.max(1, (layer.brushSize ?? 8) * previewScale / 2), 0, Math.PI * 2); context.fill(); }
+        else context.stroke();
         context.restore();
       } else if (layer.kind === 'shape') {
         context.save();
         const animated = getLayerTransformAt(layer, time);
         context.globalAlpha = animated.opacity / 100;
         context.fillStyle = layer.color;
+        context.strokeStyle = layer.color;
         const size = Math.min(canvas.width, canvas.height) * 0.22 * animated.scale / 100;
-        const x = canvas.width * animated.x / 100 - size / 2;
-        const y = canvas.height * animated.y / 100 - size / 2;
-        context.translate(x + size / 2, y + size / 2);
+        context.translate(canvas.width * animated.x / 100, canvas.height * animated.y / 100);
         context.rotate(animated.rotation * Math.PI / 180);
-        if (layer.shape === 'Circle') {
-          context.beginPath(); context.arc(0, 0, size / 2, 0, Math.PI * 2); context.fill();
-        } else if (layer.shape === 'Triangle') {
-          context.beginPath(); context.moveTo(0, -size / 2); context.lineTo(size / 2, size / 2); context.lineTo(-size / 2, size / 2); context.closePath(); context.fill();
-        } else {
-          context.fillRect(-size / 2, -size / 2, size, size);
-        }
+        traceCanvasShape(context, layer.shape ?? 'Rounded Rectangle', size);
         context.restore();
       } else if (layer.src && (layer.kind === 'image' || layer.kind === 'video')) {
         try {
@@ -923,7 +1384,7 @@ export default function App() {
           context.save();
           const animated = getLayerTransformAt(layer, time);
           context.globalAlpha = animated.opacity / 100;
-          context.filter = cssFilterForEffects(layer.effects);
+          context.filter = cssFilterForEffects(layer.effects, layer.effectStrengths);
           const width = canvas.width * animated.scale / 100;
           const height = canvas.height * animated.scale / 100;
           context.translate(canvas.width * animated.x / 100, canvas.height * animated.y / 100);
@@ -945,15 +1406,17 @@ export default function App() {
     }, 'image/png');
   };
 
-  const renderVideo = async () => {
+  const renderVideo = async (format: ExportFormat = exportFormat, quality: ExportQuality = exportQuality) => {
     if (!currentProject) return;
     setExportOpen(false);
     setRenderedVideoUrl(null);
     setRenderProgress(0);
     try {
-      const blob = await renderCompositionVideo(currentProject, layers, setRenderProgress);
+      const blob = await renderCompositionVideo(currentProject, layers, setRenderProgress, format, quality);
+      const mime = blob.type || 'video/webm';
+      setRenderedVideoType(mime);
       setRenderedVideoUrl(URL.createObjectURL(blob));
-      notify('Video render complete');
+      notify(`Video render complete · ${mime.includes('mp4') ? 'MP4' : 'WebM'}`);
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Video render failed');
     } finally {
@@ -963,9 +1426,10 @@ export default function App() {
 
   const downloadRenderedVideo = () => {
     if (!renderedVideoUrl || !currentProject) return;
+    const extension = renderedVideoType.includes('mp4') ? 'mp4' : 'webm';
     const anchor = document.createElement('a');
     anchor.href = renderedVideoUrl;
-    anchor.download = `${currentProject.name.replace(/[^a-z0-9-_]+/gi, '_')}.webm`;
+    anchor.download = `${currentProject.name.replace(/[^a-z0-9-_]+/gi, '_')}.${extension}`;
     anchor.click();
   };
 
@@ -1001,18 +1465,24 @@ export default function App() {
           onUndo={undoEdit}
           onRedo={redoEdit}
           onBack={() => { setScreen('library'); setIsPlaying(false); setContextLayerId(null); }}
+          onProjectSettings={() => setProjectSettingsOpen(true)}
           onPlay={() => setIsPlaying((value) => !value)}
           onSeek={(value) => { setTime(value); if (videoRef.current) { const end = Number.isFinite(videoRef.current.duration) ? videoRef.current.duration : value; videoRef.current.currentTime = Math.min(value, end); } }}
-          onSelectLayer={setSelectedLayerId}
+          selectedLayerIds={selectedLayerIds}
+          onSelectLayer={selectLayer}
+          onGroup={() => createGroup()}
+          onUngroup={ungroup}
           onAdd={() => setAddSheetOpen(true)}
           onSetTool={(tool) => setEditorTool((value) => value === tool ? null : tool)}
           onSetContext={setContextLayerId}
           onUpdateLayer={updateLayer}
           onDeleteLayer={removeLayer}
           onSplit={splitSelectedLayer}
+          onMoveLayer={moveLayer}
+          onRelink={requestRelink}
           onKeyframe={toggleKeyframe}
           onSetEasing={setKeyframeEasing}
-          onDuplicateLayer={(layer) => addLayer({ ...layer, id: `layer-copy-${Date.now()}`, name: `${layer.name} copy`, x: Math.min(90, layer.x + 5), y: Math.min(90, layer.y + 5) })}
+          onDuplicateLayer={duplicateLayer}
           onSaveElement={(layer) => {
             const element: Project = { id: `element-${Date.now()}`, name: layer.name, kind: 'element', ratio: currentProject?.ratio ?? '9:16', width: currentProject?.width ?? 1080, height: currentProject?.height ?? 1920, resolution: currentProject?.resolution ?? '1080p', fps: currentProject?.fps ?? 30, background: currentProject?.background ?? '#08090c', updatedAt: dateLabel, duration: layer.duration, layers: [{ ...layer }] };
             setProjects((list) => [element, ...list]);
@@ -1089,24 +1559,32 @@ export default function App() {
           onClose={() => setNewProjectOpen(false)} onCreate={createFromSettings}
         />
       )}
+      {projectSettingsOpen && currentProject && <ProjectSettingsDialog project={currentProject} onClose={() => setProjectSettingsOpen(false)} onSave={saveProjectSettings} />}
       {addSheetOpen && (
         <AddSheet
           onClose={() => setAddSheetOpen(false)}
-          onMedia={() => mediaInputRef.current?.click()}
+          onMedia={() => { setRelinkLayerId(null); mediaInputRef.current?.click(); }}
           onText={() => { setTextDraft('Your text'); setTextModalOpen(true); }}
           onShape={() => setShapeSheetOpen(true)}
-          onAudio={() => { mediaInputRef.current?.click(); notify('Choose an audio file to add to the timeline'); }}
+          onAudio={() => { setRelinkLayerId(null); mediaInputRef.current?.click(); notify('Choose an audio file to add to the timeline'); }}
           onAction={(name) => {
             if (name === 'Element / Project') { setAddSheetOpen(false); setScreen('library'); setLibraryTab('element'); return; }
             if (name === 'Template') { setAddSheetOpen(false); setScreen('library'); setLibraryTab('template'); return; }
+            if (name === 'Freehand Drawing' || name === 'Vector Drawing') {
+              setAddSheetOpen(false);
+              setDrawingMode(name === 'Freehand Drawing' ? 'freehand' : 'vector');
+              return;
+            }
+            if (name === 'Empty Group') { setAddSheetOpen(false); createGroup(true); return; }
             const kind: LayerKind = name === 'Camera' ? 'camera' : 'null';
-            addLayer(makeLayer({ name: name === 'Camera' ? 'Camera 1' : 'Null 1', kind, color: '#14e6aa', duration: currentProject?.duration ?? 5 }));
+            addLayer(makeLayer({ name: name === 'Camera' ? 'Camera 1' : 'Null 1', kind, color: '#14e6aa', start: time, duration: currentProject?.duration ?? 5 }));
             setAddSheetOpen(false);
             notify(`${name} layer added`);
           }}
         />
       )}
       {shapeSheetOpen && <ShapeSheet onClose={() => setShapeSheetOpen(false)} onSelect={makeShape} />}
+      {drawingMode && <DrawingDialog mode={drawingMode} projectWidth={currentProject?.width ?? 1080} onClose={() => setDrawingMode(null)} onSave={(points, color, brushSize) => { const duration = Math.max(1, Number.parseInt(layerDuration, 10) || 2); addLayer(makeLayer({ name: drawingMode === 'freehand' ? 'Freehand drawing' : 'Vector drawing', kind: 'drawing', drawPoints: points, brushSize, color, start: time, duration })); setDrawingMode(null); setAddSheetOpen(false); notify('Drawing added to the composition'); }} />}
       {effectBrowserOpen && (
         <EffectBrowser
           query={effectQuery} onQuery={setEffectQuery}
@@ -1114,7 +1592,7 @@ export default function App() {
           onClose={() => setEffectBrowserOpen(false)}
           onSelect={(effect) => {
             if (!selectedLayer) { notify('Select a layer before adding an effect'); return; }
-            updateLayer(selectedLayer.id, { effects: [...selectedLayer.effects, effect] });
+            updateLayer(selectedLayer.id, { effects: [...new Set([...selectedLayer.effects, effect])], effectStrengths: { ...selectedLayer.effectStrengths, [effect]: selectedLayer.effectStrengths?.[effect] ?? 75 } });
             setEffectBrowserOpen(false);
             notify(`${effect} added`);
           }}
@@ -1124,13 +1602,15 @@ export default function App() {
         <ExportDialog
           project={currentProject}
           onClose={() => setExportOpen(false)}
-          onPackage={() => { exportProjectPackage(); setExportOpen(false); }}
+          onPackage={() => { void exportProjectPackage(); setExportOpen(false); }}
           onPreview={() => { void exportPreview(); setExportOpen(false); }}
-          onRender={() => { void renderVideo(); }}
+          renderFormat={exportFormat} onFormat={setExportFormat}
+          renderQuality={exportQuality} onQuality={setExportQuality}
+          onRender={(format, quality) => { void renderVideo(format, quality); }}
         />
       )}
       {renderProgress !== null && <RenderProgressDialog progress={renderProgress} projectName={currentProject?.name ?? 'Untitled project'} />}
-      {renderedVideoUrl && currentProject && <RenderedVideoDialog src={renderedVideoUrl} name={currentProject.name} onClose={() => setRenderedVideoUrl(null)} onDownload={downloadRenderedVideo} />}
+      {renderedVideoUrl && currentProject && <RenderedVideoDialog src={renderedVideoUrl} name={currentProject.name} format={renderedVideoType.includes('mp4') ? 'MP4' : 'WebM'} onClose={() => setRenderedVideoUrl(null)} onDownload={downloadRenderedVideo} />}
       {qrOpen && (
         <div className="modal-backdrop" onMouseDown={() => setQrOpen(false)}>
           <div className="qr-dialog" onMouseDown={(event) => event.stopPropagation()}>
@@ -1249,7 +1729,7 @@ function LibraryScreen({
             <article className="project-card" key={project.id}>
               <button className="project-thumb" onClick={() => onOpen(project)} aria-label={`Open ${project.name}`}>
                 {project.thumbnail ? <img src={project.thumbnail} alt="" /> : <div className={`thumb-placeholder thumb-${index % 4}`}><Film size={25} /></div>}
-                <span className="duration-pill">{fmtTime(project.duration)}</span>
+                <span className="duration-pill">{fmtTime(project.duration, project.fps)}</span>
                 <span className="thumb-kind">{project.kind === 'template' ? 'TEMPLATE' : project.layers?.some((layer) => layer.kind === 'image') ? 'EDIT' : 'PROJECT'}</span>
               </button>
               <div className="project-details">
@@ -1307,6 +1787,43 @@ function SettingToggle({ label, note, checked, onChange }: { label: string; note
   return <div className="setting-row"><div><strong>{label}</strong><small>{note}</small></div><button className={`switch ${checked ? 'on' : ''}`} role="switch" aria-checked={checked} onClick={() => onChange(!checked)}><span /></button></div>;
 }
 
+function ProjectSettingsDialog({ project, onClose, onSave }: { project: Project; onClose: () => void; onSave: (patch: Partial<Project>) => void }) {
+  const [name, setName] = useState(project.name);
+  const [ratio, setRatio] = useState<ProjectRatio>(project.ratio);
+  const [width, setWidth] = useState(project.width);
+  const [height, setHeight] = useState(project.height);
+  const [fps, setFps] = useState(project.fps);
+  const [duration, setDuration] = useState(project.duration);
+  const [background, setBackground] = useState(project.background);
+  const [resolution, setResolution] = useState(project.resolution);
+  const updateRatio = (nextRatio: ProjectRatio) => {
+    setRatio(nextRatio);
+    if (nextRatio !== 'Custom') {
+      const [baseWidth, baseHeight] = ratioDimensions[nextRatio];
+      const scale = Math.max(.25, (Number.parseInt(resolution, 10) || 1080) / 1080);
+      setWidth(Math.round(baseWidth * scale));
+      setHeight(Math.round(baseHeight * scale));
+    }
+  };
+  const apply = () => onSave({
+    name: name.trim() || 'Untitled project', ratio, width: Math.min(7680, Math.max(16, Math.round(width))), height: Math.min(7680, Math.max(16, Math.round(height))),
+    fps: Math.max(1, Math.min(120, fps)), duration: Math.min(600, Math.max(.1, duration)), background, resolution: `${Math.round(Math.max(width, height) / 120) * 120}p`,
+  });
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <section className="project-settings-dialog" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="dialog-heading"><div><span className="eyebrow">COMPOSITION</span><h2>Project settings</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div>
+        <label className="project-setting-field">Project name<input value={name} maxLength={64} onChange={(event) => setName(event.target.value)} /></label>
+        <label className="project-setting-field">Aspect ratio<select value={ratio} onChange={(event) => updateRatio(event.target.value as ProjectRatio)}>{ratios.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <div className="project-dimensions"><label className="project-setting-field">Width<input type="number" min={16} max={7680} value={width} onChange={(event) => { setWidth(Number(event.target.value)); setRatio('Custom'); }} /></label><span>×</span><label className="project-setting-field">Height<input type="number" min={16} max={7680} value={height} onChange={(event) => { setHeight(Number(event.target.value)); setRatio('Custom'); }} /></label></div>
+        <div className="project-settings-row"><label className="project-setting-field">Frame rate<select value={fps} onChange={(event) => setFps(Number(event.target.value))}>{[24,30,48,60,90,120].map((value) => <option key={value} value={value}>{value} fps</option>)}</select></label><label className="project-setting-field">Duration (s)<input type="number" min={.1} max={600} step={.1} value={duration} onChange={(event) => setDuration(Number(event.target.value))} /></label></div>
+        <div className="project-settings-row"><label className="project-setting-field">Background color</label><label className="project-background-picker"><span style={{ background }} /><input type="color" value={background} onChange={(event) => setBackground(event.target.value)} /><span>{background.toUpperCase()}</span></label></div>
+        <div className="project-settings-actions"><button className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={apply}>Save settings</button></div>
+      </section>
+    </div>
+  );
+}
+
 function NewProjectSheet({
   kind, onKind, name, onName, ratio, onRatio, resolution, onResolution, fps, onFps, background, onBackground,
   customRatio, onCustomRatio, onClose, onCreate,
@@ -1362,6 +1879,75 @@ function AddSheet({ onClose, onMedia, onText, onShape, onAudio, onAction }: {
   );
 }
 
+function DrawingDialog({ mode, projectWidth, onClose, onSave }: { mode: 'freehand' | 'vector'; projectWidth: number; onClose: () => void; onSave: (points: DrawPoint[], color: string, brushSize: number) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pointsRef = useRef<DrawPoint[]>([]);
+  const activePointerRef = useRef<number | null>(null);
+  const [points, setPoints] = useState<DrawPoint[]>([]);
+  const [color, setColor] = useState('#f23e98');
+  const [brushSize, setBrushSize] = useState(8);
+  const [drawing, setDrawing] = useState(false);
+  const setPath = (next: DrawPoint[]) => { pointsRef.current = next; setPoints(next); };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#111116';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = 'rgba(255,255,255,.035)';
+    context.lineWidth = 1;
+    for (let x = 0; x <= canvas.width; x += 60) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, canvas.height); context.stroke(); }
+    for (let y = 0; y <= canvas.height; y += 60) { context.beginPath(); context.moveTo(0, y); context.lineTo(canvas.width, y); context.stroke(); }
+    if (!points.length) return;
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = brushSize * canvas.width / Math.max(1, projectWidth);
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.beginPath();
+    points.forEach((point, index) => { const x = point.x / 100 * canvas.width; const y = point.y / 100 * canvas.height; if (index === 0) context.moveTo(x, y); else context.lineTo(x, y); });
+    if (points.length === 1) { context.arc(points[0].x / 100 * canvas.width, points[0].y / 100 * canvas.height, context.lineWidth / 2, 0, Math.PI * 2); context.fill(); }
+    else context.stroke();
+  }, [points, color, brushSize]);
+  const pointFromEvent = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return { x: Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100)), y: Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100)) };
+  };
+  const pointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    activePointerRef.current = event.pointerId;
+    const point = pointFromEvent(event);
+    if (mode === 'vector') setPath([...pointsRef.current, point]);
+    else { setPath([point]); setDrawing(true); }
+  };
+  const pointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (mode !== 'freehand' || !drawing || activePointerRef.current !== event.pointerId) return;
+    const point = pointFromEvent(event);
+    const previous = pointsRef.current.at(-1);
+    if (!previous || Math.hypot(point.x - previous.x, point.y - previous.y) > .35) setPath([...pointsRef.current, point]);
+  };
+  const pointerUp = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (activePointerRef.current !== event.pointerId) return;
+    activePointerRef.current = null;
+    setDrawing(false);
+  };
+  const undo = () => mode === 'vector' ? setPath(pointsRef.current.slice(0, -1)) : setPath([]);
+  return (
+    <div className="modal-backdrop sheet-backdrop" onMouseDown={onClose}>
+      <section className="drawing-dialog" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="dialog-heading"><div><span className="eyebrow">{mode === 'freehand' ? 'FREEHAND TOOL' : 'VECTOR TOOL'}</span><h2>{mode === 'freehand' ? 'Draw on canvas' : 'Build a vector path'}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close drawing tool"><X size={20} /></button></div>
+        <div className="drawing-canvas-wrap"><canvas ref={canvasRef} width={720} height={1280} className="drawing-canvas" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="Drawing canvas" /></div>
+        <div className="drawing-tools"><label className="drawing-color">Color<input type="color" value={color} onChange={(event) => setColor(event.target.value)} /></label><label className="drawing-size">Brush {brushSize}px<input type="range" min={1} max={32} value={brushSize} onChange={(event) => setBrushSize(Number(event.target.value))} /></label><button className="secondary-button" onClick={undo}>{mode === 'vector' ? 'Undo point' : 'Clear'}</button></div>
+        <p className="drawing-hint">{mode === 'vector' ? 'Tap to place points. EditorsHub connects them into a smooth stroke.' : 'Draw with touch, a mouse, or a stylus.'}</p>
+        <button className="primary-button drawing-save" disabled={!points.length} onClick={() => onSave(pointsRef.current, color, brushSize)}><Check size={17} /> Add drawing layer</button>
+      </section>
+    </div>
+  );
+}
+
 function ShapeSheet({ onClose, onSelect }: { onClose: () => void; onSelect: (shape: string) => void }) {
   const shapes = [
     { name: 'Circle', icon: Circle }, { name: 'Rounded Rectangle', icon: Square }, { name: 'Triangle', icon: Triangle },
@@ -1401,17 +1987,19 @@ function EffectBrowser({ query, onQuery, category, onCategory, onClose, onSelect
   );
 }
 
-function ExportDialog({ project, onClose, onPackage, onPreview, onRender }: {
-  project: Project | null; onClose: () => void; onPackage: () => void; onPreview: () => void; onRender: () => void;
+function ExportDialog({ project, onClose, onPackage, onPreview, onRender, renderFormat, onFormat, renderQuality, onQuality }: {
+  project: Project | null; onClose: () => void; onPackage: () => void; onPreview: () => void; onRender: (format: ExportFormat, quality: ExportQuality) => void;
+  renderFormat: ExportFormat; onFormat: (format: ExportFormat) => void; renderQuality: ExportQuality; onQuality: (quality: ExportQuality) => void;
 }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section className="export-dialog" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dialog-heading"><div><span className="eyebrow">DELIVER YOUR WORK</span><h2>Export</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={21} /></button></div>
-        <div className="export-summary"><div className="export-summary-icon"><Film size={22} /></div><div><strong>{project?.name ?? 'Untitled project'}</strong><small>{project?.width} × {project?.height} · {project?.fps} fps · {fmtTime(project?.duration ?? 0)}</small></div></div>
+        <div className="export-summary"><div className="export-summary-icon"><Film size={22} /></div><div><strong>{project?.name ?? 'Untitled project'}</strong><small>{project?.width} × {project?.height} · {project?.fps} fps · {fmtTime(project?.duration ?? 0, project?.fps ?? 30)}</small></div></div>
+        <div className="export-render-settings"><label>Format<select value={renderFormat} onChange={(event) => onFormat(event.target.value as ExportFormat)}><option value="auto">Best supported</option><option value="mp4">Prefer MP4</option><option value="webm">Prefer WebM</option></select></label><label>Quality<select value={renderQuality} onChange={(event) => onQuality(event.target.value as ExportQuality)}><option value="balanced">Balanced · 1080p</option><option value="high">High · up to 1440p</option></select></label></div>
         <button className="export-option" onClick={onPackage}><span className="export-option-icon"><FilePlus2 size={21} /></span><span><strong>Save project package</strong><small>Editable timeline · .ehproj</small></span><ChevronRight size={18} /></button>
         <button className="export-option" onClick={onPreview}><span className="export-option-icon"><ImageIcon size={21} /></span><span><strong>Export frame as PNG</strong><small>Capture the current composition</small></span><ChevronRight size={18} /></button>
-        <button className="export-option" onClick={onRender}><span className="export-option-icon"><Video size={21} /></span><span><strong>Render video</strong><small>Render your composition · WebM</small></span><ChevronRight size={18} /></button>
+        <button className="export-option" onClick={() => onRender(renderFormat, renderQuality)}><span className="export-option-icon"><Video size={21} /></span><span><strong>Render video</strong><small>MP4 when supported · WebM fallback</small></span><ChevronRight size={18} /></button>
         <p className="export-note"><Info size={15} /> Video export runs on this device. Keep EditorsHub open until the render finishes.</p>
       </section>
     </div>
@@ -1433,46 +2021,50 @@ function RenderProgressDialog({ progress, projectName }: { progress: number; pro
   );
 }
 
-function RenderedVideoDialog({ src, name, onClose, onDownload }: { src: string; name: string; onClose: () => void; onDownload: () => void }) {
+function RenderedVideoDialog({ src, name, format, onClose, onDownload }: { src: string; name: string; format: 'MP4' | 'WebM'; onClose: () => void; onDownload: () => void }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section className="rendered-video-dialog" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dialog-heading"><div><span className="eyebrow">EXPORT COMPLETE</span><h2>Your video is ready</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div>
         <video className="rendered-video-preview" src={src} controls playsInline />
-        <p>{name}.webm · rendered locally on this device</p>
-        <div className="rendered-video-actions"><button className="secondary-button" onClick={onClose}>Close</button><button className="primary-button" onClick={onDownload}><ArrowDownToLine size={17} /> Download WebM</button></div>
+        <p>{name}.{format.toLowerCase()} · rendered locally on this device</p>
+        <div className="rendered-video-actions"><button className="secondary-button" onClick={onClose}>Close</button><button className="primary-button" onClick={onDownload}><ArrowDownToLine size={17} /> Download {format}</button></div>
       </section>
     </div>
   );
 }
 
 function EditorScreen({
-  project, layers, selectedLayerId, selectedLayer, time, isPlaying, editorTool, stageStyle, formattedRatio, videoRef, canvasZoom,
+  project, layers, selectedLayerId, selectedLayerIds, selectedLayer, time, isPlaying, editorTool, stageStyle, formattedRatio, videoRef, canvasZoom, onProjectSettings, onGroup, onUngroup,
   panelSlider, canUndo, canRedo, onUndo, onRedo, onBack, onPlay, onSeek, onSelectLayer, onAdd, onSetTool, onSetContext, onUpdateLayer, onDeleteLayer,
-  onDuplicateLayer, onSaveElement, onSplit, onKeyframe, onSetEasing, onOpenEffects, onExport, onZoom, onPanelSlider, onRename, onNotify, contextLayerId,
+  onDuplicateLayer, onSaveElement, onSplit, onMoveLayer, onRelink, onKeyframe, onSetEasing, onOpenEffects, onExport, onZoom, onPanelSlider, onRename, onNotify, contextLayerId,
 }: {
-  project: Project; layers: EditorLayer[]; selectedLayerId: string | null; selectedLayer: EditorLayer | null; time: number; isPlaying: boolean;
+  project: Project; layers: EditorLayer[]; selectedLayerId: string | null; selectedLayerIds: string[]; selectedLayer: EditorLayer | null; time: number; isPlaying: boolean; onProjectSettings: () => void;
+  onGroup: () => void; onUngroup: (id: string) => void;
   editorTool: string | null; stageStyle: CSSProperties; formattedRatio: string; videoRef: RefObject<HTMLVideoElement | null>; canvasZoom: number;
   panelSlider: number; canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void;
   onBack: () => void; onPlay: () => void; onSeek: (value: number) => void;
-  onSelectLayer: (id: string | null) => void; onAdd: () => void; onSetTool: (tool: string) => void; onSetContext: (id: string | null) => void;
+  onSelectLayer: (id: string | null, additive?: boolean) => void; onAdd: () => void; onSetTool: (tool: string) => void; onSetContext: (id: string | null) => void;
   onUpdateLayer: (id: string, patch: Partial<EditorLayer>) => void; onDeleteLayer: (id: string) => void;
   onDuplicateLayer: (layer: EditorLayer) => void; onSaveElement: (layer: EditorLayer) => void; onSplit: () => void;
-  onKeyframe: (layer: EditorLayer) => void; onSetEasing: (layer: EditorLayer, easing: EasingPreset) => void; onOpenEffects: () => void;
+  onMoveLayer: (id: string, direction: 'up' | 'down') => void; onRelink: (id: string) => void; onKeyframe: (layer: EditorLayer) => void; onSetEasing: (layer: EditorLayer, easing: EasingPreset) => void; onOpenEffects: () => void;
   onExport: () => void; onZoom: (value: number) => void; onPanelSlider: (value: number) => void; onRename: () => void; onNotify: (message: string) => void;
   contextLayerId: string | null;
 }) {
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'timeline' | 'layers'>('timeline');
+  const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number; scale: number } | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const stageDragRef = useRef<StageDrag | null>(null);
   const audioRefs = useRef(new Map<string, HTMLAudioElement>());
-  const visibleLayers = layers.filter((layer) => layer.visible && time >= layer.start && time < layer.start + layer.duration);
+  const visibleLayers = layers.filter((layer) => isLayerVisible(layer, layers) && layer.kind !== 'group' && time >= layer.start && time < layer.start + layer.duration);
   const stageLayers = [...visibleLayers].sort((a, b) => layers.indexOf(a) - layers.indexOf(b));
   const activeVideo = stageLayers.find((layer) => layer.kind === 'video' && layer.src);
   useEffect(() => {
     for (const layer of layers.filter((item) => item.kind === 'audio' && item.src)) {
       const audio = audioRefs.current.get(layer.id);
       if (!audio) continue;
-      const active = layer.visible && time >= layer.start && time < layer.start + layer.duration;
-      const target = Math.max(0, time - layer.start) * Math.max(.25, Math.min(4, layer.speed ?? 1));
+      const active = isLayerVisible(layer, layers) && time >= layer.start && time < layer.start + layer.duration;
+      const target = (layer.sourceOffset ?? 0) + Math.max(0, time - layer.start) * Math.max(.25, Math.min(4, layer.speed ?? 1));
       audio.volume = Math.max(0, Math.min(1, (layer.volume ?? 100) / 100));
       audio.playbackRate = Math.max(.25, Math.min(4, layer.speed ?? 1));
       if (active && Number.isFinite(audio.duration) && target < audio.duration) {
@@ -1484,6 +2076,48 @@ function EditorScreen({
   }, [layers, time, isPlaying]);
   const stageRatio = project.ratio === 'Custom' ? formattedRatio : project.ratio;
 
+  const beginStageDrag = (event: ReactPointerEvent<HTMLDivElement>, layer: EditorLayer, animated: ReturnType<typeof getLayerTransformAt>) => {
+    if (event.button !== 0) return;
+    const stageBounds = stageRef.current?.getBoundingClientRect();
+    const elementBounds = event.currentTarget.getBoundingClientRect();
+    if (!stageBounds?.width || !stageBounds.height) return;
+    const resizing = Boolean((event.target as HTMLElement).closest('[data-resize-handle]'));
+    const centerX = elementBounds.left + elementBounds.width / 2;
+    const centerY = elementBounds.top + elementBounds.height / 2;
+    const startDistance = Math.max(10, Math.hypot(event.clientX - centerX, event.clientY - centerY));
+    stageDragRef.current = {
+      id: layer.id, pointerId: event.pointerId, mode: resizing ? 'scale' : 'move',
+      startX: event.clientX, startY: event.clientY, baseX: animated.x, baseY: animated.y, baseScale: animated.scale,
+      currentX: animated.x, currentY: animated.y, currentScale: animated.scale,
+      stageWidth: stageBounds.width, stageHeight: stageBounds.height, centerX, centerY, startDistance,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    onSelectLayer(layer.id);
+  };
+
+  const moveStageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = stageDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (drag.mode === 'move') {
+      drag.currentX = Math.max(0, Math.min(100, drag.baseX + (event.clientX - drag.startX) / drag.stageWidth * 100));
+      drag.currentY = Math.max(0, Math.min(100, drag.baseY + (event.clientY - drag.startY) / drag.stageHeight * 100));
+    } else {
+      const distance = Math.hypot(event.clientX - drag.centerX, event.clientY - drag.centerY);
+      drag.currentScale = Math.max(10, Math.min(600, drag.baseScale * distance / drag.startDistance));
+    }
+    setDragPreview({ id: drag.id, x: drag.currentX, y: drag.currentY, scale: drag.currentScale });
+  };
+
+  const finishStageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = stageDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (drag.mode === 'move') onUpdateLayer(drag.id, { x: drag.currentX, y: drag.currentY });
+    else onUpdateLayer(drag.id, { scale: drag.currentScale });
+    stageDragRef.current = null;
+    setDragPreview(null);
+  };
+
   const addEffect = () => {
     if (selectedLayer) onSetTool('Effects');
     else onNotify('Select a layer first');
@@ -1493,27 +2127,32 @@ function EditorScreen({
     <div className="editor-screen">
       <header className="editor-header">
         <button className="editor-back" onClick={onBack} aria-label="Back to projects"><ArrowLeft size={21} /></button>
-        <button className="editor-project-name" onClick={onRename}><span className="eyebrow">EDITING</span><strong>{project.name}</strong><Pencil size={13} /></button>
-        <div className="editor-header-actions"><button className="editor-head-tool" onClick={() => onNotify('Project settings are available from the canvas panel')} aria-label="Project settings"><Settings size={20} /></button><button className="editor-export-button" onClick={onExport}><ArrowDownToLine size={17} /><span>Export</span></button><button className="editor-more" onClick={() => onNotify('Saved locally')} aria-label="More options"><Ellipsis size={20} /></button></div>
+        <button className="editor-project-name" onClick={onProjectSettings}><span className="eyebrow">EDITING</span><strong>{project.name}</strong><Pencil size={13} /></button>
+        <div className="editor-header-actions"><button className="editor-head-tool" onClick={onProjectSettings} aria-label="Project settings"><Settings size={20} /></button><button className="editor-export-button" onClick={onExport}><ArrowDownToLine size={17} /><span>Export</span></button><button className="editor-more" onClick={() => onNotify('Saved locally')} aria-label="More options"><Ellipsis size={20} /></button></div>
       </header>
 
       <div className="editor-workspace">
         <section className="preview-column">
           <div className="stage-toolbar"><div className="stage-pill"><span className="live-dot" /> Preview <span className="stage-divider" /> {project.resolution} · {project.fps} fps</div><button className="zoom-chip" onClick={() => onZoom(canvasZoom >= 150 ? 75 : canvasZoom + 25)}><Maximize2 size={14} /> {canvasZoom}% <ChevronDown size={13} /></button></div>
           <div className="preview-stage-wrap">
-            <div className="composition-stage" style={{ ...stageStyle, transform: `scale(${Math.min(canvasZoom, 125) / 100})` }}>
+            <div ref={stageRef} className="composition-stage" style={{ ...stageStyle, transform: `scale(${Math.min(canvasZoom, 125) / 100})` }}>
               <div className="composition-grid" />
               {stageLayers.map((layer) => {
-                const animated = getLayerTransformAt(layer, time);
+                const baseAnimated = getLayerTransformAt(layer, time);
+                const animated = dragPreview?.id === layer.id ? { ...baseAnimated, x: dragPreview.x, y: dragPreview.y, scale: dragPreview.scale } : baseAnimated;
                 const layerStyle: CSSProperties = { left: `${animated.x}%`, top: `${animated.y}%`, transform: `translate(-50%, -50%) rotate(${animated.rotation}deg) scale(${animated.scale / 100})`, opacity: animated.opacity / 100 };
                 if ((layer.kind === 'image' || layer.kind === 'video') && layer.src) {
-                  return <div className={`stage-media-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={layerStyle} key={layer.id} onClick={() => onSelectLayer(layer.id)}>
-                    {layer.kind === 'video' ? <video ref={layer.id === activeVideo?.id ? videoRef : undefined} src={layer.src} muted={!isPlaying} playsInline loop className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects) }} /> : <img src={layer.src} alt={layer.name} className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects) }} />}
+                  return <div className={`stage-media-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={layerStyle} key={layer.id} onClick={() => onSelectLayer(layer.id)} onPointerDown={(event) => beginStageDrag(event, layer, animated)} onPointerMove={moveStageDrag} onPointerUp={finishStageDrag} onPointerCancel={finishStageDrag}>
+                    {layer.kind === 'video' ? <video ref={layer.id === activeVideo?.id ? videoRef : undefined} src={layer.src} muted={!isPlaying} playsInline loop className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects, layer.effectStrengths) }} /> : <img src={layer.src} alt={layer.name} className="stage-media-content" style={{ filter: cssFilterForEffects(layer.effects, layer.effectStrengths) }} />}
                     {selectedLayerId === layer.id && <SelectionHandles />}
                   </div>;
                 }
-                if (layer.kind === 'text') return <div className={`stage-text-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={{ ...layerStyle, color: layer.color }} key={layer.id} onClick={() => onSelectLayer(layer.id)}>{layer.text}{selectedLayerId === layer.id && <SelectionHandles />}</div>;
-                if (layer.kind === 'shape') return <div className={`stage-shape-layer shape-${(layer.shape ?? 'shape').toLowerCase().replace(/[^a-z]+/g, '-')} ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={{ ...layerStyle, background: layer.color }} key={layer.id} onClick={() => onSelectLayer(layer.id)}>{selectedLayerId === layer.id && <SelectionHandles />}</div>;
+                if (layer.kind === 'text') return <div className={`stage-text-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={{ ...layerStyle, color: layer.color }} key={layer.id} onClick={() => onSelectLayer(layer.id)} onPointerDown={(event) => beginStageDrag(event, layer, animated)} onPointerMove={moveStageDrag} onPointerUp={finishStageDrag} onPointerCancel={finishStageDrag}>{layer.text}{selectedLayerId === layer.id && <SelectionHandles />}</div>;
+                if (layer.kind === 'shape') return <div className={`stage-shape-layer shape-${(layer.shape ?? 'shape').toLowerCase().replace(/[^a-z]+/g, '-')} ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={{ ...layerStyle, background: layer.shape === 'Ring' ? 'transparent' : layer.color, border: layer.shape === 'Ring' ? `${Math.max(2, Math.round(Math.min(project.width, project.height) * .012))}px solid ${layer.color}` : undefined }} key={layer.id} onClick={() => onSelectLayer(layer.id)} onPointerDown={(event) => beginStageDrag(event, layer, animated)} onPointerMove={moveStageDrag} onPointerUp={finishStageDrag} onPointerCancel={finishStageDrag}>{selectedLayerId === layer.id && <SelectionHandles />}</div>;
+                if (layer.kind === 'drawing' && layer.drawPoints?.length) {
+                  const path = layer.drawPoints.map((point, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${point.x * project.width / 100} ${point.y * project.height / 100}`).join(' ');
+                  return <div className={`stage-drawing-layer ${selectedLayerId === layer.id ? 'selected-layer' : ''}`} style={{ ...layerStyle, width: '100%', height: '100%' }} key={layer.id} onClick={() => onSelectLayer(layer.id)} onPointerDown={(event) => beginStageDrag(event, layer, animated)} onPointerMove={moveStageDrag} onPointerUp={finishStageDrag} onPointerCancel={finishStageDrag}><svg viewBox={`0 0 ${project.width} ${project.height}`} preserveAspectRatio="none"><path d={path} fill="none" stroke={layer.color} strokeWidth={layer.brushSize ?? 8} strokeLinecap="round" strokeLinejoin="round" /></svg>{selectedLayerId === layer.id && <SelectionHandles />}</div>;
+                }
                 return null;
               })}
               {!visibleLayers.some((layer) => layer.kind !== 'audio' && layer.kind !== 'null') && <div className="stage-empty"><div className="stage-empty-mark"><span /><span /><span /></div><strong>Your canvas, your rules.</strong><small>Add media, a title or a shape to get started.</small><button onClick={onAdd}><Plus size={17} /> Add your first layer</button></div>}
@@ -1529,24 +2168,24 @@ function EditorScreen({
             <div className="transport-main"><button aria-label="Go to start" onClick={() => onSeek(0)}><ChevronLeft size={21} /><span className="transport-bar" /></button><button className="play-button" aria-label={isPlaying ? 'Pause' : 'Play'} onClick={onPlay}>{isPlaying ? <Pause size={19} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><button aria-label="Go to end" onClick={() => onSeek(project.duration)}><ChevronRight size={21} /><span className="transport-bar" /></button></div>
             <div className="transport-actions"><button aria-label="Duplicate layer" onClick={() => { if (selectedLayer) onDuplicateLayer(selectedLayer); else onNotify('Select a layer to duplicate'); }}><Copy size={18} /></button><button aria-label="Fit preview" onClick={() => onZoom(100)}><Maximize2 size={18} /></button></div>
           </div>
-          <div className="timeline-readout"><span className="timecode">{fmtTime(time)}</span><span className="timeline-duration">{fmtTime(project.duration)}</span></div>
-          <div className="timeline-ruler"><div className="ruler-labels"><span>00:00</span><span>{fmtTime(project.duration / 2).slice(0, 5)}</span><span>{fmtTime(project.duration).slice(0, 5)}</span></div><div className="ruler-ticks" /></div>
+          <div className="timeline-readout"><span className="timecode">{fmtTime(time, project.fps)}</span><span className="timeline-duration">{fmtTime(project.duration, project.fps)}</span></div>
+          <div className="timeline-ruler"><div className="ruler-labels"><span>00:00</span><span>{fmtTime(project.duration / 2, project.fps).slice(0, 5)}</span><span>{fmtTime(project.duration, project.fps).slice(0, 5)}</span></div><div className="ruler-ticks" /></div>
           <div className="timeline-area">
-            <div className="timeline-head-row"><div className="timeline-mode-tabs"><button className={activeWorkspaceTab === 'timeline' ? 'selected' : ''} onClick={() => setActiveWorkspaceTab('timeline')}>Timeline</button><button className={activeWorkspaceTab === 'layers' ? 'selected' : ''} onClick={() => setActiveWorkspaceTab('layers')}>Layers <span>{layers.length}</span></button></div><button className="timeline-add" onClick={onAdd}><Plus size={17} /></button></div>
+            <div className="timeline-head-row"><div className="timeline-mode-tabs"><button className={activeWorkspaceTab === 'timeline' ? 'selected' : ''} onClick={() => setActiveWorkspaceTab('timeline')}>Timeline</button><button className={activeWorkspaceTab === 'layers' ? 'selected' : ''} onClick={() => setActiveWorkspaceTab('layers')}>Layers <span>{layers.length}</span></button></div><div className="timeline-head-actions">{selectedLayer?.kind === 'group' ? <button className="group-action" onClick={() => onUngroup(selectedLayer.id)}>Ungroup</button> : selectedLayerIds.length > 1 && <button className="group-action" onClick={onGroup}><Layers size={13} /> Group</button>}<button className="timeline-add" onClick={onAdd}><Plus size={17} /></button></div></div>
             {layers.length ? (
               <div className="track-list">
                 {layers.map((layer, index) => (
-                  <div className={`track-row ${selectedLayerId === layer.id ? 'track-selected' : ''}`} key={layer.id} onClick={() => onSelectLayer(layer.id)}>
-                    <div className="track-controls"><button className="track-eye" onClick={(event) => { event.stopPropagation(); onUpdateLayer(layer.id, { visible: !layer.visible }); }} aria-label={layer.visible ? 'Hide layer' : 'Show layer'}>{layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}</button><span className="track-swatch" style={{ background: layer.color }}>{layer.kind === 'video' ? <Video size={12} /> : layer.kind === 'audio' ? <Music2 size={12} /> : layer.kind === 'text' ? <Type size={12} /> : layer.kind === 'image' ? <ImageIcon size={12} /> : null}</span></div>
+                  <div className={`track-row ${layer.kind === 'group' ? 'track-group-row' : ''} ${layer.groupId ? 'track-child-row' : ''} ${selectedLayerIds.includes(layer.id) ? 'track-selected' : ''}`} key={layer.id} onClick={(event) => onSelectLayer(layer.id, event.shiftKey)}>
+                    <div className="track-controls"><button className="track-eye" onClick={(event) => { event.stopPropagation(); onUpdateLayer(layer.id, { visible: !layer.visible }); }} aria-label={layer.visible ? 'Hide layer' : 'Show layer'}>{layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}</button><span className="track-swatch" style={{ background: layer.color }}>{layer.kind === 'video' ? <Video size={12} /> : layer.kind === 'audio' ? <Music2 size={12} /> : layer.kind === 'text' ? <Type size={12} /> : layer.kind === 'image' ? <ImageIcon size={12} /> : layer.kind === 'drawing' ? <Pencil size={12} /> : layer.kind === 'group' ? <Layers size={12} /> : null}</span></div>
                     <div className={`track-clip clip-${index % 4}`} style={{ marginLeft: `${Math.min(75, layer.start / Math.max(project.duration, 1) * 100)}%`, width: `${Math.min(100, Math.max(12, layer.duration / Math.max(project.duration, 1) * 100))}%` }}>
-                      {layer.src && layer.kind !== 'audio' && <span className="clip-thumbnail" style={{ backgroundImage: `url(${layer.src})` }} />}
-                      {layer.kind === 'audio' && <span className="waveform"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></span>}
+                      {layer.src && layer.kind !== 'audio' && <span className="clip-thumbnail" style={{ backgroundImage: `url(${layer.src})` }} />}{layer.externalPath && <span className="missing-media-chip" title={`Relink media: ${layer.externalPath}`}><Link2 size={11} /></span>}
+                      {layer.kind === 'audio' && <span className="waveform">{(layer.waveform?.length ? layer.waveform : [0.18,.34,.72,.4,.85,.48,.62,.26,.94,.39,.7,.25,.8,.48,.32,.72,.42,.9,.36,.62,.2,.74,.48,.82]).map((value, waveIndex) => <i key={waveIndex} style={{ height: `${Math.max(8, value * 100)}%` }} />)}</span>}
                       {layer.keyframes?.map((frame, frameIndex) => <span className="keyframe-diamond" key={`${layer.id}-key-${frameIndex}`} style={{ left: `${Math.max(0, Math.min(100, (frame.time - layer.start) / Math.max(layer.duration, .01) * 100))}%` }} />)}
                       <span className="clip-name">{layer.name}</span>
                       {layer.effects.length > 0 && <span className="clip-effects"><Sparkles size={11} />{layer.effects.length}</span>}
                     </div>
                     <button className="track-more" onClick={(event) => { event.stopPropagation(); onSetContext(contextLayerId === layer.id ? null : layer.id); }} aria-label="Layer actions"><Ellipsis size={17} /></button>
-                    {contextLayerId === layer.id && <div className="track-menu"><button onClick={(event) => { event.stopPropagation(); onSelectLayer(layer.id); onSetContext(null); onRename(); }}><Pencil size={14} /> Rename layer</button><button onClick={(event) => { event.stopPropagation(); onSaveElement(layer); onSetContext(null); }}><Layers size={14} /> Save as element</button><button onClick={(event) => { event.stopPropagation(); onDuplicateLayer(layer); onSetContext(null); }}><Copy size={14} /> Duplicate</button><button onClick={(event) => { event.stopPropagation(); onDeleteLayer(layer.id); }}><Trash2 size={14} /> Delete layer</button></div>}
+                    {contextLayerId === layer.id && <div className="track-menu">{layer.externalPath && <button onClick={(event) => { event.stopPropagation(); onRelink(layer.id); }}><Link2 size={14} /> Relink media</button>}{layer.kind === 'group' && <button onClick={(event) => { event.stopPropagation(); onUngroup(layer.id); onSetContext(null); }}><Layers size={14} /> Ungroup layers</button>}<button onClick={(event) => { event.stopPropagation(); onSelectLayer(layer.id); onSetContext(null); onRename(); }}><Pencil size={14} /> Rename layer</button><button onClick={(event) => { event.stopPropagation(); onSaveElement(layer); onSetContext(null); }}><Layers size={14} /> Save as element</button><button onClick={(event) => { event.stopPropagation(); onMoveLayer(layer.id, 'up'); onSetContext(null); }} disabled={index === layers.length - 1}><ArrowUp size={14} /> Move forward</button><button onClick={(event) => { event.stopPropagation(); onMoveLayer(layer.id, 'down'); onSetContext(null); }} disabled={index === 0}><ArrowDown size={14} /> Move backward</button><button onClick={(event) => { event.stopPropagation(); onDuplicateLayer(layer); onSetContext(null); }}><Copy size={14} /> Duplicate</button><button onClick={(event) => { event.stopPropagation(); onDeleteLayer(layer.id); }}><Trash2 size={14} /> Delete layer</button></div>}
                   </div>
                 ))}
                 <div className="playhead-line" style={{ left: `calc(${Math.min(1, time / Math.max(project.duration, 0.01)) * 100}% + ${120 * (1 - Math.min(1, time / Math.max(project.duration, 0.01)))}px)` }}><span /></div>
@@ -1569,14 +2208,14 @@ function EditorScreen({
           {editorTool && (
             <div className="inspector-panel">
               <div className="inspector-header"><div><span className="eyebrow">{selectedLayer?.name ?? 'PROJECT'}</span><strong>{editorTool}</strong></div><button className="icon-button" onClick={() => onSetTool(editorTool)} aria-label="Close panel"><X size={18} /></button></div>
-              {editorTool === 'Move & Transform' && selectedLayer ? <>
+              {selectedLayer?.kind === 'group' ? <div className="group-inspector"><Layers size={20} /><strong>{layers.filter((layer) => layer.groupId === selectedLayer.id).length} layers in this group</strong><small>Shift-select additional timeline layers, then use Group to add them. Groups organize the stack; child layers remain independently editable.</small><button className="secondary-button" onClick={() => onUngroup(selectedLayer.id)}>Ungroup layers</button></div> : editorTool === 'Move & Transform' && selectedLayer ? <>
                 {(() => {
                   const frameAtPlayhead = selectedLayer.keyframes?.find((frame) => Math.abs(frame.time - time) < .04);
                   return <div className="keyframe-controls"><button className={frameAtPlayhead ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onKeyframe(selectedLayer)}><Plus size={14} /> {frameAtPlayhead ? 'Remove keyframe' : 'Add keyframe'}</button><span>{selectedLayer.keyframes?.length ?? 0} keyframes</span>{Boolean(selectedLayer.keyframes?.length) && <><select aria-label="Keyframe easing" value={frameAtPlayhead?.easing ?? 'easeInOut'} disabled={!frameAtPlayhead} onChange={(event) => onSetEasing(selectedLayer, event.target.value as EasingPreset)}><option value="linear">Linear</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="easeInOut">Ease in-out</option></select>{frameAtPlayhead && <svg className={`easing-mini-graph easing-${frameAtPlayhead.easing}`} viewBox="0 0 80 42" aria-label="Easing curve"><path d={frameAtPlayhead.easing === 'linear' ? 'M5 37 L75 5' : frameAtPlayhead.easing === 'easeIn' ? 'M5 37 C52 37 67 24 75 5' : frameAtPlayhead.easing === 'easeOut' ? 'M5 37 C13 18 28 5 75 5' : 'M5 37 C30 37 28 5 75 5'} /></svg>}</>}</div>;
                 })()}
                 <div className="transform-readouts"><label>X <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).x * 10)} onChange={(event) => onUpdateLayer(selectedLayer.id, { x: Number(event.target.value) / 10 })} /></label><label>Y <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).y * 10)} onChange={(event) => onUpdateLayer(selectedLayer.id, { y: Number(event.target.value) / 10 })} /></label><label>Scale <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).scale)} onChange={(event) => onUpdateLayer(selectedLayer.id, { scale: Number(event.target.value) })} /></label></div>
                 <label className="range-setting">Rotation <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotation)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotation: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotation)}°</span></label>
-              </> : editorTool === 'Speed' && selectedLayer ? <label className="range-setting">Playback speed <input type="range" min={25} max={400} value={Math.round((selectedLayer.speed ?? 1) * 100)} onChange={(event) => onUpdateLayer(selectedLayer.id, { speed: Number(event.target.value) / 100 })} /><span>{(selectedLayer.speed ?? 1).toFixed(2)}×</span></label> : editorTool === 'Trim start' && selectedLayer ? <div className="trim-controls"><p>Clip range · {fmtTime(selectedLayer.start)} – {fmtTime(selectedLayer.start + selectedLayer.duration)}</p><label className="range-setting">Start <input type="range" min={0} max={Math.max(0, project.duration - selectedLayer.duration)} step={.01} value={selectedLayer.start} onChange={(event) => onUpdateLayer(selectedLayer.id, { start: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.start)}</span></label><label className="range-setting">Length <input type="range" min={.1} max={Math.max(.1, project.duration - selectedLayer.start)} step={.01} value={Math.min(selectedLayer.duration, project.duration - selectedLayer.start)} onChange={(event) => onUpdateLayer(selectedLayer.id, { duration: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.duration)}</span></label></div> : editorTool === 'Volume' && selectedLayer ? <>{selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? <label className="range-setting">Volume <input type="range" min={0} max={100} value={selectedLayer.volume ?? 100} onChange={(event) => onUpdateLayer(selectedLayer.id, { volume: Number(event.target.value) })} /><span>{selectedLayer.volume ?? 100}%</span></label> : <div className="inspector-empty"><Info size={17} /> Volume is available on audio and video layers.</div>}</> : editorTool === 'Color & Fill' && selectedLayer ? <div className="inspector-swatches">{colorSwatches.map((color) => <button key={color} className={selectedLayer.color === color ? 'swatch-selected' : ''} style={{ background: color }} onClick={() => onUpdateLayer(selectedLayer.id, { color })} aria-label={`Set color ${color}`} />)}<label className="color-custom"><Pencil size={15} /><input type="color" value={selectedLayer.color} onChange={(event) => onUpdateLayer(selectedLayer.id, { color: event.target.value })} /></label></div> : editorTool === 'Effects' ? <div className="effect-inspector-list">{selectedLayer?.effects.length ? selectedLayer.effects.map((effect, index) => <div key={`${effect}-${index}`}><Sparkles size={15} /><span>{effect}</span><button onClick={() => selectedLayer && onUpdateLayer(selectedLayer.id, { effects: selectedLayer.effects.filter((_, itemIndex) => itemIndex !== index) })}><X size={15} /></button></div>) : <p>No effects yet. Browse the library to add a look.</p>}<button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Browse effects</button></div> : selectedLayer ? <>
+              </> : editorTool === 'Speed' && selectedLayer ? <label className="range-setting">Playback speed <input type="range" min={25} max={400} value={Math.round((selectedLayer.speed ?? 1) * 100)} onChange={(event) => onUpdateLayer(selectedLayer.id, { speed: Number(event.target.value) / 100 })} /><span>{(selectedLayer.speed ?? 1).toFixed(2)}×</span></label> : editorTool === 'Trim start' && selectedLayer ? <div className="trim-controls"><p>Clip range · {fmtTime(selectedLayer.start, project.fps)} – {fmtTime(selectedLayer.start + selectedLayer.duration, project.fps)}</p><label className="range-setting">Position <input type="range" min={0} max={Math.max(0, project.duration - selectedLayer.duration)} step={.01} value={Math.min(selectedLayer.start, Math.max(0, project.duration - selectedLayer.duration))} onChange={(event) => onUpdateLayer(selectedLayer.id, { start: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.start, project.fps)}</span></label>{selectedLayer.sourceDuration && (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video') && <label className="range-setting">Source in <input type="range" min={0} max={Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1))} step={.01} value={Math.min(selectedLayer.sourceOffset ?? 0, Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1)))} onChange={(event) => onUpdateLayer(selectedLayer.id, { sourceOffset: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.sourceOffset ?? 0, project.fps)}</span></label>}<label className="range-setting">Length <input type="range" min={.1} max={Math.max(.1, Math.min(project.duration - selectedLayer.start, selectedLayer.sourceDuration ? (selectedLayer.sourceDuration - (selectedLayer.sourceOffset ?? 0)) / Math.max(.25, selectedLayer.speed ?? 1) : project.duration - selectedLayer.start))} step={.01} value={Math.min(selectedLayer.duration, project.duration - selectedLayer.start)} onChange={(event) => onUpdateLayer(selectedLayer.id, { duration: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.duration, project.fps)}</span></label></div> : editorTool === 'Volume' && selectedLayer ? <>{selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? <label className="range-setting">Volume <input type="range" min={0} max={100} value={selectedLayer.volume ?? 100} onChange={(event) => onUpdateLayer(selectedLayer.id, { volume: Number(event.target.value) })} /><span>{selectedLayer.volume ?? 100}%</span></label> : <div className="inspector-empty"><Info size={17} /> Volume is available on audio and video layers.</div>}</> : editorTool === 'Color & Fill' && selectedLayer ? <div className="inspector-swatches">{colorSwatches.map((color) => <button key={color} className={selectedLayer.color === color ? 'swatch-selected' : ''} style={{ background: color }} onClick={() => onUpdateLayer(selectedLayer.id, { color })} aria-label={`Set color ${color}`} />)}<label className="color-custom"><Pencil size={15} /><input type="color" value={selectedLayer.color} onChange={(event) => onUpdateLayer(selectedLayer.id, { color: event.target.value })} /></label></div> : editorTool === 'Effects' ? <div className="effect-inspector-list">{selectedLayer?.effects.length ? selectedLayer.effects.map((effect, index) => <div className="effect-control" key={`${effect}-${index}`}><div className="effect-control-heading"><Sparkles size={15} /><span>{effect}</span><button onClick={() => selectedLayer && onUpdateLayer(selectedLayer.id, { effects: selectedLayer.effects.filter((_, itemIndex) => itemIndex !== index) })} aria-label={`Remove ${effect}`}><X size={15} /></button></div><label className="effect-strength"><input type="range" min={0} max={100} value={selectedLayer.effectStrengths?.[effect] ?? 75} onChange={(event) => selectedLayer && onUpdateLayer(selectedLayer.id, { effectStrengths: { ...selectedLayer.effectStrengths, [effect]: Number(event.target.value) } })} /><span>{selectedLayer.effectStrengths?.[effect] ?? 75}%</span></label></div>) : <p>No effects yet. Browse the library to add a look.</p>}<button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Browse effects</button></div> : selectedLayer ? <>
                 <label className="range-setting">Opacity <input type="range" min={0} max={100} value={Math.round(getLayerTransformAt(selectedLayer, time).opacity)} onChange={(event) => onUpdateLayer(selectedLayer.id, { opacity: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).opacity)}%</span></label>
                 <label className="range-setting">Intensity <input type="range" min={0} max={100} value={panelSlider} onChange={(event) => onPanelSlider(Number(event.target.value))} /><span>{panelSlider}%</span></label>
                 <button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Add effect</button>
@@ -1592,5 +2231,5 @@ function EditorScreen({
 }
 
 function SelectionHandles() {
-  return <span className="selection-handles" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /></span>;
+  return <span className="selection-handles" aria-hidden="true"><i data-resize-handle /><i /><i data-resize-handle /><i /><i data-resize-handle /><i /><i data-resize-handle /><i /></span>;
 }

@@ -1,20 +1,21 @@
 # EditorsHub Motion Studio
 
-EditorsHub is a mobile-first motion-design workspace built with React, Vite and Capacitor. It uses an original EditorsHub identity and an original implementation inspired by the supplied mobile-editor references.
+EditorsHub is a mobile-first motion-design and video-editing workspace built with React, Vite and Capacitor. It uses an original EditorsHub identity and an original implementation inspired by the supplied mobile-editor references.
 
-## Working preview features
+## Current feature set
 
-- Home, project/template/element library, and responsive composition editor
-- Project setup with aspect ratio, resolution, frame rate, and background controls
-- Local image, video, and audio layer import; limited XML title/metadata import; `.ehproj` package import/export
-- Layered timeline with visibility, playhead scrubbing, video/audio preview, split, trim, playback speed, and volume controls
-- Text and shape layers; transform, color, opacity, duplicate, rename, and delete controls
-- Transform keyframes with linear, ease-in, ease-out, and ease-in-out interpolation
-- Searchable effect library and CSS-filter-based preview/render effects
-- PNG frame export and on-device WebM render with progress, preview, and download
+- Home, project/template/element libraries, search, sorting, duplicate/delete, and responsive editor
+- Composition setup and in-editor settings: project name, aspect ratio, dimensions, background, frame rate, and duration
+- Local image/video/audio import stored in IndexedDB, with project metadata saved locally
+- Portable `.ehproj` packages that embed local media; XML import with best-effort project/layer parsing and a relink workflow for unavailable source files
+- Multi-layer timeline with visibility, z-order controls, modifier-key multi-select, organizational groups, playhead scrubbing, playback, actual audio waveforms, split, trim/source-in, speed, and volume controls
+- Stage manipulation by touch/mouse/stylus: select, drag, and resize layers; transform keyframes with linear/ease-in/ease-out/ease-in-out interpolation
+- Text, vector shapes, freehand drawing, and vector-path drawing layers
+- Searchable effect browser with per-effect strength and CSS-filter-based preview/rendering
+- PNG frame export and on-device video rendering with progress, preview, download, and quality/format preferences (MP4 when supported; WebM fallback)
 - Capacitor Android app ID: `com.editorshub.mr.arfat`
 
-This is a functional first-pass prototype, not a feature-complete replacement for Ultra Motion, Gold Motion, or After Motion Z. There is no native multi-track compositor or MP4/H.264 export; advanced keyframe property animation, full third-party XML compatibility, and persistent storage of imported media still need work. Video rendering depends on browser/WebView support for canvas capture and `MediaRecorder`.
+This is a substantial functional prototype, not complete feature parity with commercial motion editors. The renderer is browser/WebView-based, so MP4 availability and export performance depend on the Android WebView's `MediaRecorder` support. Proprietary project XML formats are parsed on a best-effort basis; unsupported constructs and unavailable media need manual review/relinking. Cloud sync, cross-device asset sharing, nested groups/parent rigs, and a native hardware-accelerated compositor are not included.
 
 ## Run the web preview
 
