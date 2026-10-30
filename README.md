@@ -4,6 +4,7 @@ EditorsHub is a mobile-first motion-design and video-editing workspace built wit
 
 ## Current feature set
 
+- Liquid Glass interface: translucent aurora-tinted surfaces, specular edges, adaptive reduced-transparency fallback, and mobile-friendly frosted navigation
 - Home, project/template/element libraries, search, sorting, duplicate/delete, and responsive editor
 - Composition setup and in-editor settings: project name, aspect ratio, dimensions, background, frame rate, and duration
 - Local image/video/audio import stored in IndexedDB, with project metadata saved locally
