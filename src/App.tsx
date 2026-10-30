@@ -63,6 +63,8 @@ import sampleCityUrl from './assets/images/sample_cyber_cityscape_1793170789915.
 import sampleAnimeUrl from './assets/images/sample_anime_mecha_1793170789185.jpg';
 import { blobToDataUrl, buildAudioWaveform, dataUrlToBlob, getMediaAsset, inspectMediaDuration, saveMediaAsset } from './mediaStore';
 import { createPrimitiveMesh, drawMesh3D, parseObjMesh, type Mesh3D } from './mesh3d';
+import { runEsrganUpscale } from './aiUpscaler';
+import { estimateBlockFlow, extrapolateMotionFrame, fingerprintFrame, flowToImageData, MotionWarpRenderer, type BlockFlow } from './opticalFlow';
 
 type ProjectKind = 'project' | 'template' | 'element';
 type Screen = 'home' | 'library' | 'editor';
@@ -634,7 +636,70 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
 
   const duration = Math.max(0.5, project.duration);
   const restoredImages = new Map<string, CanvasImageSource>();
-  const previousVideoFrames = new Map<string, HTMLCanvasElement>();
+  type FlowFrameState = { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D; fullCanvas: HTMLCanvasElement; fullContext: CanvasRenderingContext2D; flowMapCanvas: HTMLCanvasElement; flowMapContext: CanvasRenderingContext2D; current: ImageData | null; previous: ImageData | null; currentTime: number; previousTime: number; fingerprint: number; flow: BlockFlow | null; textureKey: string };
+  const opticalFlowStates = new Map<string, FlowFrameState>();
+  let motionWarpRenderer: MotionWarpRenderer | null = null;
+  let motionWarpAttempted = false;
+  const getMotionCompensatedFrame = (layer: EditorLayer, video: HTMLVideoElement, timelineTime: number) => {
+    if (getLayerSpeedAt(layer, timelineTime) >= .98) return video;
+    let state = opticalFlowStates.get(layer.id);
+    if (!state) {
+      const analysisScale = Math.min(1, 256 / Math.max(video.videoWidth, video.videoHeight, 1));
+      const width = Math.max(8, Math.round(video.videoWidth * analysisScale));
+      const height = Math.max(8, Math.round(video.videoHeight * analysisScale));
+      const flowCanvas = document.createElement('canvas'); flowCanvas.width = width; flowCanvas.height = height;
+      const flowContext = flowCanvas.getContext('2d', { willReadFrequently: true });
+      const fullCanvas = document.createElement('canvas'); fullCanvas.width = canvas.width; fullCanvas.height = canvas.height;
+      const fullContext = fullCanvas.getContext('2d');
+      const flowMapCanvas = document.createElement('canvas');
+      const flowMapContext = flowMapCanvas.getContext('2d', { willReadFrequently: true });
+      if (!flowContext || !fullContext || !flowMapContext) return video;
+      state = { canvas: flowCanvas, context: flowContext, fullCanvas, fullContext, flowMapCanvas, flowMapContext, current: null, previous: null, currentTime: 0, previousTime: 0, fingerprint: -1, flow: null, textureKey: '' };
+      opticalFlowStates.set(layer.id, state);
+    }
+    const localTime = getLayerSourceTime(layer, timelineTime);
+    const sourceTime = Number.isFinite(video.duration) && video.duration > 0 ? localTime % video.duration : localTime;
+    try {
+      if (state.current && sourceTime + .02 < state.currentTime) { state.current = null; state.previous = null; state.flow = null; state.fingerprint = -1; }
+      state.context.drawImage(video, 0, 0, state.canvas.width, state.canvas.height);
+      const frame = state.context.getImageData(0, 0, state.canvas.width, state.canvas.height);
+      const fingerprint = fingerprintFrame(frame);
+      if (fingerprint !== state.fingerprint) {
+        if (state.current && sourceTime > state.currentTime && sourceTime - state.currentTime < 1) {
+          state.previous = state.current; state.previousTime = state.currentTime;
+          state.current = frame; state.currentTime = sourceTime;
+          state.flow = estimateBlockFlow(state.previous, frame, 8, 4);
+        } else {
+          state.previous = null; state.current = frame; state.currentTime = sourceTime; state.previousTime = sourceTime; state.flow = null;
+        }
+        state.fingerprint = fingerprint;
+        state.fullContext.drawImage(video, 0, 0, state.fullCanvas.width, state.fullCanvas.height);
+        if (state.flow) {
+          state.flowMapCanvas.width = state.flow.columns; state.flowMapCanvas.height = state.flow.rows;
+          state.flowMapContext = state.flowMapCanvas.getContext('2d', { willReadFrequently: true })!;
+          state.flowMapContext.putImageData(flowToImageData(state.flow), 0, 0);
+          state.textureKey = `${layer.id}:${fingerprint}:${state.currentTime}`;
+        }
+      }
+      const interval = state.currentTime - state.previousTime;
+      const amount = interval > 0 ? (sourceTime - state.currentTime) / interval : 0;
+      if (state.current && state.flow && getLayerSpeedAt(layer, timelineTime) < .98 && amount > .015 && amount <= 1.15) {
+        if (!motionWarpAttempted) {
+          motionWarpAttempted = true;
+          try { motionWarpRenderer = new MotionWarpRenderer(canvas.width, canvas.height); } catch { motionWarpRenderer = null; }
+        }
+        if (motionWarpRenderer) {
+          try { return motionWarpRenderer.render(state.fullCanvas, state.flowMapCanvas, state.canvas.width, state.canvas.height, amount, state.textureKey); }
+          catch { motionWarpRenderer = null; }
+        }
+        state.context.putImageData(extrapolateMotionFrame(state.current, state.flow, amount), 0, 0);
+        return state.canvas;
+      }
+    } catch {
+      // Cross-origin or unsupported frame readback falls back to the decoded video frame.
+    }
+    return video;
+  };
   const drawFrame = (time: number) => {
     context.fillStyle = project.background;
     context.fillRect(0, 0, canvas.width, canvas.height);
@@ -662,13 +727,7 @@ async function renderCompositionVideo(project: Project, layers: EditorLayer[], o
         const drawX = -canvas.width * animated.scale / 200; const drawY = -canvas.height * animated.scale / 200;
         const drawWidth = canvas.width * animated.scale / 100; const drawHeight = canvas.height * animated.scale / 100;
         if (layer.kind === 'video' && layer.frameBlend && resource instanceof HTMLVideoElement) {
-          const previous = previousVideoFrames.get(layer.id);
-          if (previous) { context.save(); context.globalAlpha *= .28; context.drawImage(previous, drawX, drawY, drawWidth, drawHeight); context.restore(); }
-          context.drawImage(resource, drawX, drawY, drawWidth, drawHeight);
-          let buffer = previous;
-          if (!buffer) { buffer = document.createElement('canvas'); buffer.width = Math.min(1024, canvas.width); buffer.height = Math.min(1024, canvas.height); previousVideoFrames.set(layer.id, buffer); }
-          const bufferContext = buffer.getContext('2d');
-          if (bufferContext) bufferContext.drawImage(resource, 0, 0, buffer.width, buffer.height);
+          context.drawImage(getMotionCompensatedFrame(layer, resource, time), drawX, drawY, drawWidth, drawHeight);
         } else context.drawImage(drawable, drawX, drawY, drawWidth, drawHeight);
       } else if (layer.kind === 'text' && layer.text) {
         context.scale(animated.scale / 100, animated.scale / 100);
@@ -812,6 +871,9 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'Date' | 'Name' | 'Duration'>('Date');
   const [toast, setToast] = useState('');
   const [showLowQuality, setShowLowQuality] = useState(false);
+  const [aiUpscaleBusy, setAiUpscaleBusy] = useState(false);
+  const [aiUpscaleProgress, setAiUpscaleProgress] = useState<number | null>(null);
+  const [aiUpscaleStatus, setAiUpscaleStatus] = useState('');
   const [showOffTimeline, setShowOffTimeline] = useState(true);
   const [rememberAddPage, setRememberAddPage] = useState(false);
   const [audioResampling, setAudioResampling] = useState('Ultra');
@@ -826,7 +888,12 @@ export default function App() {
   const [customRatio, setCustomRatio] = useState('3:2');
 
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const currentProjectRef = useRef<Project | null>(null);
+  const screenRef = useRef<Screen>('home');
   const [layers, setLayers] = useState<EditorLayer[]>([]);
+  const layersRef = useRef<EditorLayer[]>([]);
+  useEffect(() => { currentProjectRef.current = currentProject; }, [currentProject]);
+  useEffect(() => { screenRef.current = screen; }, [screen]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [selectedLayerIds, setSelectedLayerIds] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -1003,10 +1070,13 @@ export default function App() {
   };
 
   const openEditor = (project: Project) => {
+    screenRef.current = 'editor';
+    currentProjectRef.current = project;
     const projectLayers = project.layers?.map((layer) => ({ ...layer })) ?? [];
     setCurrentProject(project);
     setUndoStack([]);
     setRedoStack([]);
+    layersRef.current = projectLayers;
     setLayers(projectLayers);
     setSelectedLayerId(projectLayers[0]?.id ?? null);
     setSelectedLayerIds(projectLayers[0]?.id ? [projectLayers[0].id] : []);
@@ -1018,8 +1088,10 @@ export default function App() {
   };
 
   const commitLayerList = (nextLayers: EditorLayer[]) => {
-    setUndoStack((stack) => [...stack, layers].slice(-40));
+    const previousLayers = layersRef.current;
+    setUndoStack((stack) => [...stack, previousLayers].slice(-40));
     setRedoStack([]);
+    layersRef.current = nextLayers;
     setLayers(nextLayers);
   };
 
@@ -1050,6 +1122,7 @@ export default function App() {
     if (!previous) { notify('Nothing to undo'); return; }
     setRedoStack((stack) => [...stack, layers]);
     setUndoStack((stack) => stack.slice(0, -1));
+    layersRef.current = previous;
     setLayers(previous);
     const validSelection = selectedLayerIds.filter((id) => previous.some((layer) => layer.id === id));
     const nextSelectedId = previous.some((layer) => layer.id === selectedLayerId) ? selectedLayerId : validSelection[0] ?? previous.at(-1)?.id ?? null;
@@ -1063,6 +1136,7 @@ export default function App() {
     if (!next) { notify('Nothing to redo'); return; }
     setUndoStack((stack) => [...stack, layers]);
     setRedoStack((stack) => stack.slice(0, -1));
+    layersRef.current = next;
     setLayers(next);
     const validSelection = selectedLayerIds.filter((id) => next.some((layer) => layer.id === id));
     const nextSelectedId = next.some((layer) => layer.id === selectedLayerId) ? selectedLayerId : validSelection[0] ?? next.at(-1)?.id ?? null;
@@ -1094,14 +1168,17 @@ export default function App() {
       duration: 15,
     };
     setProjects((list) => [project, ...list]);
+    currentProjectRef.current = project;
     setCurrentProject(project);
     setUndoStack([]);
     setRedoStack([]);
+    layersRef.current = [];
     setLayers([]);
     setSelectedLayerId(null);
     setSelectedLayerIds([]);
     setTime(0);
     setNewProjectOpen(false);
+    screenRef.current = 'editor';
     setScreen('editor');
     notify(`${createKind === 'element' ? 'Element' : createKind === 'template' ? 'Template' : 'Project'} canvas created`);
   };
@@ -1117,11 +1194,84 @@ export default function App() {
   };
 
   const addLayer = (layer: EditorLayer) => {
-    commitLayerList([...layers, layer]);
+    commitLayerList([...layersRef.current, layer]);
     selectLayer(layer.id);
     setEditorTool(null);
-    if (currentProject) {
-      setCurrentProject((project) => project ? { ...project, duration: Math.max(project.duration, layer.start + layer.duration) } : project);
+    setCurrentProject((project) => project ? { ...project, duration: Math.max(project.duration, layer.start + layer.duration) } : project);
+  };
+
+  const enhanceSelectedLayerWithAI = async () => {
+    const target = selectedLayer;
+    const sourceProjectId = currentProject?.id;
+    if (!target || (target.kind !== 'image' && target.kind !== 'video')) { notify('Select a still image or an active video layer first'); return; }
+    if (!currentProject || aiUpscaleBusy) return;
+    setAiUpscaleBusy(true); setAiUpscaleProgress(0); setAiUpscaleStatus('Preparing local ESRGAN model…');
+    const loadAIImage = (src: string, errorMessage: string, crossOrigin = false) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const loaded = new Image(); if (crossOrigin) loaded.crossOrigin = 'anonymous';
+      loaded.onload = () => resolve(loaded); loaded.onerror = () => reject(new Error(errorMessage)); loaded.src = src;
+    });
+    try {
+      let image: HTMLImageElement;
+      if (target.kind === 'image') {
+        if (!target.src) throw new Error('This image layer has no readable media source.');
+        image = await loadAIImage(target.src, `Could not load ${target.name} for AI upscaling.`, true);
+      } else {
+        const video = videoRef.current;
+        const active = isLayerVisible(target, layers) && time >= target.start && time < target.start + target.duration;
+        const expectedSource = target.src ? new URL(target.src, window.location.href).href : '';
+        if (!video || !active || (video.currentSrc !== expectedSource && video.src !== expectedSource) || video.readyState < 2) throw new Error('Seek to a frame where this video layer is active, then try AI Frame Restore again.');
+        setIsPlaying(false); video.pause();
+        const sourceTime = getLayerSourceTime(target, time);
+        if (Number.isFinite(video.duration) && video.duration > 0 && Math.abs(video.currentTime - sourceTime) > .04) {
+          await new Promise<void>((resolve, reject) => {
+            const timeout = window.setTimeout(() => { video.removeEventListener('seeked', onSeeked); reject(new Error('Timed out seeking to the selected video frame.')); }, 2500);
+            const onSeeked = () => { window.clearTimeout(timeout); resolve(); };
+            video.addEventListener('seeked', onSeeked, { once: true });
+            video.currentTime = sourceTime % video.duration;
+          });
+        }
+        const frameCanvas = document.createElement('canvas');
+        const scale = Math.min(1, 2048 / Math.max(video.videoWidth, video.videoHeight, 1));
+        frameCanvas.width = Math.max(1, Math.round(video.videoWidth * scale)); frameCanvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+        const frameContext = frameCanvas.getContext('2d');
+        if (!frameContext) throw new Error('Could not extract this video frame.');
+        frameContext.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+        image = await loadAIImage(frameCanvas.toDataURL('image/png'), 'Could not read the selected video frame.');
+      }
+      const preparedCanvas = document.createElement('canvas');
+      const inputScale = Math.min(1, 2048 / Math.max(image.naturalWidth, image.naturalHeight, 1), Math.sqrt(2_500_000 / Math.max(1, image.naturalWidth * image.naturalHeight)));
+      if (inputScale < 1) {
+        preparedCanvas.width = Math.max(1, Math.round(image.naturalWidth * inputScale)); preparedCanvas.height = Math.max(1, Math.round(image.naturalHeight * inputScale));
+        const preparedContext = preparedCanvas.getContext('2d');
+        if (!preparedContext) throw new Error('Could not prepare this image for the on-device AI model.');
+        preparedContext.imageSmoothingEnabled = true; preparedContext.imageSmoothingQuality = 'high';
+        preparedContext.drawImage(image, 0, 0, preparedCanvas.width, preparedCanvas.height);
+        image = await loadAIImage(preparedCanvas.toDataURL('image/png'), 'Could not prepare the source image.');
+      }
+      const enhancedDataUrl = await runEsrganUpscale(image, setAiUpscaleProgress, setAiUpscaleStatus);
+      const blob = await dataUrlToBlob(enhancedDataUrl);
+      const assetId = await saveMediaAsset(blob, `${target.name} · ESRGAN 2x`);
+      const src = await getMediaUrl(assetId);
+      if (!src) throw new Error('The AI result could not be saved to local media storage.');
+      const { id: _oldId, src: _oldSrc, assetId: _oldAssetId, kind: _oldKind, ...copy } = target;
+      const videoFrame = target.kind === 'video';
+      const duration = videoFrame ? Math.max(1 / currentProject.fps, Math.min(.5, target.start + target.duration - time, currentProject.duration - time)) : target.duration;
+      if (currentProjectRef.current?.id !== sourceProjectId || screenRef.current !== 'editor') throw new Error('The editor project changed before AI processing finished, so the result was not added.');
+      const enhancedLayer = makeLayer({
+        ...copy,
+        name: videoFrame ? `${target.name} · AI-restored frame` : `${target.name} · AI 2×`,
+        kind: 'image', src, assetId, start: videoFrame ? time : target.start, duration,
+        sourceOffset: undefined, sourceDuration: undefined, externalPath: undefined, waveform: undefined,
+        speed: undefined, speedKeyframes: undefined, volume: undefined, frameBlend: false,
+        restoreStrength: 0, presetName: undefined,
+        ...(videoFrame ? { ...getLayerTransformAt(target, time), keyframes: undefined } : {}),
+      });
+      addLayer(enhancedLayer);
+      notify(videoFrame ? 'AI-restored 2× frame added above the video' : 'ESRGAN 2× copy added · original kept unchanged');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Local AI upscaling failed');
+    } finally {
+      setAiUpscaleBusy(false); setAiUpscaleProgress(null); setAiUpscaleStatus('');
     }
   };
 
@@ -1667,7 +1817,7 @@ export default function App() {
           canRedo={redoStack.length > 0}
           onUndo={undoEdit}
           onRedo={redoEdit}
-          onBack={() => { setScreen('library'); setIsPlaying(false); setContextLayerId(null); }}
+          onBack={() => { screenRef.current = 'library'; setScreen('library'); setIsPlaying(false); setContextLayerId(null); }}
           onProjectSettings={() => setProjectSettingsOpen(true)}
           onPlay={() => setIsPlaying((value) => !value)}
           onSeek={(value) => { setTime(value); if (videoRef.current) { const end = Number.isFinite(videoRef.current.duration) ? videoRef.current.duration : value; videoRef.current.currentTime = Math.min(value, end); } }}
@@ -1688,6 +1838,10 @@ export default function App() {
           onSpeedValue={setSpeedAtPlayhead}
           onSpeedKeyframe={toggleSpeedKeyframe}
           onSpeedEasing={setSpeedKeyframeEasing}
+          onAIUpscale={enhanceSelectedLayerWithAI}
+          aiUpscaleBusy={aiUpscaleBusy}
+          aiUpscaleProgress={aiUpscaleProgress}
+          aiUpscaleStatus={aiUpscaleStatus}
           onSetEasing={setKeyframeEasing}
           onDuplicateLayer={duplicateLayer}
           onSaveElement={(layer) => {
@@ -1735,7 +1889,7 @@ export default function App() {
               />
             )}
           </main>
-          <BottomNavigation screen={screen} onHome={() => setScreen('home')} onLibrary={() => { setLibraryTab('project'); setScreen('library'); }} onCreate={() => openCreator('project')} />
+          <BottomNavigation screen={screen} onHome={() => { screenRef.current = 'home'; setScreen('home'); }} onLibrary={() => { setLibraryTab('project'); screenRef.current = 'library'; setScreen('library'); }} onCreate={() => openCreator('project')} />
         </>
       )}
 
@@ -1775,8 +1929,8 @@ export default function App() {
           onShape={() => setShapeSheetOpen(true)}
           onAudio={() => { setRelinkLayerId(null); mediaInputRef.current?.click(); notify('Choose an audio file to add to the timeline'); }}
           onAction={(name) => {
-            if (name === 'Element / Project') { setAddSheetOpen(false); setScreen('library'); setLibraryTab('element'); return; }
-            if (name === 'Template') { setAddSheetOpen(false); setScreen('library'); setLibraryTab('template'); return; }
+            if (name === 'Element / Project') { setAddSheetOpen(false); screenRef.current = 'library'; setScreen('library'); setLibraryTab('element'); return; }
+            if (name === 'Template') { setAddSheetOpen(false); screenRef.current = 'library'; setScreen('library'); setLibraryTab('template'); return; }
             if (name === 'Freehand Drawing' || name === 'Vector Drawing') {
               setAddSheetOpen(false);
               setDrawingMode(name === 'Freehand Drawing' ? 'freehand' : 'vector');
@@ -2283,7 +2437,7 @@ function RenderedVideoDialog({ src, name, format, onClose, onDownload }: { src: 
 function EditorScreen({
   project, layers, selectedLayerId, selectedLayerIds, selectedLayer, time, isPlaying, editorTool, stageStyle, formattedRatio, videoRef, canvasZoom, lowQualityPreview, onProjectSettings, onGroup, onUngroup,
   panelSlider, canUndo, canRedo, onUndo, onRedo, onBack, onPlay, onSeek, onSelectLayer, onAdd, onSetTool, onSetContext, onUpdateLayer, onDeleteLayer,
-  onDuplicateLayer, onSaveElement, onSplit, onMoveLayer, onRelink, onKeyframe, onSetEasing, onSpeedValue, onSpeedKeyframe, onSpeedEasing, onOpenEffects, onExport, onZoom, onPanelSlider, onRename, onNotify, contextLayerId,
+  onDuplicateLayer, onSaveElement, onSplit, onMoveLayer, onRelink, onKeyframe, onSetEasing, onSpeedValue, onSpeedKeyframe, onSpeedEasing, onAIUpscale, aiUpscaleBusy, aiUpscaleProgress, aiUpscaleStatus, onOpenEffects, onExport, onZoom, onPanelSlider, onRename, onNotify, contextLayerId,
 }: {
   project: Project; layers: EditorLayer[]; selectedLayerId: string | null; selectedLayerIds: string[]; selectedLayer: EditorLayer | null; time: number; isPlaying: boolean; lowQualityPreview: boolean; onProjectSettings: () => void;
   onGroup: () => void; onUngroup: (id: string) => void;
@@ -2293,7 +2447,7 @@ function EditorScreen({
   onSelectLayer: (id: string | null, additive?: boolean) => void; onAdd: () => void; onSetTool: (tool: string) => void; onSetContext: (id: string | null) => void;
   onUpdateLayer: (id: string, patch: Partial<EditorLayer>) => void; onDeleteLayer: (id: string) => void;
   onDuplicateLayer: (layer: EditorLayer) => void; onSaveElement: (layer: EditorLayer) => void; onSplit: () => void;
-  onMoveLayer: (id: string, direction: 'up' | 'down') => void; onRelink: (id: string) => void; onKeyframe: (layer: EditorLayer) => void; onSetEasing: (layer: EditorLayer, easing: EasingPreset) => void; onSpeedValue: (layer: EditorLayer, speed: number) => void; onSpeedKeyframe: (layer: EditorLayer) => void; onSpeedEasing: (layer: EditorLayer, easing: EasingPreset) => void; onOpenEffects: () => void;
+  onMoveLayer: (id: string, direction: 'up' | 'down') => void; onRelink: (id: string) => void; onKeyframe: (layer: EditorLayer) => void; onSetEasing: (layer: EditorLayer, easing: EasingPreset) => void; onSpeedValue: (layer: EditorLayer, speed: number) => void; onSpeedKeyframe: (layer: EditorLayer) => void; onSpeedEasing: (layer: EditorLayer, easing: EasingPreset) => void; onAIUpscale: () => void; aiUpscaleBusy: boolean; aiUpscaleProgress: number | null; aiUpscaleStatus: string; onOpenEffects: () => void;
   onExport: () => void; onZoom: (value: number) => void; onPanelSlider: (value: number) => void; onRename: () => void; onNotify: (message: string) => void;
   contextLayerId: string | null;
 }) {
@@ -2458,14 +2612,14 @@ function EditorScreen({
           {editorTool && (
             <div className="inspector-panel">
               <div className="inspector-header"><div><span className="eyebrow">{selectedLayer?.name ?? 'PROJECT'}</span><strong>{editorTool}</strong></div><button className="icon-button" onClick={() => onSetTool(editorTool)} aria-label="Close panel"><X size={18} /></button></div>
-              {selectedLayer?.kind === 'group' ? <div className="group-inspector"><Layers size={20} /><strong>{layers.filter((layer) => layer.groupId === selectedLayer.id).length} layers in this group</strong><small>Shift-select additional timeline layers, then use Group to add them. Groups organize the stack; child layers remain independently editable.</small><button className="secondary-button" onClick={() => onUngroup(selectedLayer.id)}>Ungroup layers</button></div> : editorTool === '3D Lab' && selectedLayer?.kind === '3d' ? <div className="model-inspector"><label className="project-setting-field">Primitive / mesh<select value={selectedLayer.meshName ?? 'Cube'} onChange={(event) => { const meshName = event.target.value as 'Cube' | 'Sphere' | 'Pyramid' | 'Plane' | 'Torus'; onUpdateLayer(selectedLayer.id, { meshName, mesh3d: createPrimitiveMesh(meshName) }); }}>{['Cube','Sphere','Pyramid','Plane','Torus'].map((mesh) => <option key={mesh}>{mesh}</option>)}{selectedLayer.meshName === 'Imported OBJ' && <option value="Imported OBJ" disabled>Imported OBJ file</option>}</select></label><p>Import Wavefront `.obj` through Add → Media. Meshes stay local to the project.</p><button className={selectedLayer.keyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onKeyframe(selectedLayer)}><Plus size={13} /> {selectedLayer.keyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'Remove 3D keyframe' : 'Keyframe 3D pose'}</button><label className="range-setting">Pitch <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationX)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationX: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationX)}°</span></label><label className="range-setting">Yaw <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationY)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationY: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationY)}°</span></label><label className="range-setting">Depth <input type="range" min={-300} max={300} value={Math.round(getLayerTransformAt(selectedLayer, time).depth)} onChange={(event) => onUpdateLayer(selectedLayer.id, { depth: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).depth)}px</span></label></div> : editorTool === 'Enhance' && selectedLayer ? <div className="enhance-panel"><strong>Local detail recovery</strong>{selectedLayer.kind === 'image' ? <label className="range-setting">Sharpen / restore <input type="range" min={0} max={100} value={selectedLayer.restoreStrength ?? 0} onChange={(event) => onUpdateLayer(selectedLayer.id, { restoreStrength: Number(event.target.value) })} /><span>{selectedLayer.restoreStrength ?? 0}%</span></label> : <p>Detail recovery currently targets still images. Use Motion Frame Blend on video layers for approximate slow-motion smoothing.</p>}<small>Export resamples to the render size and applies a local unsharp mask. Preview is a lightweight tonal approximation. No cloud upload or generative AI model is used; source media remains unchanged.</small></div> : editorTool === 'Move & Transform' && selectedLayer ? <>
+              {selectedLayer?.kind === 'group' ? <div className="group-inspector"><Layers size={20} /><strong>{layers.filter((layer) => layer.groupId === selectedLayer.id).length} layers in this group</strong><small>Shift-select additional timeline layers, then use Group to add them. Groups organize the stack; child layers remain independently editable.</small><button className="secondary-button" onClick={() => onUngroup(selectedLayer.id)}>Ungroup layers</button></div> : editorTool === '3D Lab' && selectedLayer?.kind === '3d' ? <div className="model-inspector"><label className="project-setting-field">Primitive / mesh<select value={selectedLayer.meshName ?? 'Cube'} onChange={(event) => { const meshName = event.target.value as 'Cube' | 'Sphere' | 'Pyramid' | 'Plane' | 'Torus'; onUpdateLayer(selectedLayer.id, { meshName, mesh3d: createPrimitiveMesh(meshName) }); }}>{['Cube','Sphere','Pyramid','Plane','Torus'].map((mesh) => <option key={mesh}>{mesh}</option>)}{selectedLayer.meshName === 'Imported OBJ' && <option value="Imported OBJ" disabled>Imported OBJ file</option>}</select></label><p>Import Wavefront `.obj` through Add → Media. Meshes stay local to the project.</p><button className={selectedLayer.keyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onKeyframe(selectedLayer)}><Plus size={13} /> {selectedLayer.keyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'Remove 3D keyframe' : 'Keyframe 3D pose'}</button><label className="range-setting">Pitch <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationX)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationX: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationX)}°</span></label><label className="range-setting">Yaw <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationY)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationY: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationY)}°</span></label><label className="range-setting">Depth <input type="range" min={-300} max={300} value={Math.round(getLayerTransformAt(selectedLayer, time).depth)} onChange={(event) => onUpdateLayer(selectedLayer.id, { depth: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).depth)}px</span></label></div> : editorTool === 'Enhance' && selectedLayer ? <EnhancePanel layer={selectedLayer} busy={aiUpscaleBusy} progress={aiUpscaleProgress} status={aiUpscaleStatus} onUpscale={onAIUpscale} onUpdateLayer={onUpdateLayer} /> : editorTool === 'Move & Transform' && selectedLayer ? <>
                 {(() => {
                   const frameAtPlayhead = selectedLayer.keyframes?.find((frame) => Math.abs(frame.time - time) < .04);
                   return <div className="keyframe-controls"><button className={frameAtPlayhead ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onKeyframe(selectedLayer)}><Plus size={14} /> {frameAtPlayhead ? 'Remove keyframe' : 'Add keyframe'}</button><span>{selectedLayer.keyframes?.length ?? 0} keyframes</span>{Boolean(selectedLayer.keyframes?.length) && <><select aria-label="Keyframe easing" value={frameAtPlayhead?.easing ?? 'easeInOut'} disabled={!frameAtPlayhead} onChange={(event) => onSetEasing(selectedLayer, event.target.value as EasingPreset)}><option value="linear">Linear</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="easeInOut">Ease in-out</option></select>{frameAtPlayhead && <svg className={`easing-mini-graph easing-${frameAtPlayhead.easing}`} viewBox="0 0 80 42" aria-label="Easing curve"><path d={frameAtPlayhead.easing === 'linear' ? 'M5 37 L75 5' : frameAtPlayhead.easing === 'easeIn' ? 'M5 37 C52 37 67 24 75 5' : frameAtPlayhead.easing === 'easeOut' ? 'M5 37 C13 18 28 5 75 5' : 'M5 37 C30 37 28 5 75 5'} /></svg>}</>}</div>;
                 })()}
                 <div className="transform-readouts"><label>X <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).x * 10)} onChange={(event) => onUpdateLayer(selectedLayer.id, { x: Number(event.target.value) / 10 })} /></label><label>Y <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).y * 10)} onChange={(event) => onUpdateLayer(selectedLayer.id, { y: Number(event.target.value) / 10 })} /></label><label>Scale <input type="number" value={Math.round(getLayerTransformAt(selectedLayer, time).scale)} onChange={(event) => onUpdateLayer(selectedLayer.id, { scale: Number(event.target.value) })} /></label></div>
                 <label className="range-setting">Rotation <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotation)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotation: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotation)}°</span></label>{selectedLayer.kind === '3d' && <><label className="range-setting">3D Pitch <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationX)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationX: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationX)}°</span></label><label className="range-setting">3D Yaw <input type="range" min={-180} max={180} value={Math.round(getLayerTransformAt(selectedLayer, time).rotationY)} onChange={(event) => onUpdateLayer(selectedLayer.id, { rotationY: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).rotationY)}°</span></label><label className="range-setting">Depth <input type="range" min={-300} max={300} value={Math.round(getLayerTransformAt(selectedLayer, time).depth)} onChange={(event) => onUpdateLayer(selectedLayer.id, { depth: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).depth)}px</span></label></>}
-              </> : editorTool === 'Speed' && selectedLayer ? <div className="speed-ramp-panel"><div className="speed-ramp-heading"><button className={selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onSpeedKeyframe(selectedLayer)}><Plus size={13} /> {selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'Remove speed key' : 'Add speed key'}</button><span>{selectedLayer.speedKeyframes?.length ?? 0} velocity keys</span></div><label className="range-setting">Playback speed <input type="range" min={10} max={800} value={Math.round(getLayerSpeedAt(selectedLayer, time) * 100)} onChange={(event) => onSpeedValue(selectedLayer, Number(event.target.value) / 100)} /><span>{getLayerSpeedAt(selectedLayer, time).toFixed(2)}×</span></label>{selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) && <label className="project-setting-field">Ramp easing<select value={selectedLayer.speedKeyframes.find((frame) => Math.abs(frame.time-time) < .04)?.easing ?? 'easeInOut'} onChange={(event) => onSpeedEasing(selectedLayer, event.target.value as EasingPreset)}><option value="linear">Linear</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="easeInOut">Ease in-out</option></select></label>}{selectedLayer.kind === 'video' && <label className="motion-blend-setting"><input type="checkbox" checked={Boolean(selectedLayer.frameBlend)} onChange={(event) => onUpdateLayer(selectedLayer.id, { frameBlend: event.target.checked })} /><span><strong>Export frame blending</strong><small>Faintly blends an adjacent frame for smoother slow motion. Basic ghosting only—not vector optical flow; preview stays real-time.</small></span></label>}</div> : editorTool === 'Trim start' && selectedLayer ? <div className="trim-controls"><p>Clip range · {fmtTime(selectedLayer.start, project.fps)} – {fmtTime(selectedLayer.start + selectedLayer.duration, project.fps)}</p><label className="range-setting">Position <input type="range" min={0} max={Math.max(0, project.duration - selectedLayer.duration)} step={.01} value={Math.min(selectedLayer.start, Math.max(0, project.duration - selectedLayer.duration))} onChange={(event) => onUpdateLayer(selectedLayer.id, { start: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.start, project.fps)}</span></label>{selectedLayer.sourceDuration && (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video') && <label className="range-setting">Source in <input type="range" min={0} max={Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1))} step={.01} value={Math.min(selectedLayer.sourceOffset ?? 0, Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1)))} onChange={(event) => onUpdateLayer(selectedLayer.id, { sourceOffset: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.sourceOffset ?? 0, project.fps)}</span></label>}<label className="range-setting">Length <input type="range" min={.1} max={Math.max(.1, Math.min(project.duration - selectedLayer.start, selectedLayer.sourceDuration ? (selectedLayer.sourceDuration - (selectedLayer.sourceOffset ?? 0)) / Math.max(.25, selectedLayer.speed ?? 1) : project.duration - selectedLayer.start))} step={.01} value={Math.min(selectedLayer.duration, project.duration - selectedLayer.start)} onChange={(event) => onUpdateLayer(selectedLayer.id, { duration: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.duration, project.fps)}</span></label></div> : editorTool === 'Volume' && selectedLayer ? <>{selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? <label className="range-setting">Volume <input type="range" min={0} max={100} value={selectedLayer.volume ?? 100} onChange={(event) => onUpdateLayer(selectedLayer.id, { volume: Number(event.target.value) })} /><span>{selectedLayer.volume ?? 100}%</span></label> : <div className="inspector-empty"><Info size={17} /> Volume is available on audio and video layers.</div>}</> : editorTool === 'Color & Fill' && selectedLayer ? <div className="inspector-swatches">{colorSwatches.map((color) => <button key={color} className={selectedLayer.color === color ? 'swatch-selected' : ''} style={{ background: color }} onClick={() => onUpdateLayer(selectedLayer.id, { color })} aria-label={`Set color ${color}`} />)}<label className="color-custom"><Pencil size={15} /><input type="color" value={selectedLayer.color} onChange={(event) => onUpdateLayer(selectedLayer.id, { color: event.target.value })} /></label></div> : editorTool === 'Effects' ? <div className="effect-inspector-list">{selectedLayer?.presetName && <span className="preset-applied-tag">LOOK · {selectedLayer.presetName}</span>}{selectedLayer?.effects.length ? selectedLayer.effects.map((effect, index) => <div className="effect-control" key={`${effect}-${index}`}><div className="effect-control-heading"><Sparkles size={15} /><span>{effect}</span><button onClick={() => selectedLayer && onUpdateLayer(selectedLayer.id, { effects: selectedLayer.effects.filter((_, itemIndex) => itemIndex !== index) })} aria-label={`Remove ${effect}`}><X size={15} /></button></div><label className="effect-strength"><input type="range" min={0} max={100} value={selectedLayer.effectStrengths?.[effect] ?? 75} onChange={(event) => selectedLayer && onUpdateLayer(selectedLayer.id, { effectStrengths: { ...selectedLayer.effectStrengths, [effect]: Number(event.target.value) } })} /><span>{selectedLayer.effectStrengths?.[effect] ?? 75}%</span></label></div>) : <p>No effects yet. Browse the library to add a look.</p>}<button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Browse effects</button></div> : selectedLayer ? <>
+              </> : editorTool === 'Speed' && selectedLayer ? <div className="speed-ramp-panel"><div className="speed-ramp-heading"><button className={selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'keyframe-toggle active' : 'keyframe-toggle'} onClick={() => onSpeedKeyframe(selectedLayer)}><Plus size={13} /> {selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) ? 'Remove speed key' : 'Add speed key'}</button><span>{selectedLayer.speedKeyframes?.length ?? 0} velocity keys</span></div><label className="range-setting">Playback speed <input type="range" min={10} max={800} value={Math.round(getLayerSpeedAt(selectedLayer, time) * 100)} onChange={(event) => onSpeedValue(selectedLayer, Number(event.target.value) / 100)} /><span>{getLayerSpeedAt(selectedLayer, time).toFixed(2)}×</span></label>{selectedLayer.speedKeyframes?.some((frame) => Math.abs(frame.time-time) < .04) && <label className="project-setting-field">Ramp easing<select value={selectedLayer.speedKeyframes.find((frame) => Math.abs(frame.time-time) < .04)?.easing ?? 'easeInOut'} onChange={(event) => onSpeedEasing(selectedLayer, event.target.value as EasingPreset)}><option value="linear">Linear</option><option value="easeIn">Ease in</option><option value="easeOut">Ease out</option><option value="easeInOut">Ease in-out</option></select></label>}{selectedLayer.kind === 'video' && <label className="motion-blend-setting"><input type="checkbox" checked={Boolean(selectedLayer.frameBlend)} onChange={(event) => onUpdateLayer(selectedLayer.id, { frameBlend: event.target.checked })} /><span><strong>Optical-flow slow motion · export</strong><small>Estimates low-resolution block motion on CPU and warps full-resolution export frames with WebGL when available. Experimental slow-motion approximation; not AI/Twixtor-grade interpolation.</small></span></label>}</div> : editorTool === 'Trim start' && selectedLayer ? <div className="trim-controls"><p>Clip range · {fmtTime(selectedLayer.start, project.fps)} – {fmtTime(selectedLayer.start + selectedLayer.duration, project.fps)}</p><label className="range-setting">Position <input type="range" min={0} max={Math.max(0, project.duration - selectedLayer.duration)} step={.01} value={Math.min(selectedLayer.start, Math.max(0, project.duration - selectedLayer.duration))} onChange={(event) => onUpdateLayer(selectedLayer.id, { start: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.start, project.fps)}</span></label>{selectedLayer.sourceDuration && (selectedLayer.kind === 'audio' || selectedLayer.kind === 'video') && <label className="range-setting">Source in <input type="range" min={0} max={Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1))} step={.01} value={Math.min(selectedLayer.sourceOffset ?? 0, Math.max(0, selectedLayer.sourceDuration - selectedLayer.duration * (selectedLayer.speed ?? 1)))} onChange={(event) => onUpdateLayer(selectedLayer.id, { sourceOffset: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.sourceOffset ?? 0, project.fps)}</span></label>}<label className="range-setting">Length <input type="range" min={.1} max={Math.max(.1, Math.min(project.duration - selectedLayer.start, selectedLayer.sourceDuration ? (selectedLayer.sourceDuration - (selectedLayer.sourceOffset ?? 0)) / Math.max(.25, selectedLayer.speed ?? 1) : project.duration - selectedLayer.start))} step={.01} value={Math.min(selectedLayer.duration, project.duration - selectedLayer.start)} onChange={(event) => onUpdateLayer(selectedLayer.id, { duration: Number(event.target.value) })} /><span>{fmtTime(selectedLayer.duration, project.fps)}</span></label></div> : editorTool === 'Volume' && selectedLayer ? <>{selectedLayer.kind === 'audio' || selectedLayer.kind === 'video' ? <label className="range-setting">Volume <input type="range" min={0} max={100} value={selectedLayer.volume ?? 100} onChange={(event) => onUpdateLayer(selectedLayer.id, { volume: Number(event.target.value) })} /><span>{selectedLayer.volume ?? 100}%</span></label> : <div className="inspector-empty"><Info size={17} /> Volume is available on audio and video layers.</div>}</> : editorTool === 'Color & Fill' && selectedLayer ? <div className="inspector-swatches">{colorSwatches.map((color) => <button key={color} className={selectedLayer.color === color ? 'swatch-selected' : ''} style={{ background: color }} onClick={() => onUpdateLayer(selectedLayer.id, { color })} aria-label={`Set color ${color}`} />)}<label className="color-custom"><Pencil size={15} /><input type="color" value={selectedLayer.color} onChange={(event) => onUpdateLayer(selectedLayer.id, { color: event.target.value })} /></label></div> : editorTool === 'Effects' ? <div className="effect-inspector-list">{selectedLayer?.presetName && <span className="preset-applied-tag">LOOK · {selectedLayer.presetName}</span>}{selectedLayer?.effects.length ? selectedLayer.effects.map((effect, index) => <div className="effect-control" key={`${effect}-${index}`}><div className="effect-control-heading"><Sparkles size={15} /><span>{effect}</span><button onClick={() => selectedLayer && onUpdateLayer(selectedLayer.id, { effects: selectedLayer.effects.filter((_, itemIndex) => itemIndex !== index) })} aria-label={`Remove ${effect}`}><X size={15} /></button></div><label className="effect-strength"><input type="range" min={0} max={100} value={selectedLayer.effectStrengths?.[effect] ?? 75} onChange={(event) => selectedLayer && onUpdateLayer(selectedLayer.id, { effectStrengths: { ...selectedLayer.effectStrengths, [effect]: Number(event.target.value) } })} /><span>{selectedLayer.effectStrengths?.[effect] ?? 75}%</span></label></div>) : <p>No effects yet. Browse the library to add a look.</p>}<button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Browse effects</button></div> : selectedLayer ? <>
                 <label className="range-setting">Opacity <input type="range" min={0} max={100} value={Math.round(getLayerTransformAt(selectedLayer, time).opacity)} onChange={(event) => onUpdateLayer(selectedLayer.id, { opacity: Number(event.target.value) })} /><span>{Math.round(getLayerTransformAt(selectedLayer, time).opacity)}%</span></label>
                 <label className="range-setting">Intensity <input type="range" min={0} max={100} value={panelSlider} onChange={(event) => onPanelSlider(Number(event.target.value))} /><span>{panelSlider}%</span></label>
                 <button className="secondary-button" onClick={onOpenEffects}><Plus size={16} /> Add effect</button>
@@ -2478,6 +2632,23 @@ function EditorScreen({
       <div className="media-preload-bin" aria-hidden="true">{layers.filter((layer) => layer.kind === 'audio' && layer.src).map((layer) => <audio key={layer.id} ref={(element) => { if (element) audioRefs.current.set(layer.id, element); else audioRefs.current.delete(layer.id); }} src={layer.src} preload="auto" />)}</div>
     </div>
   );
+}
+
+function EnhancePanel({ layer, busy, progress, status, onUpscale, onUpdateLayer }: {
+  layer: EditorLayer; busy: boolean; progress: number | null; status: string; onUpscale: () => void;
+  onUpdateLayer: (id: string, patch: Partial<EditorLayer>) => void;
+}) {
+  const supported = layer.kind === 'image' || layer.kind === 'video';
+  return <div className="enhance-panel">
+    <strong>AI super-resolution</strong>
+    {supported ? <>
+      <button className="ai-upscale-button" disabled={busy} onClick={onUpscale}><Sparkles size={16} />{busy ? 'Processing locally…' : layer.kind === 'video' ? 'AI restore current frame · 2×' : 'AI upscale image · 2×'}</button>
+      <small>Bundled ESRGAN-Slim 2× model, runs on this device, no upload. Large sources are downsampled to a mobile-safe input size. Video action creates a restored still at the playhead; it does not re-render the whole clip.</small>
+      {busy && <div className="ai-progress"><div className="ai-progress-heading"><span>{status || 'Preparing model…'}</span><span>{progress ?? 0}%</span></div><div className="ai-progress-track"><span style={{ width: `${progress ?? 2}%` }} /></div></div>}
+      {layer.kind === 'image' && <label className="range-setting">Extra local sharpening <input type="range" min={0} max={100} value={layer.restoreStrength ?? 0} onChange={(event) => onUpdateLayer(layer.id, { restoreStrength: Number(event.target.value) })} /><span>{layer.restoreStrength ?? 0}%</span></label>}
+    </> : <p>AI super-resolution is available on still images and extracted video frames.</p>}
+    <small>The 2× model output is added as a new layer. Original media stays untouched; an optional export-time unsharp pass remains separate from the AI model.</small>
+  </div>;
 }
 
 function StageMeshCanvas({ layer, transform, lowQuality }: { layer: EditorLayer; transform: ReturnType<typeof getLayerTransformAt>; lowQuality: boolean }) {

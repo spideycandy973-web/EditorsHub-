@@ -1,13 +1,42 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+const esrganModelDirectory = path.resolve(projectRoot, 'node_modules/@upscalerjs/default-model/models');
+const esrganModelFiles = ['model.json', 'group1-shard1of1.bin'];
+
+function bundleEsrganModel(): Plugin {
+  return {
+    name: 'editorshub-bundle-esrgan-model',
+    configureServer(server) {
+      server.middlewares.use('/models', (request, response, next) => {
+        const requestedFile = (request.url ?? '').split('?')[0].replace(/^\/+/, '');
+        if (!esrganModelFiles.includes(requestedFile)) { next(); return; }
+        const source = path.resolve(esrganModelDirectory, requestedFile);
+        if (!source.startsWith(`${esrganModelDirectory}${path.sep}`) || !existsSync(source)) { next(); return; }
+        response.setHeader('Content-Type', requestedFile.endsWith('.json') ? 'application/json' : 'application/octet-stream');
+        response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        response.end(readFileSync(source));
+      });
+    },
+    closeBundle() {
+      const outputDirectory = path.resolve(projectRoot, 'dist/models');
+      mkdirSync(outputDirectory, { recursive: true });
+      for (const file of esrganModelFiles) {
+        const source = path.resolve(esrganModelDirectory, file);
+        if (!existsSync(source)) throw new Error(`Bundled ESRGAN model file is missing: ${source}`);
+        copyFileSync(source, path.resolve(outputDirectory, file));
+      }
+    },
+  };
+}
 
 export default defineConfig(() => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), bundleEsrganModel()],
   resolve: {
     alias: {
       '@': path.resolve(projectRoot, '.'),

@@ -777,3 +777,9 @@ button:disabled { opacity: .42; cursor: not-allowed; }
 .preset-load-more { display: block; min-height: 39px; margin: 14px auto 2px; padding: 0 16px; border: 1px solid rgba(255,217,140,.2); border-radius: 10px; background: rgba(255,215,118,.08); color: #ffdf9b; font-size: 10px; cursor: pointer; }
 .preset-empty { color: #aaa; font-size: 11px; }
 .preset-applied-tag { justify-self: start; max-width: 100%; overflow: hidden; padding: 5px 8px; border: 1px solid rgba(255,216,125,.2); border-radius: 7px; background: rgba(246,202,115,.075); color: #ffdfa0; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.ai-upscale-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 11px; border: 1px solid rgba(255,216,125,.3); border-radius: 10px; background: linear-gradient(135deg,rgba(255,225,159,.18),rgba(225,162,58,.12)); color: #ffe3a3; font-size: 9px; font-weight: 750; cursor: pointer; }
+.ai-upscale-button:disabled { cursor: progress; opacity: .7; }
+.ai-progress { display: grid; gap: 6px; }
+.ai-progress-heading { display: flex; justify-content: space-between; gap: 8px; color: #e8dbbd; font-size: 8px; }
+.ai-progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.09); }
+.ai-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#c98725,#ffe08d); transition: width .18s ease; }
