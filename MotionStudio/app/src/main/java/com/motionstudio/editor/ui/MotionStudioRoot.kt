@@ -1,6 +1,7 @@
 package com.motionstudio.editor.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -207,7 +208,7 @@ private fun AnimatedNavigationBar(
                 onClick = { navigateToTab(nav, tab) },
                 icon = {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {
-                        AnimatedVisibility(
+                        androidx.compose.animation.AnimatedVisibility(
                             visible = selected,
                             enter = scaleIn(tween(AppMotion.Normal)) + fadeIn(),
                             exit = scaleOut(tween(AppMotion.Fast)) + fadeOut()

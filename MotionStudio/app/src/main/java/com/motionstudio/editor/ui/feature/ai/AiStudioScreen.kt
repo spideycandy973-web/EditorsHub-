@@ -380,7 +380,7 @@ fun AiStudioScreen(
                             Text(g.name, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
                             Text("${g.nodes.size} nodes", style = MaterialTheme.typography.labelSmall)
                             IconButton(onClick = { vm.deleteEffect(g.name) }) {
-                                Icon(Icons.Default.Delete, null, tint = EditorPalette.Red, Modifier.size(16.dp))
+                                Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp), tint = EditorPalette.Red)
                             }
                         }
                     }

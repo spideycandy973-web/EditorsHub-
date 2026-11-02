@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -362,7 +363,7 @@ private fun NodeCard(
         Row(Modifier.padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(12.dp).background(EditorPalette.Cyan, CircleShape)
                 .pointerInput(node.id) {
-                    androidx.compose.foundation.gestures.detectTapGestures(onTap = { vm.tapPort(node.id) })
+                    detectTapGestures(onTap = { vm.tapPort(node.id) })
                 })
             Spacer(Modifier.width(6.dp))
             Column(Modifier.weight(1f)) {

@@ -96,8 +96,8 @@ object AlightMotionXmlImporter {
                                 id = ImportIds.newId("layer"),
                                 name = anyAttr("name", "label") ?: "Layer ${outLayers.size + 1}",
                                 type = type,
-                                startMs = longAttr("start", 0L).let { if (it < 1000 && durationMs > 1000) (it * 1000).roundToLong() else it },
-                                durationMs = longAttr("duration", durationMs).let { if (it < 1000 && durationMs > 1000) (it * 1000).roundToLong() else it },
+                                startMs = longAttr("start", 0L).let { if (it < 1000 && durationMs > 1000) it * 1000L else it },
+                                durationMs = longAttr("duration", durationMs).let { if (it < 1000 && durationMs > 1000) it * 1000L else it },
                                 source = source,
                                 transform = Transform(
                                     x = floatAttr("x", 0f), y = floatAttr("y", 0f),

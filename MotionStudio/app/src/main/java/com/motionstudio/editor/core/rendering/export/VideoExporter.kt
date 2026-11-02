@@ -234,7 +234,7 @@ class VideoExporter @Inject constructor(
         }
     }
 
-    private fun saveToMediaStore(file: File, name: String, saveLocation: String): Uri? = try {
+    private fun saveToMediaStore(file: File, name: String, saveLocation: String): Uri? {
         if (saveLocation == "app") {
             val dir = File(context.filesDir, "Movies").apply { mkdirs() }
             val dest = File(dir, name)
@@ -242,6 +242,7 @@ class VideoExporter @Inject constructor(
             return androidx.core.content.FileProvider.getUriForFile(
                 context, "${context.packageName}.fileprovider", dest)
         }
+        return try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
                 put(MediaStore.Video.Media.DISPLAY_NAME, name)
@@ -268,7 +269,8 @@ class VideoExporter @Inject constructor(
             file.copyTo(dest, true)
             Uri.fromFile(dest)
         }
-    } catch (e: Exception) { null }
+        } catch (e: Exception) { null }
+    }
 
     private fun cleanup(encoder: MediaCodec?, writer: GlFrameWriter?, muxer: MediaMuxer?) {
         try { encoder?.stop() } catch (e: Exception) { /* ignore */ }

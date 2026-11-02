@@ -225,7 +225,7 @@ private fun ProjectCard(summary: ProjectSummary, vm: HomeViewModel,
                 }
             }
             IconButton(onClick = onAction, modifier = Modifier.align(Alignment.TopEnd).size(30.dp)) {
-                Icon(Icons.Default.MoreVert, "Actions", tint = Color.White, Modifier.size(16.dp))
+                Icon(Icons.Default.MoreVert, "Actions", modifier = Modifier.size(16.dp), tint = Color.White)
             }
             if (summary.interrupted) {
                 Box(Modifier.align(Alignment.BottomStart).padding(4.dp)
