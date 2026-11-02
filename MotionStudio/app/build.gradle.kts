@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -10,7 +12,7 @@ plugins {
 // Release signing is configured ONLY when a local keystore.properties exists.
 // No keystore or password is ever committed. See docs/RELEASE_SIGNING.md.
 val keystorePropertiesFile = rootProject.file("app/keystore.properties")
-val keystoreProperties = java.util.Properties()
+val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
