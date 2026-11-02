@@ -73,3 +73,36 @@ These are documented rather than hidden behind fake buttons:
   unit tests plus compilation and packaging.
 - Release artifacts are **unsigned by default**; production signing requires a local
   `keystore.properties` (see RELEASE_SIGNING.md).
+
+## Version 2 additions
+
+| Module | Responsibility |
+| --- | --- |
+| `core/importer` | `ProjectImporter` orchestration, `CountingInputStream`, `AlightMotionXmlImporter` (XmlPullParser), `NodeVideoZipImporter` (ZipInputStream), `AfterEffectsImporter` (AEPX XML), `NativeProjectImporter` |
+| `core/ai` | `EffectGraph` / `NodeEvaluator` (validated DAG → real effect stack), `AiEffectService` (HTTPS inference), `AiKeyStore` (Keystore AES-GCM) |
+| `ui/navigation` | `MainTab` destinations, animated `NavHost` transition specs, navigation bar/rail |
+| `ui/feature/home` | Home, Projects, Templates, project creation sheet, settings pages, tutorials |
+| `ui/feature/effects` | Effects Library with live `RenderPreview` and preset management |
+| `ui/feature/ai` | AI Studio (no simulation), `ui/feature/node` visual node editor |
+| `ui/feature/importer` | Import screen with progress, cancellation and conversion report |
+
+Exact frame rates: `Project.fpsExact` feeds `TimelineMath.frameCount/frameTimeExact/snapExact`,
+`EditorViewModel.play()`, `VideoExporter` (`MediaFormat.KEY_FRAME_RATE` as float and per-frame PTS).
+
+Transparent/gradient backgrounds are handled by `CanvasCompositor.drawBackground`; the checkerboard
+and guides are a Compose `Canvas` overlay in `PreviewSurface` (export intentionally keeps an opaque
+MP4 frame because H.264 has no alpha channel — this is documented, not hidden).
+
+### Known limitations (v2)
+
+- Binary `.aep` is not parsed; the original is preserved and a report explains the AEPX /
+  interchange workflow. Expressions, 3D layers, cameras and proprietary AE plugins are not
+  reproduced.
+- Alight Motion XML has no published schema: the importer is alias-based and reports unsupported
+  properties, missing media and approximated Bezier curves rather than promising full parity.
+- `SurfaceTexture` zero-copy video decoding and optical-flow interpolation are not implemented;
+  nearest-keyframe `MediaMetadataRetriever` decoding is used.
+- Image-to-effect uses real pixel statistics (average RGB/brightness/saturation/hue) rather than
+  uploading the image to a vision model; video-reference analysis is not implemented.
+- AV1, MOV/WebM output, image sequences and 120 fps hardware encoding are only used when the
+  device exposes the encoder; otherwise the app falls back and reports it.

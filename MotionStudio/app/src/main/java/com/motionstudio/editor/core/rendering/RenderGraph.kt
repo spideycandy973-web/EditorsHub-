@@ -75,7 +75,7 @@ object RenderGraph {
         val crossfades = resolveCrossfades(project, timeMs)
         val layers = mutableListOf<ResolvedLayer>()
         for (layer in project.layers) {
-            if (!layer.visible || !TimelineMath.active(layer, timeMs)) continue
+            if (!layer.visible || !layer.enabled || !TimelineMath.active(layer, timeMs)) continue
             val local = timeMs - layer.startMs
             val base = transforms.getValue(layer.id)
             val world = worldMatrix(project, layer, transforms)

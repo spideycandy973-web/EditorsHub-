@@ -18,7 +18,10 @@ import com.motionstudio.editor.core.domain.timeline.TimelineMath
 import com.motionstudio.editor.core.media.MediaKind
 import com.motionstudio.editor.core.media.MediaRepository
 import com.motionstudio.editor.core.rendering.ThumbnailGenerator
+import com.motionstudio.editor.core.rendering.export.ExportResult
 import com.motionstudio.editor.core.rendering.export.ExportWorker
+import com.motionstudio.editor.core.rendering.export.VideoExporter
+import com.motionstudio.editor.core.settings.AppSettings
 import com.motionstudio.editor.core.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +50,8 @@ sealed class ExportUiState {
 data class EditorUiState(
     val project: Project? = null,
     val selectedLayerId: String? = null,
+    val selectedLayerIds: Set<String> = emptySet(),
+    val multiSelect: Boolean = false,
     val playheadMs: Long = 0L,
     val playing: Boolean = false,
     val zoomPxPerSecond: Float = 70f,
@@ -54,9 +59,28 @@ data class EditorUiState(
     val selectedProperty: String = "x",
     val autoKey: Boolean = false,
     val snapping: Boolean = true,
+    val magneticSnapping: Boolean = true,
     val gpuPreview: Boolean = true,
     val previewQuality: Float = 0.6f,
     val previewZoom: Float = 1f,
+    val proxyEnabled: Boolean = false,
+    val proxyScale: Float = 0.5f,
+    val checkerboard: Boolean = true,
+    val showSafeArea: Boolean = false,
+    val showGrid: Boolean = false,
+    val showCenterGuides: Boolean = false,
+    val showAspectGuides: Boolean = false,
+    val backgroundRendering: Boolean = true,
+    val autosaveIntervalMs: Long = 700L,
+    val defaultResolution: ExportResolution = ExportResolution.P1080,
+    val defaultFps: Int = 30,
+    val defaultCodec: VideoCodec = VideoCodec.H264,
+    val defaultBitrate: Int = 8_000_000,
+    val defaultQuality: Int = 80,
+    val defaultSaveLocation: String = "gallery",
+    val defaultIncludeAudio: Boolean = true,
+    val undoAvailable: Boolean = false,
+    val redoAvailable: Boolean = false,
     val export: ExportUiState = ExportUiState.Idle,
     val message: String? = null
 )
@@ -68,7 +92,8 @@ class EditorViewModel @Inject constructor(
     private val media: MediaRepository,
     private val settings: SettingsRepository,
     private val thumbnails: ThumbnailGenerator,
-    private val workManager: WorkManager
+    private val workManager: WorkManager,
+    private val exporter: VideoExporter
 ) : ViewModel() {
 
     private val projectId: String = savedStateHandle["projectId"] ?: ""
@@ -79,6 +104,10 @@ class EditorViewModel @Inject constructor(
     private var playbackJob: Job? = null
     private var exportUuid: UUID? = null
     private var keyframeClipboard: List<Keyframe> = emptyList()
+    private val undoStack = ArrayDeque<Project>()
+    private val redoStack = ArrayDeque<Project>()
+    private var layerClipboard: List<Layer> = emptyList()
+    private var currentSettings = AppSettings()
 
     init {
         viewModelScope.launch {
@@ -90,7 +119,29 @@ class EditorViewModel @Inject constructor(
                     playheadMs = 0L
                 )
                 settings.settings.collectLatest { s ->
-                    _ui.value = _ui.value.copy(snapping = s.snapping, previewQuality = s.previewQuality)
+                    currentSettings = s
+                    _ui.value = _ui.value.copy(
+                        snapping = s.snapping,
+                        magneticSnapping = s.magneticSnapping,
+                        previewQuality = s.previewQuality,
+                        gpuPreview = s.hardwareAcceleration,
+                        proxyEnabled = s.proxyEnabled,
+                        proxyScale = s.proxyScale,
+                        checkerboard = s.checkerboard,
+                        showSafeArea = s.showSafeArea,
+                        showGrid = s.showGrid,
+                        showCenterGuides = s.showCenterGuides,
+                        showAspectGuides = s.showAspectGuides,
+                        backgroundRendering = s.backgroundRendering,
+                        autosaveIntervalMs = s.autosaveIntervalMs,
+                        defaultResolution = s.defaultResolution,
+                        defaultFps = s.defaultFps,
+                        defaultCodec = s.defaultCodec,
+                        defaultBitrate = s.defaultBitrate,
+                        defaultQuality = s.defaultQuality,
+                        defaultSaveLocation = s.defaultSaveLocation,
+                        defaultIncludeAudio = s.defaultIncludeAudio
+                    )
                 }
             } else {
                 _ui.value = _ui.value.copy(message = "Project not found")
@@ -105,15 +156,40 @@ class EditorViewModel @Inject constructor(
     }
 
     private fun commit(transform: (Project) -> Project) {
-        val next = transform(project())
-        _ui.value = _ui.value.copy(project = next)
+        val previous = project()
+        val next = transform(previous)
+        if (next != previous) {
+            undoStack.addLast(previous)
+            if (undoStack.size > 80) undoStack.removeFirst()
+            redoStack.clear()
+        }
+        _ui.value = _ui.value.copy(project = next,
+            undoAvailable = undoStack.isNotEmpty(), redoAvailable = redoStack.isNotEmpty())
         scheduleAutosave(next)
+    }
+
+    fun undo() {
+        if (undoStack.isEmpty()) return
+        redoStack.addLast(project())
+        val restored = undoStack.removeLast()
+        _ui.value = _ui.value.copy(project = restored,
+            undoAvailable = undoStack.isNotEmpty(), redoAvailable = true)
+        scheduleAutosave(restored)
+    }
+
+    fun redo() {
+        if (redoStack.isEmpty()) return
+        undoStack.addLast(project())
+        val restored = redoStack.removeLast()
+        _ui.value = _ui.value.copy(project = restored,
+            undoAvailable = true, redoAvailable = redoStack.isNotEmpty())
+        scheduleAutosave(restored)
     }
 
     private fun scheduleAutosave(p: Project) {
         autosaveJob?.cancel()
         autosaveJob = viewModelScope.launch {
-            delay(700)
+            delay(_ui.value.autosaveIntervalMs)
             val thumb = withContext(Dispatchers.Default) { thumbnails.generate(p) }
             repository.save(p, thumbnailPath = thumb, autosaveOnly = true)
         }
@@ -144,8 +220,8 @@ class EditorViewModel @Inject constructor(
         val p = project()
         _ui.value = _ui.value.copy(playing = true)
         playbackJob = viewModelScope.launch {
-            val fps = p.fps.coerceIn(1, 120)
-            val frameMs = 1000L / fps
+            val exact = p.fpsExact.coerceIn(1.0, 240.0)
+            val frameMs = (1000.0 / exact).toLong().coerceAtLeast(1L)
             val origin = System.nanoTime()
             val start = _ui.value.playheadMs
             while (isActive && _ui.value.playing) {
@@ -170,7 +246,7 @@ class EditorViewModel @Inject constructor(
 
     fun stepFrames(count: Int) {
         pause()
-        val frame = 1000L / project().fps.coerceIn(1, 120)
+        val frame = (1000.0 / project().fpsExact.coerceIn(1.0, 240.0)).toLong().coerceAtLeast(1L)
         seek(_ui.value.playheadMs + count * frame)
     }
 
@@ -312,7 +388,23 @@ class EditorViewModel @Inject constructor(
     }
 
     fun moveClip(id: String, deltaMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { if (it.id == id) TimelineMath.move(it, deltaMs, p.fps, _ui.value.snapping) else it })
+        p.copy(layers = p.layers.map { l ->
+            if (l.id != id) return@map l
+            var moved = TimelineMath.move(l, deltaMs, p.fps, _ui.value.snapping)
+            if (_ui.value.magneticSnapping) {
+                val edges = p.layers.filter { it.id != id }
+                    .flatMap { listOf(it.startMs, it.startMs + it.durationMs) }
+                val target = listOf(moved.startMs, moved.startMs + moved.durationMs)
+                for (t in target) {
+                    val near = edges.minByOrNull { kotlin.math.abs(it - t) }
+                    if (near != null && kotlin.math.abs(near - t) < 120L) {
+                        moved = moved.copy(startMs = (moved.startMs + (near - t)).coerceAtLeast(0L))
+                        break
+                    }
+                }
+            }
+            moved
+        })
     }
 
     fun trimStart(id: String, deltaMs: Long) = commit { p ->
@@ -619,15 +711,145 @@ class EditorViewModel @Inject constructor(
         p.copy(audioTracks = p.audioTracks.filterNot { it.id == id })
     }
 
+    // ------------------------------------------------------------- selection & clipboard
+    fun toggleMultiSelect() {
+        val on = !_ui.value.multiSelect
+        _ui.value = _ui.value.copy(multiSelect = on,
+            selectedLayerIds = if (on) setOfNotNull(_ui.value.selectedLayerId) else emptySet())
+    }
+
+    fun toggleLayerSelection(id: String) {
+        val cur = _ui.value.selectedLayerIds.toMutableSet()
+        if (!cur.add(id)) cur.remove(id)
+        _ui.value = _ui.value.copy(selectedLayerIds = cur, selectedLayerId = id)
+    }
+
+    fun copyLayers() {
+        val ids = if (_ui.value.multiSelect) _ui.value.selectedLayerIds else setOfNotNull(_ui.value.selectedLayerId)
+        layerClipboard = project().layers.filter { it.id in ids }
+        message("${layerClipboard.size} layer(s) copied")
+    }
+
+    fun pasteLayers() {
+        if (layerClipboard.isEmpty()) { message("Nothing copied"); return }
+        val pasted = layerClipboard.map { it.copy(
+            id = UUID.randomUUID().toString(),
+            name = "${it.name} copy",
+            startMs = _ui.value.playheadMs.coerceAtLeast(0L),
+            parentId = null,
+            keyframes = it.keyframes.map { t -> t.copy(keyframes = t.keyframes.map {
+                k -> k.copy(id = UUID.randomUUID().toString()) }) },
+            effects = it.effects.map { e -> e.copy(id = UUID.randomUUID().toString()) },
+            masks = it.masks.map { m -> m.copy(id = UUID.randomUUID().toString()) }
+        ) }
+        commit { p -> p.copy(layers = pasted + p.layers) }
+        message("${pasted.size} layer(s) pasted")
+    }
+
+    fun groupSelected() {
+        val ids = if (_ui.value.multiSelect) _ui.value.selectedLayerIds else setOfNotNull(_ui.value.selectedLayerId)
+        if (ids.size < 2) { message("Select at least two layers"); return }
+        val groupId = UUID.randomUUID().toString()
+        val group = Layer(id = groupId, name = "Group", type = LayerType.GROUP,
+            startMs = 0L, durationMs = project().durationMs)
+        commit { p -> p.copy(layers = listOf(group) + p.layers.map {
+            if (it.id in ids) it.copy(parentId = groupId) else it }) }
+        message("Layers grouped")
+    }
+
+    fun ungroupSelected() {
+        val ids = if (_ui.value.multiSelect) _ui.value.selectedLayerIds else setOfNotNull(_ui.value.selectedLayerId)
+        commit { p -> p.copy(
+            layers = p.layers.filterNot { it.id in ids && it.type == LayerType.GROUP }
+                .map { if (it.parentId in ids) it.copy(parentId = null) else it }
+        ) }
+        message("Ungrouped")
+    }
+
+    fun toggleEnabled(id: String) = commit { p ->
+        p.copy(layers = p.layers.map { if (it.id == id) it.copy(enabled = !it.enabled) else it })
+    }
+
+    fun toggleMuteLayer(id: String) = commit { p ->
+        p.copy(layers = p.layers.map { if (it.id == id) it.copy(muted = !it.muted) else it })
+    }
+
+    fun toggleMuteAudio(id: String) = commit { p ->
+        p.copy(audioTracks = p.audioTracks.map { if (it.id == id) it.copy(muted = !it.muted) else it })
+    }
+
+    fun extendClip(id: String, deltaMs: Long) = commit { p ->
+        p.copy(layers = p.layers.map { if (it.id == id) TimelineMath.resizeEnd(it, deltaMs, p.fps, _ui.value.snapping) else it })
+    }
+
+    fun zoomToFit() {
+        val d = project().durationMs.coerceAtLeast(1000L)
+        // 70 dp/s is the default; fit into a ~3200dp-wide viewport.
+        setZoom((3200f * 1000f / d).coerceIn(12f, 320f))
+    }
+
+    fun zoomToSelection() {
+        val ids = if (_ui.value.multiSelect) _ui.value.selectedLayerIds else setOfNotNull(_ui.value.selectedLayerId)
+        val sel = project().layers.filter { it.id in ids }
+        if (sel.isEmpty()) { zoomToFit(); return }
+        val start = sel.minOf { it.startMs }
+        val end = sel.maxOf { it.startMs + it.durationMs }
+        setZoom((3200f * 1000f / (end - start).coerceAtLeast(500L)).coerceIn(12f, 320f))
+        seek(start)
+    }
+
+    fun setGuide(name: String, value: Boolean) {
+        val field = when (name) {
+            "checkerboard" -> "checkerboard"; "safe" -> "showSafeArea"
+            "grid" -> "showGrid"; "center" -> "showCenterGuides"
+            else -> "showAspectGuides"
+        }
+        _ui.value = when (field) {
+            "checkerboard" -> _ui.value.copy(checkerboard = value)
+            "safe" -> _ui.value.copy(showSafeArea = value)
+            "grid" -> _ui.value.copy(showGrid = value)
+            "center" -> _ui.value.copy(showCenterGuides = value)
+            else -> _ui.value.copy(showAspectGuides = value)
+        }
+        viewModelScope.launch {
+            settings.update { st -> when (field) {
+                "checkerboard" -> st.copy(checkerboard = value)
+                "safe" -> st.copy(showSafeArea = value)
+                "grid" -> st.copy(showGrid = value)
+                "center" -> st.copy(showCenterGuides = value)
+                else -> st.copy(showAspectGuides = value)
+            } }
+        }
+    }
+
     // --------------------------------------------------------------------- export
     fun startExport(config: ExportConfig) {
         val p = project()
+        if (!_ui.value.backgroundRendering) {
+            // Direct foreground export path (still real rendering, no WorkManager).
+            viewModelScope.launch {
+                _ui.value = _ui.value.copy(export = ExportUiState.Running(0, "Rendering"))
+                val result = exporter.export(p, config, { percent, label ->
+                    _ui.value = _ui.value.copy(export = ExportUiState.Running(percent, label))
+                }, { false })
+                _ui.value = _ui.value.copy(export = when (result) {
+                    is ExportResult.Success -> ExportUiState.Success(result.file.absolutePath,
+                        result.uri?.toString() ?: "")
+                    is ExportResult.Failure -> ExportUiState.Failure(result.message)
+                    ExportResult.Cancelled -> ExportUiState.Failure("Export cancelled")
+                })
+            }
+            return
+        }
         val data = Data.Builder()
             .putString(ExportWorker.KEY_PROJECT, ProjectSerializer.encode(p))
             .putInt(ExportWorker.KEY_WIDTH, config.width)
             .putInt(ExportWorker.KEY_HEIGHT, config.height)
             .putInt(ExportWorker.KEY_FPS, config.fps)
             .putInt(ExportWorker.KEY_BITRATE, config.bitrate)
+            .putDouble(ExportWorker.KEY_FPS_EXACT, config.fpsExact)
+            .putInt(ExportWorker.KEY_AUDIO_BITRATE, config.audioBitrate)
+            .putString(ExportWorker.KEY_SAVE_LOCATION, config.saveLocation)
             .putString(ExportWorker.KEY_CODEC, config.codec.name)
             .putBoolean(ExportWorker.KEY_AUDIO, config.includeAudio)
             .build()

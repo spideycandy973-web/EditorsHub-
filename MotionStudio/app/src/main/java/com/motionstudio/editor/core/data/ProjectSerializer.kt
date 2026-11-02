@@ -25,7 +25,8 @@ object ProjectSerializer {
         val parsed = decode(raw)
         val healed = parsed.copy(
             version = PROJECT_FORMAT_VERSION,
-            fps = parsed.fps.coerceIn(1, 120),
+            fps = parsed.fps.coerceIn(1, 240),
+            fpsExact = if (parsed.fpsExact > 0.0) parsed.fpsExact else parsed.fps.toDouble(),
             width = parsed.width.coerceIn(16, 4096),
             height = parsed.height.coerceIn(16, 4096),
             durationMs = parsed.durationMs.coerceAtLeast(100L),

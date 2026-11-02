@@ -2,6 +2,8 @@ package com.motionstudio.editor.ui.feature.editor
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +31,7 @@ import com.motionstudio.editor.core.domain.keyframe.KeyframeEngine
 import com.motionstudio.editor.core.domain.model.*
 import com.motionstudio.editor.core.rendering.RenderGraph
 import com.motionstudio.editor.ui.components.*
+import com.motionstudio.editor.ui.theme.AppMotion
 import kotlin.math.abs
 
 private val TRANSFORM_PROPS = listOf(
@@ -43,6 +46,7 @@ private val TRANSFORM_PROPS = listOf(
     Triple("skewX", "Skew X", -80f..80f)
 )
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Inspector(state: EditorUiState, vm: EditorViewModel, modifier: Modifier = Modifier) {
     val project = state.project ?: return
@@ -57,18 +61,30 @@ fun Inspector(state: EditorUiState, vm: EditorViewModel, modifier: Modifier = Mo
         }
         LazyColumn(Modifier.fillMaxSize().padding(vertical = 4.dp)) {
             item {
-                when (state.tab) {
-                    EditorTab.ADD -> AddPanel(state, vm)
-                    EditorTab.TRANSFORM -> TransformPanel(state, vm, layer, project)
-                    EditorTab.KEYFRAMES -> KeyframesPanel(state, vm, layer)
-                    EditorTab.EFFECTS -> EffectsPanel(state, vm, layer)
-                    EditorTab.TEXT -> TextPanel(state, vm, layer)
-                    EditorTab.SHAPE -> ShapePanel(state, vm, layer)
-                    EditorTab.VECTOR -> VectorPanel(state, vm, layer)
-                    EditorTab.MASKS -> MasksPanel(state, vm, layer)
-                    EditorTab.AUDIO -> AudioPanel(state, vm, project)
-                    EditorTab.TRANSITIONS -> TransitionsPanel(state, vm, layer, project)
-                    EditorTab.PROJECT -> ProjectPanel(state, vm, project)
+                AnimatedContent(
+                    targetState = state.tab,
+                    transitionSpec = {
+                        val from = EditorTab.entries.indexOf(initialState)
+                        val to = EditorTab.entries.indexOf(targetState)
+                        val dir = if (to > from) 1 else -1
+                        (fadeIn(tween(220)) + slideInHorizontally(tween(260, easing = AppMotion.Emphasized)) { dir * it / 8 }) togetherWith
+                            (fadeOut(tween(140)) + slideOutHorizontally(tween(220)) { -dir * it / 8 })
+                    },
+                    label = "inspector-tab"
+                ) { tab ->
+                    when (tab) {
+                        EditorTab.ADD -> AddPanel(state, vm)
+                        EditorTab.TRANSFORM -> TransformPanel(state, vm, layer, project)
+                        EditorTab.KEYFRAMES -> KeyframesPanel(state, vm, layer)
+                        EditorTab.EFFECTS -> EffectsPanel(state, vm, layer)
+                        EditorTab.TEXT -> TextPanel(state, vm, layer)
+                        EditorTab.SHAPE -> ShapePanel(state, vm, layer)
+                        EditorTab.VECTOR -> VectorPanel(state, vm, layer)
+                        EditorTab.MASKS -> MasksPanel(state, vm, layer)
+                        EditorTab.AUDIO -> AudioPanel(state, vm, project)
+                        EditorTab.TRANSITIONS -> TransitionsPanel(state, vm, layer, project)
+                        EditorTab.PROJECT -> ProjectPanel(state, vm, project)
+                    }
                 }
             }
         }
@@ -148,6 +164,18 @@ private fun TransformPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Auto-key", fontSize = 11.sp, modifier = Modifier.weight(1f))
             Switch(checked = state.autoKey, onCheckedChange = { vm.setAutoKey(it) })
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Multi-select", fontSize = 11.sp, modifier = Modifier.weight(1f))
+            Switch(checked = state.multiSelect, onCheckedChange = { vm.toggleMultiSelect() })
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            IconButton(onClick = { vm.copyLayers() }) { Icon(Icons.Default.ContentCopy, "Copy", Modifier.size(16.dp)) }
+            IconButton(onClick = { vm.pasteLayers() }) { Icon(Icons.Default.ContentPaste, "Paste", Modifier.size(16.dp)) }
+            IconButton(onClick = { vm.groupSelected() }) { Icon(Icons.Default.Workspaces, "Group", Modifier.size(16.dp)) }
+            IconButton(onClick = { vm.ungroupSelected() }) { Icon(Icons.Default.LayersClear, "Ungroup", Modifier.size(16.dp)) }
+            IconButton(onClick = { vm.toggleEnabled(layer.id) }) { Icon(Icons.Default.ToggleOn, "Enable", Modifier.size(16.dp)) }
+            IconButton(onClick = { vm.toggleMuteLayer(layer.id) }) { Icon(Icons.Default.VolumeOff, "Mute", Modifier.size(16.dp)) }
         }
     }
     PanelSection("Transform") {

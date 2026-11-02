@@ -29,11 +29,14 @@ class AudioMixer @Inject constructor(
         const val CHANNELS = 2
     }
 
+    @Volatile var audioBitrate: Int = 128_000
+
     fun buildPcm(project: Project, config: ExportConfig): ShortArray {
         val totalUs = project.durationMs * 1000L
         val totalFrames = (totalUs * SAMPLE_RATE / 1_000_000L).toInt().coerceAtLeast(1)
         val mix = FloatArray(totalFrames * CHANNELS)
         for (track in project.audioTracks) {
+            if (track.muted) continue
             val path = track.uri.removePrefix("file://")
             val data = runCatching { decode(path) }.getOrNull() ?: continue
             val startUs = track.startMs * 1000L
@@ -153,7 +156,7 @@ class AudioMixer @Inject constructor(
         onSample: (ByteBuffer, MediaCodec.BufferInfo) -> Unit
     ) {
         val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, SAMPLE_RATE, CHANNELS)
-        format.setInteger(MediaFormat.KEY_BIT_RATE, 128_000)
+        format.setInteger(MediaFormat.KEY_BIT_RATE, audioBitrate.coerceIn(32_000, 512_000))
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
         val mime = MediaFormat.MIMETYPE_AUDIO_AAC
         val codec = MediaCodecList(MediaCodecList.REGULAR_CODECS)

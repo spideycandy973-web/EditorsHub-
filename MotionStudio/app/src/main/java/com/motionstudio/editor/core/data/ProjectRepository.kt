@@ -6,6 +6,8 @@ import com.motionstudio.editor.core.database.ProjectVersionEntity
 import com.motionstudio.editor.core.domain.model.PROJECT_FORMAT_VERSION
 import com.motionstudio.editor.core.domain.model.Project
 import com.motionstudio.editor.core.domain.model.ProjectSummary
+import com.motionstudio.editor.core.domain.model.ProjectSpec
+import com.motionstudio.editor.core.domain.model.FrameRates
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -16,6 +18,7 @@ import javax.inject.Singleton
 interface ProjectRepository {
     fun observeProjects(): Flow<List<ProjectSummary>>
     suspend fun create(name: String, width: Int, height: Int, fps: Int, durationMs: Long): Project
+    suspend fun create(spec: ProjectSpec): Project
     suspend fun load(id: String): Project?
     suspend fun save(project: Project, thumbnailPath: String? = null, autosaveOnly: Boolean = false)
     suspend fun rename(id: String, name: String)
@@ -32,26 +35,56 @@ class ProjectRepositoryImpl @Inject constructor(
 ) : ProjectRepository {
 
     override fun observeProjects(): Flow<List<ProjectSummary>> = dao.observe().map { rows ->
-        rows.map { row ->
-            ProjectSummary(
-                id = row.id,
-                name = row.name,
-                updatedAt = row.updatedAt,
-                layerCount = row.layerCount,
-                version = row.version,
-                thumbnailPath = row.thumbnailPath,
-                interrupted = row.autosaveJson != row.publishedJson
-            )
-        }
+        rows.map { row -> row.toSummary() }
     }
 
-    override suspend fun create(name: String, width: Int, height: Int, fps: Int, durationMs: Long): Project {
+    private fun ProjectEntity.toSummary(): ProjectSummary {
+        val project = runCatching {
+            ProjectSerializer.migrate(autosaveJson.ifBlank { publishedJson })
+        }.getOrDefault(Project())
+        val thumbBytes = thumbnailPath?.let { java.io.File(it).length() } ?: 0L
+        return ProjectSummary(
+            id = id,
+            name = name,
+            updatedAt = updatedAt,
+            createdAt = createdAt,
+            layerCount = layerCount,
+            version = version,
+            thumbnailPath = thumbnailPath,
+            interrupted = autosaveJson != publishedJson,
+            width = project.width,
+            height = project.height,
+            fpsExact = project.fpsExact,
+            durationMs = project.durationMs,
+            bytes = autosaveJson.toByteArray(Charsets.UTF_8).size.toLong() + thumbBytes
+        )
+    }
+
+    override suspend fun create(name: String, width: Int, height: Int, fps: Int, durationMs: Long): Project =
+        create(ProjectSpec(name = name, width = width, height = height,
+            fpsExact = fps.toDouble(), durationMs = durationMs))
+
+    override suspend fun create(spec: ProjectSpec): Project {
         val now = System.currentTimeMillis()
         val project = Project(
             id = UUID.randomUUID().toString(),
-            name = name,
-            width = width, height = height, fps = fps, durationMs = durationMs,
-            version = PROJECT_FORMAT_VERSION, updatedAt = now
+            name = spec.name,
+            width = spec.width.coerceIn(16, 4096),
+            height = spec.height.coerceIn(16, 4096),
+            fps = FrameRates.rounded(spec.fpsExact),
+            fpsExact = spec.fpsExact,
+            durationMs = spec.durationMs,
+            background = spec.background,
+            backgroundType = spec.backgroundType,
+            backgroundEnd = spec.backgroundEnd,
+            backgroundAngle = spec.backgroundAngle,
+            audioSampleRate = spec.audioSampleRate,
+            colorSpace = spec.colorSpace,
+            previewQuality = spec.previewQuality,
+            timebase = spec.timebase,
+            version = PROJECT_FORMAT_VERSION,
+            updatedAt = now,
+            createdAt = now
         )
         save(project)
         return project
@@ -82,7 +115,7 @@ class ProjectRepositoryImpl @Inject constructor(
                 publishedJson = published,
                 autosaveJson = json,
                 thumbnailPath = thumbnailPath ?: existing?.thumbnailPath,
-                createdAt = existing?.createdAt ?: now,
+                createdAt = existing?.createdAt ?: normalized.createdAt.takeIf { it > 0 } ?: now,
                 updatedAt = now,
                 version = nextVersion,
                 layerCount = normalized.layers.size

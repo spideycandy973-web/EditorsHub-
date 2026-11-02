@@ -24,3 +24,19 @@ All notable changes to this repository are documented here.
 - Browser-based compositor with layers, keyframes, effects, XML import/export,
   MediaRecorder video export and PNG frame ZIP export.
 - Signed Capacitor APK (`EditorsHub-Motion.apk`) built by CI.
+
+## 1.1.0 — 2026-11-03 (EditorsHub Motion Studio v2)
+
+- Animated six-tab navigation, animated inspector/play transitions, premium dark design system,
+  UI scaling and language switching.
+- Home/Projects: search, sorting, grid/list, full metadata, share/export/info/confirm-delete actions.
+- Full project creation (resolutions 144p–4K, custom, 8 aspect ratios, 13 exact frame rates,
+  backgrounds, audio sample rate, colour space, timebase, preview quality).
+- Preview guides and proxy media; undo/redo, multi-select, clipboard, grouping, magnetic snapping,
+  zoom-to-fit/selection.
+- Effects Library with real rendered previews; validated node-based custom effect builder.
+- AI Studio with real inference endpoint, encrypted key storage and no simulated generation.
+- Streaming universal import (native JSON, Alight Motion XML, Node Video ZIP, AEPX, AEP reference),
+  conversion reports, no size cap, cancellation and import logs.
+- Expanded settings pages wired to real behaviour; exact-FPS export, AAC bitrate and save location.
+- New JVM tests (frame rates, effect graphs, project spec/migration) and instrumented importer tests.
