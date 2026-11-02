@@ -1,0 +1,110 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arena/a6be4510-editorshub
+    paths:
+      - '.github/workflows/build-apk.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'android/**'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Locate preinstalled Android SDK
+        run: |
+          if [ -z "$ANDROID_HOME" ]; then export ANDROID_HOME="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"; fi
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "SDK root: $ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" || true
+          ls "$ANDROID_HOME/build-tools" || true
+          SDKMGR=$(find "$ANDROID_HOME" -type f -path '*/cmdline-tools/*/bin/sdkmanager' 2>/dev/null | head -1)
+          if [ -n "$SDKMGR" ]; then
+            yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+            "$SDKMGR" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null 2>&1 || true
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Package and inspect APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk EditorsHub-Motion.apk
+          ls -lh EditorsHub-Motion.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt 2>/dev/null | sort -V | tail -1)
+          if [ -n "$AAPT" ]; then "$AAPT" dump badging EditorsHub-Motion.apk | head -6; fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EditorsHub-Motion-apk
+          path: EditorsHub-Motion.apk
+          if-no-files-found: error
+
+      - name: Publish APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: EditorsHub Motion — Android APK
+          body: |
+            Installable debug-signed Android APK for EditorsHub Motion.
+            Built from the Capacitor Android wrapper by GitHub Actions.
+          files: EditorsHub-Motion.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add APK to repository
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f EditorsHub-Motion.apk
+          git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
+          git push origin HEAD:arena/a6be4510-editorshub

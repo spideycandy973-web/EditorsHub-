@@ -33,6 +33,16 @@ npx cap open android      # open in Android Studio to build an APK/AAB
 
 Capacitor wraps the same app; no native code needs to be written.
 
+### Prebuilt APK
+
+`EditorsHub-Motion.apk` at the repository root is a ready-to-install, debug-signed build.
+It is produced by `.github/workflows/build-apk.yml` on every relevant push (and can be run
+manually with **Actions → Build Android APK → Run workflow**). The same workflow publishes
+the APK to the `apk-latest` GitHub Release and uploads it as a workflow artifact.
+
+To install: copy the APK to an Android device, allow "Install unknown apps", and open it.
+Minimum Android 6.0 (API 23); built against API 35.
+
 ---
 
 ## What actually works
