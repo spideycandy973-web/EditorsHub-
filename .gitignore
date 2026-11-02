@@ -10,10 +10,25 @@ coverage/
 .vite/
 .aistudio/
 
-# Native builds (generated with `npm run cap:add:android`)
+# Web/Capacitor native build
 android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
 android/.idea/
 *.iml
+
+# Motion Studio (native Android project)
+MotionStudio/.gradle/
+MotionStudio/build/
+MotionStudio/app/build/
+MotionStudio/local.properties
+MotionStudio/app/keystore.properties
+MotionStudio/app/*.jks
+MotionStudio/app/*.keystore
+MotionStudio/.idea/
+MotionStudio/captures/
+MotionStudio/.cxx/
+
+# CI scratch logs
+ci-logs/
