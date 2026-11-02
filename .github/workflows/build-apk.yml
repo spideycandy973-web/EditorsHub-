@@ -74,7 +74,32 @@ jobs:
         run: |
           chmod +x android/gradlew
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Collect failure diagnostics
+        if: always()
+        run: |
+          {
+            echo "ANDROID_HOME=$ANDROID_HOME"
+            echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+            echo "--- platforms ---"
+            ls "$ANDROID_HOME/platforms" 2>&1
+            echo "--- build-tools ---"
+            ls "$ANDROID_HOME/build-tools" 2>&1
+            echo "--- java ---"
+            java -version 2>&1
+          } > sdk-diagnostics.txt || true
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-diagnostics
+          path: |
+            gradle-build.log
+            sdk-diagnostics.txt
+          if-no-files-found: warn
 
       - name: Package and inspect APK
         run: |
