@@ -49,13 +49,9 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "SDK root: $ANDROID_HOME"
-          ls "$ANDROID_HOME" || true
-          echo "--- platforms ---"
           ls "$ANDROID_HOME/platforms" || true
-          echo "--- build tools ---"
           ls "$ANDROID_HOME/build-tools" || true
           SDKMGR=$(find "$ANDROID_HOME" -type f -path '*/cmdline-tools/*/bin/sdkmanager' 2>/dev/null | head -1)
-          echo "sdkmanager: $SDKMGR"
           if [ -n "$SDKMGR" ]; then
             yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
             "$SDKMGR" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null 2>&1 || true
@@ -74,44 +70,7 @@ jobs:
         run: |
           chmod +x android/gradlew
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
-          exit ${PIPESTATUS[0]}
-
-      - name: Collect failure diagnostics
-        if: failure()
-        run: |
-          {
-            echo "ANDROID_HOME=$ANDROID_HOME"
-            echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-            echo "--- platforms ---"
-            ls "$ANDROID_HOME/platforms" 2>&1
-            echo "--- build-tools ---"
-            ls "$ANDROID_HOME/build-tools" 2>&1
-            echo "--- java ---"
-            java -version 2>&1
-          } > sdk-diagnostics.txt || true
-
-      - name: Upload build logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-diagnostics
-          path: |
-            gradle-build.log
-            sdk-diagnostics.txt
-          if-no-files-found: warn
-
-      - name: Publish diagnostics to repository
-        if: failure()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          mkdir -p ci-logs
-          cp gradle-build.log ci-logs/gradle-build.log 2>/dev/null || true
-          cp sdk-diagnostics.txt ci-logs/sdk-diagnostics.txt 2>/dev/null || true
-          git add -f ci-logs/ || true
-          git commit -m "ci: build diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/a6be4510-editorshub || true
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Package and inspect APK
         run: |
