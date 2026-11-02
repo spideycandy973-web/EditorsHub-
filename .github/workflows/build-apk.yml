@@ -101,6 +101,18 @@ jobs:
             sdk-diagnostics.txt
           if-no-files-found: warn
 
+      - name: Publish diagnostics to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ci-logs
+          cp gradle-build.log ci-logs/gradle-build.log 2>/dev/null || true
+          cp sdk-diagnostics.txt ci-logs/sdk-diagnostics.txt 2>/dev/null || true
+          git add -f ci-logs/ || true
+          git commit -m "ci: build diagnostics [skip ci]" || echo "no diagnostic changes"
+          git push origin HEAD:arena/a6be4510-editorshub || true
+
       - name: Package and inspect APK
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk EditorsHub-Motion.apk
