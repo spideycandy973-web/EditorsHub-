@@ -177,7 +177,7 @@ class CanvasCompositor @Inject constructor(
         val path = vectorPath(spec)
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            shader = gradient(spec.fillColor, spec.fillColor2, spec.gradient, spec.gradientAngle, 600f, 600f)
+            shader = gradient(spec.fillColor, ColorUtil.parse(spec.fillColor2), spec.gradient, spec.gradientAngle, 600f, 600f)
         }
         c.drawPath(path, fill)
         if (spec.strokeWidth > 0f) {
@@ -203,7 +203,7 @@ class CanvasCompositor @Inject constructor(
             TextAlign.CENTER -> Paint.Align.CENTER
             TextAlign.RIGHT -> Paint.Align.RIGHT
         }
-        paint.shader = gradient(spec.color, spec.color2, spec.gradient, spec.gradientAngle, 900f, spec.fontSize * lines.size)
+        paint.shader = gradient(spec.color, ColorUtil.parse(spec.color2), spec.gradient, spec.gradientAngle, 900f, spec.fontSize * lines.size)
         if (spec.shadowBlur > 0f) {
             paint.setShadowLayer(spec.shadowBlur, spec.shadowDx, spec.shadowDy, ColorUtil.parse(spec.shadowColor))
         }
@@ -453,8 +453,9 @@ class CanvasCompositor @Inject constructor(
         val shader = RadialGradient(
             w / 2f, h / 2f, radius * 0.25f,
             w / 2f, h / 2f, radius,
-            intArrayOf(Color.TRANSPARENT, Color.argb((amount * 255).toInt(), 0, 0, 0)),
-            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP
+            Color.TRANSPARENT,
+            Color.argb((amount * 255).toInt().coerceIn(0, 255), 0, 0, 0),
+            Shader.TileMode.CLAMP
         )
         val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.shader = shader

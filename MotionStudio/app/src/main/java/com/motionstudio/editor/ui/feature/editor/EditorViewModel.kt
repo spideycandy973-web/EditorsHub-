@@ -104,10 +104,10 @@ class EditorViewModel @Inject constructor(
         return s.project?.layers?.firstOrNull { it.id == s.selectedLayerId }
     }
 
-    private fun commit(transform: (Project) -> Project, autosave: Boolean = true) {
+    private fun commit(transform: (Project) -> Project) {
         val next = transform(project())
         _ui.value = _ui.value.copy(project = next)
-        if (autosave) scheduleAutosave(next)
+        scheduleAutosave(next)
     }
 
     private fun scheduleAutosave(p: Project) {

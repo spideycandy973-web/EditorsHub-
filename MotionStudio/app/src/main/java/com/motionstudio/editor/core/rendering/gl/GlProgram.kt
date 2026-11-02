@@ -169,7 +169,7 @@ class GlProgram {
         GLES20.glCompileShader(shader)
         val status = IntArray(1)
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, status, 0)
-        if (status[0] == 0) throw IllegalStateException("GL compile failed: ${GLES20.glShaderInfoLog(shader)}")
+        if (status[0] == 0) throw IllegalStateException("GL compile failed: ${GLES20.glGetShaderInfoLog(shader)}")
         return shader
     }
 
