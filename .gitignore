@@ -1,9 +1,19 @@
 node_modules/
-build/
 dist/
+build/
 coverage/
 .DS_Store
 *.log
-.env*
+.env
+.env.*
 !.env.example
+.vite/
 .aistudio/
+
+# Native builds (generated with `npm run cap:add:android`)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml

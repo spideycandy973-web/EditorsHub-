@@ -1,20 +1,14 @@
 {
-  "id": "/",
-  "name": "EditorsHub - Authentic Super-Resolution",
-  "short_name": "EditorsHub",
-  "description": "Authentic frame-by-frame super-resolution and real pixel enhancement studio powered by advanced neural algorithms.",
-  "start_url": "/",
-  "scope": "/",
+  "name": "EditorsHub Motion",
+  "short_name": "EH Motion",
+  "description": "Mobile motion graphics and video editor",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
-  "orientation": "any",
+  "orientation": "portrait",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
   "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

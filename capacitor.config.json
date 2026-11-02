@@ -1,8 +1,11 @@
 {
-  "appId": "com.editorshub.enhancer",
-  "appName": "EditorsHub",
+  "appId": "com.editorshub.motion",
+  "appName": "EditorsHub Motion",
   "webDir": "dist",
   "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true
+  },
   "server": {
     "androidScheme": "https"
   }
