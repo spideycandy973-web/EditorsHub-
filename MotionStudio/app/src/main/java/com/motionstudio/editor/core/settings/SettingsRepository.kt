@@ -1,6 +1,7 @@
 package com.motionstudio.editor.core.settings
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -35,7 +36,9 @@ data class AppSettings(
 )
 
 @Singleton
-class SettingsRepository @Inject constructor(private val context: Context) {
+class SettingsRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private object Keys {
         val DARK = booleanPreferencesKey("dark_theme")
