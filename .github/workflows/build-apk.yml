@@ -41,7 +41,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Locate preinstalled Android SDK
         run: |
@@ -78,7 +78,7 @@ jobs:
           exit ${PIPESTATUS[0]}
 
       - name: Collect failure diagnostics
-        if: always()
+        if: failure()
         run: |
           {
             echo "ANDROID_HOME=$ANDROID_HOME"
@@ -92,7 +92,7 @@ jobs:
           } > sdk-diagnostics.txt || true
 
       - name: Upload build logs
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: build-diagnostics
@@ -102,7 +102,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Publish diagnostics to repository
-        if: always()
+        if: failure()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -140,3 +140,12 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add APK to repository
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f EditorsHub-Motion.apk
+          git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
+          git push origin HEAD:arena/a6be4510-editorshub
