@@ -1,0 +1,106 @@
+name: Build Android (Motion Studio)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arena/db21ee35-editorshub
+    paths:
+      - 'MotionStudio/**'
+      - '.github/workflows/android-ci.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Locate Android SDK
+        run: |
+          if [ -z "$ANDROID_HOME" ]; then export ANDROID_HOME="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"; fi
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "SDK: $ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" || true
+          SDKMGR=$(find "$ANDROID_HOME" -type f -path '*/cmdline-tools/*/bin/sdkmanager' 2>/dev/null | head -1)
+          if [ -n "$SDKMGR" ]; then
+            yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+            "$SDKMGR" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null 2>&1 || true
+          fi
+
+      - name: Build, test and package
+        run: |
+          chmod +x MotionStudio/gradlew
+          cd MotionStudio
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:bundleRelease --stacktrace 2>&1 | tee ../android-build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Publish build log on failure
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ci-logs
+          cp android-build.log ci-logs/android-build.log 2>/dev/null || true
+          git add -f ci-logs/ || true
+          git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
+          git push origin HEAD:arena/db21ee35-editorshub || true
+
+      - name: Collect artifacts
+        if: success()
+        run: |
+          mkdir -p artifacts
+          cp MotionStudio/app/build/outputs/apk/debug/app-debug.apk artifacts/MotionStudio-debug.apk
+          cp MotionStudio/app/build/outputs/apk/release/app-release-unsigned.apk artifacts/MotionStudio-release-unsigned.apk
+          cp MotionStudio/app/build/outputs/bundle/release/app-release.aab artifacts/MotionStudio-release.aab
+          ls -lh artifacts
+
+      - name: Upload artifact bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: motion-studio-android
+          path: artifacts/
+          if-no-files-found: error
+
+      - name: Publish artifacts to GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: motion-studio-latest
+          name: Motion Studio — Android builds
+          body: |
+            Automated build from the native Android Studio project (`MotionStudio/`).
+            `MotionStudio-debug.apk` is installable for development.
+            The release APK/AAB are unsigned by design — see docs/RELEASE_SIGNING.md.
+          files: |
+            artifacts/MotionStudio-debug.apk
+            artifacts/MotionStudio-release-unsigned.apk
+            artifacts/MotionStudio-release.aab
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit artifacts to repository
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f artifacts/
+          git commit -m "build: add Android APK + AAB [skip ci]" || echo "artifacts already committed"
+          git push origin HEAD:arena/db21ee35-editorshub
