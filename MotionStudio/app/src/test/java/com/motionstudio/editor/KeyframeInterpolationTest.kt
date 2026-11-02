@@ -70,7 +70,7 @@ class KeyframeInterpolationTest {
         val mid = KeyframeEngine.color(t, 500L, 0)
         val red = (mid ushr 16) and 0xFF
         val alpha = (mid ushr 24) and 0xFF
-        assertEquals(127, red, 2)
+        assertTrue(kotlin.math.abs(red - 127) <= 2)
         assertEquals(255, alpha)
     }
 
