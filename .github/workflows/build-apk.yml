@@ -43,13 +43,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      - name: Locate preinstalled Android SDK
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          if [ -z "$ANDROID_HOME" ]; then export ANDROID_HOME="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"; fi
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "SDK root: $ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+          echo "--- platforms ---"
+          ls "$ANDROID_HOME/platforms" || true
+          echo "--- build tools ---"
+          ls "$ANDROID_HOME/build-tools" || true
+          SDKMGR=$(find "$ANDROID_HOME" -type f -path '*/cmdline-tools/*/bin/sdkmanager' 2>/dev/null | head -1)
+          echo "sdkmanager: $SDKMGR"
+          if [ -n "$SDKMGR" ]; then
+            yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+            "$SDKMGR" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null 2>&1 || true
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -70,7 +80,8 @@ jobs:
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk EditorsHub-Motion.apk
           ls -lh EditorsHub-Motion.apk
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging EditorsHub-Motion.apk | head -6
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt 2>/dev/null | sort -V | tail -1)
+          if [ -n "$AAPT" ]; then "$AAPT" dump badging EditorsHub-Motion.apk | head -6; fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
