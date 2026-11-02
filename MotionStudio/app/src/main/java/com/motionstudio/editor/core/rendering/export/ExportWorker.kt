@@ -34,6 +34,9 @@ class ExportWorker @AssistedInject constructor(
         const val KEY_BITRATE = "bitrate"
         const val KEY_CODEC = "codec"
         const val KEY_AUDIO = "audio"
+        const val KEY_FPS_EXACT = "fps_exact"
+        const val KEY_AUDIO_BITRATE = "audio_bitrate"
+        const val KEY_SAVE_LOCATION = "save_location"
         const val KEY_PROGRESS = "progress"
         const val KEY_LABEL = "label"
         const val KEY_FILE = "file"
@@ -51,10 +54,13 @@ class ExportWorker @AssistedInject constructor(
             width = inputData.getInt(KEY_WIDTH, 1080),
             height = inputData.getInt(KEY_HEIGHT, 1920),
             fps = inputData.getInt(KEY_FPS, 30),
+            fpsExact = inputData.getDouble(KEY_FPS_EXACT, 30.0),
             bitrate = inputData.getInt(KEY_BITRATE, 8_000_000),
+            audioBitrate = inputData.getInt(KEY_AUDIO_BITRATE, 128_000),
             codec = runCatching { VideoCodec.valueOf(inputData.getString(KEY_CODEC) ?: "H264") }
                 .getOrDefault(VideoCodec.H264),
-            includeAudio = inputData.getBoolean(KEY_AUDIO, true)
+            includeAudio = inputData.getBoolean(KEY_AUDIO, true),
+            saveLocation = inputData.getString(KEY_SAVE_LOCATION) ?: "gallery"
         )
         try { setForeground(foregroundInfo()) } catch (e: Exception) { /* notification unavailable */ }
 

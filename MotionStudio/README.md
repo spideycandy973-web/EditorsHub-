@@ -82,3 +82,38 @@ placeholder buttons.
 ## License
 
 MIT — see [`LICENSE`](../LICENSE). Third-party dependencies are Apache 2.0 / MIT.
+
+## Version 2 — full workspace, animation and interoperability
+
+- **Animated navigation**: six real main destinations (Home, Projects, Templates, Effects Library,
+  AI Studio, Settings) on a bottom bar / navigation rail with directional slide+fade transitions,
+  animated selection indicators, animated inspector-tab switching and animated play/pause.
+- **Projects**: search, sorting (date/name/duration/size), animated grid/list switch, real metadata
+  (thumbnail, resolution, exact FPS, duration, size, modified date), and real actions: open, rename,
+  duplicate, delete (confirmation), share native project JSON, background video export and a
+  project-information dialog.
+- **Project creation**: 144p–4K + custom resolution, eight aspect ratios, 12/15/23.976/24/25/29.97/
+  30/48/50/59.94/60/90/120 fps (exact rational rates used by playback, timeline and encoder),
+  solid/transparent/linear/radial backgrounds, audio sample rate, colour space, preview quality,
+  default duration and timebase — all persisted.
+- **Preview guides**: transparency checkerboard, safe-area, grid, centre and aspect guides;
+  proxy-media quality scaling; zoom/fit/fullscreen.
+- **Editor operations**: undo/redo (80 steps), multi-select, copy/paste layers, group/ungroup,
+  enable/disable, mute, extend, zoom-to-fit / zoom-to-selection, magnetic snapping.
+- **Effects Library & Node Editor**: 18 effects with live compositor previews; a validated DAG
+  node editor where topological order becomes the real render stack; save/import/export graphs.
+- **AI Studio**: text-to-effect and reference-image colour analysis through a configured
+  OpenAI-compatible inference endpoint. API keys are encrypted with Android Keystore AES-GCM.
+  Generation is disabled (not simulated) when the service is unavailable; rate limits, errors and
+  connection status are real. Generated graphs are validated against a node whitelist.
+- **Universal project import**: streaming import of native `.json`, Alight Motion `.xml`, Node Video
+  `.zip`/`.amproj`, After Effects `.aepx` (XML) and `.aep` (preserved reference only). No 5 MB cap;
+  storage validation, incremental XML parsing, streamed ZIP extraction, media relinking, duplicate
+  asset detection, cancellation, import logs and an honest conversion report for every file.
+- **Settings**: General / Performance / Export / Storage / AI / About pages; every preference
+  persists and changes real behaviour (UI scale, language, autosave interval, hardware acceleration,
+  background rendering, proxy media, preview guides, snapping, export defaults, cache limit, AI
+  configuration).
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module map and
+[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for versions.

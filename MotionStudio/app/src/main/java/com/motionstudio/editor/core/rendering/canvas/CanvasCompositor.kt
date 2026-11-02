@@ -62,10 +62,39 @@ class CanvasCompositor @Inject constructor(
     @Volatile var previewQuality: Float = 1f
 
     fun draw(canvas: Canvas, frame: RenderFrame, width: Int, height: Int) {
-        canvas.drawColor(ColorUtil.parse(frame.project.background))
+        drawBackground(canvas, frame.project, width, height)
         // Layer 0 is topmost, so paint bottom-to-top.
         for (resolved in frame.layers.asReversed()) {
             drawLayer(canvas, frame, resolved, width, height)
+        }
+    }
+
+    private fun drawBackground(canvas: Canvas, project: com.motionstudio.editor.core.domain.model.Project,
+                               width: Int, height: Int) {
+        val p = project
+        when (p.backgroundType) {
+            com.motionstudio.editor.core.domain.model.BackgroundType.TRANSPARENT -> {
+                // Transparent composition: leave the canvas clear so the checkerboard overlay shows.
+                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+            }
+            com.motionstudio.editor.core.domain.model.BackgroundType.LINEAR_GRADIENT -> {
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = gradient(p.background, ColorUtil.parse(p.backgroundEnd),
+                        com.motionstudio.editor.core.domain.model.GradientType.LINEAR,
+                        p.backgroundAngle, width.toFloat(), height.toFloat())
+                }
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            }
+            com.motionstudio.editor.core.domain.model.BackgroundType.RADIAL_GRADIENT -> {
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = RadialGradient(width / 2f, height / 2f,
+                        kotlin.math.max(width, height) / 2f,
+                        ColorUtil.parse(p.background), ColorUtil.parse(p.backgroundEnd),
+                        Shader.TileMode.CLAMP)
+                }
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            }
+            else -> canvas.drawColor(ColorUtil.parse(p.background))
         }
     }
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/db21ee35-editorshub
+      - arena/38df8470-editorshub
     paths:
       - 'MotionStudio/**'
       - '.github/workflows/android-ci.yml'
@@ -58,7 +58,7 @@ jobs:
           cp android-build.log ci-logs/android-build.log 2>/dev/null || true
           git add -f ci-logs/ || true
           git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/db21ee35-editorshub || true
+          git push origin HEAD:arena/38df8470-editorshub || true
 
       - name: Collect artifacts
         if: success()
@@ -103,4 +103,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f artifacts/
           git commit -m "build: add Android APK + AAB [skip ci]" || echo "artifacts already committed"
-          git push origin HEAD:arena/db21ee35-editorshub
+          git push origin HEAD:arena/38df8470-editorshub

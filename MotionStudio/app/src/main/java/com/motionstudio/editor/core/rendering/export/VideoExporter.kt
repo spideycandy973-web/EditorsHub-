@@ -56,7 +56,8 @@ class VideoExporter @Inject constructor(
     ): ExportResult = withContext(Dispatchers.Default) {
         val width = (config.width.coerceIn(16, 4096) / 2) * 2
         val height = (config.height.coerceIn(16, 4096) / 2) * 2
-        val fps = config.fps.coerceIn(1, 120)
+        val fps = config.fps.coerceIn(1, 240)
+        val fpsExact = config.fpsExact.coerceIn(1.0, 240.0)
         val outDir = File(context.cacheDir, "exported").apply { mkdirs() }
         val stamp = System.currentTimeMillis()
         val videoOnly = File(outDir, "motion_${stamp}_video.mp4")
@@ -79,7 +80,7 @@ class VideoExporter @Inject constructor(
             val format = MediaFormat.createVideoFormat(actualMime, width, height).apply {
                 setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfoCompat.COLOR_FORMAT_SURFACE)
                 setInteger(MediaFormat.KEY_BIT_RATE, config.bitrate.coerceIn(500_000, 80_000_000))
-                setInteger(MediaFormat.KEY_FRAME_RATE, fps)
+                setFloat(MediaFormat.KEY_FRAME_RATE, fpsExact.toFloat())
                 setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
             }
             encoder = MediaCodec.createByCodecName(encoderName)
@@ -90,14 +91,14 @@ class VideoExporter @Inject constructor(
             encoder.start()
             val state = MuxState()
             val info = MediaCodec.BufferInfo()
-            val total = TimelineMath.frameCount(project.durationMs, fps)
+            val total = TimelineMath.frameCount(project.durationMs, fpsExact)
 
             for (i in 0 until total) {
                 if (cancelled()) {
                     cleanup(encoder, writer, muxer)
                     return@withContext ExportResult.Cancelled
                 }
-                val timeMs = TimelineMath.frameTime(i, fps)
+                val timeMs = TimelineMath.frameTimeExact(i, fpsExact)
                 val frame = RenderGraph.resolve(project, timeMs)
                 var full: Bitmap? = null
                 var scaled: Bitmap? = null
@@ -132,7 +133,7 @@ class VideoExporter @Inject constructor(
             } else videoOnly
 
             onProgress(100, "Saving")
-            val uri = saveToMediaStore(output, "Motion_Studio_$stamp.mp4")
+            val uri = saveToMediaStore(output, "Motion_Studio_$stamp.mp4", config.saveLocation)
             ExportResult.Success(output, uri, output.length())
         } catch (e: kotlinx.coroutines.CancellationException) {
             cleanup(encoder, writer, muxer)
@@ -187,6 +188,7 @@ class VideoExporter @Inject constructor(
     private fun muxAudio(videoOnly: File, output: File, project: Project, config: ExportConfig): Boolean {
         return try {
             val pcm = audioMixer.buildPcm(project, config)
+            audioMixer.audioBitrate = config.audioBitrate
             val extractor = MediaExtractor()
             extractor.setDataSource(videoOnly.absolutePath)
             var videoSrc = -1
@@ -232,7 +234,15 @@ class VideoExporter @Inject constructor(
         }
     }
 
-    private fun saveToMediaStore(file: File, name: String): Uri? = try {
+    private fun saveToMediaStore(file: File, name: String, saveLocation: String): Uri? {
+        if (saveLocation == "app") {
+            val dir = File(context.filesDir, "Movies").apply { mkdirs() }
+            val dest = File(dir, name)
+            file.copyTo(dest, true)
+            return androidx.core.content.FileProvider.getUriForFile(
+                context, "${context.packageName}.fileprovider", dest)
+        }
+        return try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
                 put(MediaStore.Video.Media.DISPLAY_NAME, name)
@@ -259,7 +269,8 @@ class VideoExporter @Inject constructor(
             file.copyTo(dest, true)
             Uri.fromFile(dest)
         }
-    } catch (e: Exception) { null }
+        } catch (e: Exception) { null }
+    }
 
     private fun cleanup(encoder: MediaCodec?, writer: GlFrameWriter?, muxer: MediaMuxer?) {
         try { encoder?.stop() } catch (e: Exception) { /* ignore */ }

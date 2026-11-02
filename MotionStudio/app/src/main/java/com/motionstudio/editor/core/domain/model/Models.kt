@@ -3,7 +3,7 @@ package com.motionstudio.editor.core.domain.model
 import kotlinx.serialization.Serializable
 
 /** Bumped whenever the on-disk project JSON shape changes. */
-const val PROJECT_FORMAT_VERSION = 1
+const val PROJECT_FORMAT_VERSION = 2
 
 @Serializable enum class LayerType { VIDEO, IMAGE, AUDIO, TEXT, SHAPE, VECTOR, SOLID, EFFECT, GROUP }
 @Serializable enum class BlendMode { NORMAL, MULTIPLY, SCREEN, OVERLAY, DARKEN, LIGHTEN, ADD, DIFFERENCE }
@@ -21,6 +21,41 @@ const val PROJECT_FORMAT_VERSION = 1
 @Serializable enum class TextAlign { LEFT, CENTER, RIGHT }
 @Serializable enum class AudioEffectType { NONE, ECHO, BASS_BOOST, TREBLE }
 @Serializable enum class VideoCodec { H264, H265 }
+@Serializable enum class BackgroundType { SOLID, TRANSPARENT, LINEAR_GRADIENT, RADIAL_GRADIENT }
+@Serializable enum class ColorSpace { SRGB, DISPLAY_P3, BT709 }
+
+/** Exact rational frame rates used by the timeline, playback and encoder. */
+object FrameRates {
+    data class Preset(val label: String, val exact: Double)
+    val ALL = listOf(
+        Preset("12 fps", 12.0), Preset("15 fps", 15.0),
+        Preset("23.976 fps", 23.976), Preset("24 fps", 24.0), Preset("25 fps", 25.0),
+        Preset("29.97 fps", 29.97), Preset("30 fps", 30.0), Preset("48 fps", 48.0),
+        Preset("50 fps", 50.0), Preset("59.94 fps", 59.94), Preset("60 fps", 60.0),
+        Preset("90 fps", 90.0), Preset("120 fps", 120.0)
+    )
+    fun rounded(exact: Double): Int = kotlin.math.round(exact).toInt().coerceIn(1, 240)
+    fun frameDurationMs(exact: Double): Double = 1000.0 / exact.coerceIn(1.0, 240.0)
+}
+
+/** Fully persisted project-creation configuration. */
+@Serializable
+data class ProjectSpec(
+    val name: String = "Untitled",
+    val width: Int = 1080,
+    val height: Int = 1920,
+    val aspect: String = "9:16",
+    val fpsExact: Double = 30.0,
+    val durationMs: Long = 10_000L,
+    val backgroundType: BackgroundType = BackgroundType.SOLID,
+    val background: String = "#FF0B0C14",
+    val backgroundEnd: String = "#FF22D3EE",
+    val backgroundAngle: Float = 45f,
+    val audioSampleRate: Int = 48_000,
+    val colorSpace: ColorSpace = ColorSpace.SRGB,
+    val previewQuality: Float = 0.75f,
+    val timebase: String = "1/30"
+)
 
 @Serializable
 data class Keyframe(
@@ -158,6 +193,8 @@ data class Layer(
     val inPointMs: Long = 0L,
     val visible: Boolean = true,
     val locked: Boolean = false,
+    val enabled: Boolean = true,
+    val muted: Boolean = false,
     val blendMode: BlendMode = BlendMode.NORMAL,
     val parentId: String? = null,
     val sourceUri: String? = null,
@@ -182,6 +219,7 @@ data class AudioTrack(
     val durationMs: Long = 0L,
     val inPointMs: Long = 0L,
     val volume: Float = 1f,
+    val muted: Boolean = false,
     val fadeInMs: Long = 0L,
     val fadeOutMs: Long = 0L,
     val keyframes: List<KeyframeTrack> = emptyList(),
@@ -196,13 +234,23 @@ data class Project(
     val width: Int = 1080,
     val height: Int = 1920,
     val fps: Int = 30,
+    /** Exact frame rate (23.976 / 29.97 / 59.94 supported). */
+    val fpsExact: Double = 30.0,
     val durationMs: Long = 10_000L,
     val background: String = "#FF0B0C14",
+    val backgroundType: BackgroundType = BackgroundType.SOLID,
+    val backgroundEnd: String = "#FF22D3EE",
+    val backgroundAngle: Float = 45f,
+    val audioSampleRate: Int = 48_000,
+    val colorSpace: ColorSpace = ColorSpace.SRGB,
+    val previewQuality: Float = 0.75f,
+    val timebase: String = "1/30",
     val layers: List<Layer> = emptyList(),
     val audioTracks: List<AudioTrack> = emptyList(),
     val transitions: List<TransitionClip> = emptyList(),
     val version: Int = PROJECT_FORMAT_VERSION,
-    val updatedAt: Long = 0L
+    val updatedAt: Long = 0L,
+    val createdAt: Long = 0L
 )
 
 @Serializable
@@ -210,9 +258,13 @@ data class ExportConfig(
     val width: Int = 1080,
     val height: Int = 1920,
     val fps: Int = 30,
+    val fpsExact: Double = 30.0,
     val bitrate: Int = 8_000_000,
+    val audioBitrate: Int = 128_000,
     val codec: VideoCodec = VideoCodec.H264,
-    val includeAudio: Boolean = true
+    val includeAudio: Boolean = true,
+    val hardwarePreferred: Boolean = true,
+    val saveLocation: String = "gallery"
 )
 
 /** Plain, non-serialized enum for settings UI. */
@@ -225,10 +277,16 @@ data class ProjectSummary(
     val id: String,
     val name: String,
     val updatedAt: Long,
+    val createdAt: Long,
     val layerCount: Int,
     val version: Int,
     val thumbnailPath: String?,
-    val interrupted: Boolean
+    val interrupted: Boolean,
+    val width: Int,
+    val height: Int,
+    val fpsExact: Double,
+    val durationMs: Long,
+    val bytes: Long
 )
 
 /** Pure color helpers: "#RRGGBB" or "#AARRGGBB" -> packed ARGB int. */

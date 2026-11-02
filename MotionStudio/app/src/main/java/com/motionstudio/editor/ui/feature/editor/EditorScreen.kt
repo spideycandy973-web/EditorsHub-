@@ -2,6 +2,8 @@ package com.motionstudio.editor.ui.feature.editor
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.*
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -14,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.motionstudio.editor.ui.theme.AppMotion
+import com.motionstudio.editor.ui.theme.EditorPalette
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,7 +28,7 @@ import com.motionstudio.editor.core.domain.timeline.TimelineMath
 import com.motionstudio.editor.ui.components.LabeledSelect
 import com.motionstudio.editor.ui.components.SliderRow
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun EditorScreen(
     vm: EditorViewModel = hiltViewModel(),
@@ -50,6 +54,15 @@ fun EditorScreen(
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
                 },
                 actions = {
+                    IconButton(onClick = { vm.undo() }, enabled = state.undoAvailable) {
+                        Icon(Icons.Default.Undo, "Undo")
+                    }
+                    IconButton(onClick = { vm.redo() }, enabled = state.redoAvailable) {
+                        Icon(Icons.Default.Redo, "Redo")
+                    }
+                    IconButton(onClick = { vm.zoomToFit() }) { Icon(Icons.Default.FitScreen, "Zoom to fit") }
+                    IconButton(onClick = { vm.zoomToSelection() }) { Icon(Icons.Default.Crop, "Zoom to selection") }
+                    GuidesMenu(state, vm)
                     IconButton(onClick = { vm.saveNow() }) { Icon(Icons.Default.Save, "Save") }
                     IconButton(onClick = { fullscreen = true }) { Icon(Icons.Default.Fullscreen, "Fullscreen") }
                     IconButton(onClick = { showExport = true }) { Icon(Icons.Default.FileDownload, "Export") }
@@ -99,8 +112,14 @@ private fun PlayerBar(state: EditorUiState, vm: EditorViewModel) {
             Icon(Icons.Default.KeyboardArrowLeft, null, Modifier.size(18.dp))
         }
         IconButton(onClick = { vm.togglePlay() }, modifier = Modifier.size(34.dp)) {
-            Icon(if (state.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                "Play / pause", Modifier.size(20.dp))
+            AnimatedContent(targetState = state.playing, transitionSpec = {
+                scaleIn(animationSpec = spring()) + fadeIn() togetherWith
+                    scaleOut(animationSpec = spring()) + fadeOut()
+            }, label = "play-pause") { playing ->
+                Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    "Play / pause", Modifier.size(20.dp),
+                    tint = if (playing) EditorPalette.Purple else EditorPalette.TextPrimary)
+            }
         }
         IconButton(onClick = { vm.stepFrames(1) }, modifier = Modifier.size(30.dp)) {
             Icon(Icons.Default.KeyboardArrowRight, null, Modifier.size(18.dp))
@@ -134,11 +153,13 @@ private fun PlayerBar(state: EditorUiState, vm: EditorViewModel) {
 private fun ExportDialog(state: EditorUiState, vm: EditorViewModel, onDismiss: () -> Unit) {
     val p = state.project ?: return
     val context = LocalContext.current
-    var resolution by remember { mutableStateOf(ExportResolution.P1080) }
-    var fps by remember { mutableIntStateOf(30) }
-    var bitrateMbps by remember { mutableFloatStateOf(8f) }
-    var codec by remember { mutableStateOf(VideoCodec.H264) }
-    var audio by remember { mutableStateOf(true) }
+    var resolution by remember { mutableStateOf(state.defaultResolution) }
+    var fps by remember { mutableIntStateOf(state.defaultFps) }
+    var bitrateMbps by remember { mutableFloatStateOf(state.defaultBitrate / 1_000_000f) }
+    var codec by remember { mutableStateOf(state.defaultCodec) }
+    var audio by remember { mutableStateOf(state.defaultIncludeAudio) }
+    var quality by remember { mutableIntStateOf(state.defaultQuality) }
+    var saveLocation by remember { mutableStateOf(state.defaultSaveLocation) }
 
     val shortSide = resolution.shortSide
     val ratio = p.width.toFloat() / p.height.toFloat()
@@ -157,8 +178,11 @@ private fun ExportDialog(state: EditorUiState, vm: EditorViewModel, onDismiss: (
                 LabeledSelect("Frame rate", fps.toString(),
                     listOf("24", "30", "60").map { it to "$it fps" }) { fps = it.toInt() }
                 SliderRow("Bitrate (Mbps)", bitrateMbps, 1f..30f, { bitrateMbps = it })
+                SliderRow("Quality", quality.toFloat(), 10f..100f, { quality = it.toInt() })
                 LabeledSelect("Codec", codec.name,
                     VideoCodec.entries.map { it.name to it.name }) { codec = VideoCodec.valueOf(it) }
+                LabeledSelect("Save location", saveLocation,
+                    listOf("gallery" to "Gallery / MediaStore", "app" to "App storage")) { saveLocation = it }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Include audio", fontSize = 11.sp, modifier = Modifier.weight(1f))
                     Switch(checked = audio, onCheckedChange = { audio = it })
@@ -197,14 +221,44 @@ private fun ExportDialog(state: EditorUiState, vm: EditorViewModel, onDismiss: (
                 TextButton(onClick = {
                     vm.startExport(
                         ExportConfig(
-                            width = w, height = h, fps = fps,
-                            bitrate = (bitrateMbps * 1_000_000).toInt(),
-                            codec = codec, includeAudio = audio
+                            width = w, height = h, fps = fps, fpsExact = fps.toDouble(),
+                            bitrate = (bitrateMbps * 1_000_000 * quality / 100).toInt(),
+                            audioBitrate = 128_000,
+                            codec = codec, includeAudio = audio,
+                            saveLocation = saveLocation
                         )
                     )
                 }) { Text("Start export") }
             }
         },
         dismissButton = { TextButton(onClick = { vm.dismissExport(); onDismiss() }) { Text("Close") } }
+    )
+}
+
+
+@Composable
+private fun GuidesMenu(state: EditorUiState, vm: EditorViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) { Icon(Icons.Default.GridOn, "Preview guides") }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            GuideItem("Transparency checkerboard", state.checkerboard) { vm.setGuide("checkerboard", it) }
+            GuideItem("Safe area", state.showSafeArea) { vm.setGuide("safe", it) }
+            GuideItem("Grid", state.showGrid) { vm.setGuide("grid", it) }
+            GuideItem("Center guides", state.showCenterGuides) { vm.setGuide("center", it) }
+            GuideItem("Aspect guides", state.showAspectGuides) { vm.setGuide("aspect", it) }
+        }
+    }
+}
+
+@Composable
+private fun GuideItem(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    DropdownMenuItem(
+        text = { Text(label, style = androidx.compose.material3.MaterialTheme.typography.bodySmall) },
+        onClick = { onChange(!checked) },
+        trailingIcon = {
+            Icon(if (checked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                null, Modifier.size(16.dp))
+        }
     )
 }
