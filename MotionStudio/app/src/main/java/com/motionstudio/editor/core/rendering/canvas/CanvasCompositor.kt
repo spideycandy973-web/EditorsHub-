@@ -451,9 +451,8 @@ class CanvasCompositor @Inject constructor(
         c.drawBitmap(src, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
         val radius = max(w, h) * (0.35f + size * 0.55f)
         val shader = RadialGradient(
-            w / 2f, h / 2f, radius * 0.25f,
             w / 2f, h / 2f, radius,
-            Color.TRANSPARENT,
+            Color.argb(0, 0, 0, 0),
             Color.argb((amount * 255).toInt().coerceIn(0, 255), 0, 0, 0),
             Shader.TileMode.CLAMP
         )
