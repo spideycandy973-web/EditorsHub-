@@ -130,7 +130,7 @@ export function createProject(name = 'Untitled Project', width = 1080, height = 
     height,
     fps: 30,
     duration: 10,
-    background: '#0b0c14',
+    background: '#e9e9ec',
     layers: [],
     createdAt: now,
     updatedAt: now,

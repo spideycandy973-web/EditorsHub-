@@ -2,14 +2,13 @@ import React from 'react';
 import {
   Copy, Maximize2, Pause, Play, Redo2, SkipBack, SkipForward, Undo2,
 } from 'lucide-react';
-import { useEditor, usePlayhead } from '../editor/store';
-import { formatTime } from '../editor/utils';
+import { useEditor } from '../editor/store';
 import { IconBtn } from './ui';
 
-/** Alight-Motion-style control bar with transport, ruler and timecode. */
+/** Alight-Motion-style control bar: seven transport icons, single row.
+ *  The ruler + timecode live on the timeline itself (see Timeline.tsx). */
 export function PlayerBar() {
   const e = useEditor();
-  const time = usePlayhead();
   return (
     <div className="playerbar">
       <div className="am-transport">
@@ -24,12 +23,6 @@ export function PlayerBar() {
         <span className="am-transport-sep" />
         <IconBtn title="Duplicate selected layer (D)" onClick={() => e.selectedLayer && e.duplicateLayer(e.selectedLayer.id)}><Copy size={16} /></IconBtn>
         <IconBtn title="Fit preview / reset zoom" onClick={() => e.setPreviewZoom(1)}><Maximize2 size={16} /></IconBtn>
-      </div>
-
-      <div className="am-ruler-wrap">
-        <div className="am-ruler" />
-        <span className="am-timecode">{formatTime(time, e.project.fps)}</span>
-        <span className="am-total-time">{formatTime(e.project.duration, e.project.fps)}</span>
       </div>
     </div>
   );

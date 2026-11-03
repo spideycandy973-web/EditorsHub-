@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  ChevronDown, Diamond, Folder, Move, PlusCircle, SlidersHorizontal, Sparkles,
+  ChevronDown, Diamond, Folder, LayoutGrid, Move, PlusCircle, Shapes, SlidersHorizontal,
+  Sparkles, Type, X,
 } from 'lucide-react';
 import { editor, useEditor } from './editor/store';
 import { Renderer } from './editor/renderer';
@@ -202,6 +203,12 @@ export default function App() {
                   {e.panel === 'effects' && <EffectsPanel />}
                   {e.panel === 'keyframes' && <KeyframesPanel />}
                   {e.panel === 'project' && <ProjectPanel />}
+                </div>
+                <div className="am-rail-right">
+                  <button type="button" title="All categories" onClick={() => { e.setPanel('add'); e.setAddCategory('media'); }}><LayoutGrid size={17} /></button>
+                  <button type="button" title="Add text layer" onClick={() => { e.addLayer('text'); e.setPanel('edit'); }}><Type size={17} /></button>
+                  <button type="button" title="Add shape layer" onClick={() => { e.setPanel('add'); e.setAddCategory('shape'); }}><Shapes size={17} /></button>
+                  <button type="button" className="close" title="Close panel" onClick={() => e.toggleSheet()}><X size={19} /></button>
                 </div>
               </div>
             </div>

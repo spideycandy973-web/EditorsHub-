@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ChevronDown, ImagePlus, Minus, Plus, Maximize2, Layers3, Search } from 'lucide-react';
+import { ImagePlus, Minus, Plus, Maximize2, Layers3, Search } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import { importMany } from '../editor/media';
 import type { Renderer } from '../editor/renderer';
@@ -62,7 +62,7 @@ export function Preview({
       <button type="button" className="am-preview-search" title="Fit preview / reset zoom" onClick={() => e.setPreviewZoom(1)}>
         <Search size={17} />
       </button>
-      <div className="am-watermark">EditorsHub <ChevronDown size={12} /></div>
+      <div className="am-watermark">EditorsHub</div>
 
       <div className="canvas-holder" style={{ transform: `scale(${e.previewZoom})` }}>
         <canvas ref={canvasRef} onPointerDown={onCanvasPointer} />

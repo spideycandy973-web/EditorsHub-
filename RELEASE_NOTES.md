@@ -1,4 +1,4 @@
-# EditorsHub v2.1.0 — Alight-Motion-style Editor
+# EditorsHub v2.2.0 — Alight Motion fidelity
 
 An original, production-structured Android motion editor: Kotlin + Jetpack Compose + Material 3,
 Room, Hilt, WorkManager, Media3, OpenGL ES 2.0, MediaCodec/MediaMuxer and the Storage Access
@@ -8,10 +8,35 @@ Framework. Package `com.editorshub`, application label `EditorsHub`.
 `EditorsHub-debug.apk` is installable for development (`adb install`). The release APK is
 unsigned by design — configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run the
 `android-release.yml` workflow with keystore secrets. `EditorsHub-release.aab` is for Play upload.
-`EditorsHub-source-v2.1.0.zip` contains the complete source tree (source only, no build outputs).
+`EditorsHub-source-v2.2.0.zip` contains the complete source tree (source only, no build outputs).
 The web/PWA editor and its Capacitor APK (`EditorsHub-Motion.apk` / `apk-latest`) are also rebuilt.
 
-## What's new in 2.1.0 — Alight-Motion-style UI
+## What's new in 2.2.0 — closer Alight Motion fidelity
+
+This release tightens the editor to Alight Motion's actual layout and interaction model while
+keeping **EditorsHub**'s own name, logo and original code. No proprietary assets are copied.
+
+- **Clean preview**: floating zoom chip, resolution/FPS badges, layer chip and zoom toolbar were
+  removed from the canvas. The composition now starts light grey, with a subtle vertical
+  `EditorsHub` watermark at the right edge, exactly as Alight Motion's empty project does. Those
+  controls are still real and reachable from Settings (zoom slider, grid/guides) and the Add menu.
+- **Navigation bar**: back / project name / settings gear / export, single-line title on phones.
+- **Single-row transport**: undo, redo, start, play/pause, end, duplicate, fit — no second ruler row.
+- **Centre-anchored playhead**: the playhead is fixed at the horizontal centre of the timeline and
+  layers scroll underneath it. Scrubbing uses drag-delta so it stays stable while the ruler moves;
+  playback, scrubbing and zoom were verified to keep the playhead at the exact centre.
+- **AM-style ruler**: small tick marks only, plain white `mm:ss:ff` timecode above the playhead,
+  no numeric labels on phones. The layer chip with previous/next arrows sits above the clip bars.
+- **Layer gutter**: eye + thumbnail pinned at the left edge; amber/teal/blue clip bars; no
+  timeline toolbar on phones (all its actions live in the real Layer options dialog).
+- **Circular outlined Add Layer button** at the bottom-right of the timeline, replaced by the big
+  **X** in the inspector rail while the Add menu is open.
+- **Two rails, not four**: one panel rail on the left, one persistent quick-action rail on the
+  right (All / Text / Shapes / close). Every button performs a real action.
+- All template circles now carry Alight Motion's thin teal ring.
+- `versionCode 4`, `versionName 2.2.0`; PWA cache `editorshub-v4`.
+
+## Previous release — 2.1.0 (Alight-Motion-style UI)
 
 This release rebuilds the visible interface around Alight Motion's layout and interaction model,
 while keeping **EditorsHub**'s own name, logo and original code. No proprietary assets are copied.
