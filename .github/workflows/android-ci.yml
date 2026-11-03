@@ -71,8 +71,11 @@ jobs:
 
       - name: Package complete source archive
         if: success()
+        # Source only: exclude committed build outputs so the ZIP stays small.
         run: |
-          git archive --format=zip --prefix=EditorsHub-v2.0.1/ HEAD > artifacts/EditorsHub-source-v2.0.1.zip
+          git archive --format=zip --prefix=EditorsHub-v2.0.1/ HEAD -- \
+            . ':(exclude)artifacts' ':(exclude)artifacts/**' \
+            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v2.0.1.zip
           ls -lh artifacts/
 
       - name: Upload artifact bundle
@@ -136,6 +139,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
+      - name: Checkout for diagnostics
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
@@ -157,21 +165,43 @@ jobs:
           arch: x86_64
           profile: pixel_5
           disable-animations: true
+          # /usr/bin/sh is dash here: no `set -o pipefail` (it exits 2).
           script: |
-            set -euo pipefail
-            adb install -r artifacts/EditorsHub-debug.apk
-            adb logcat -c
-            adb shell am start -W -n com.editorshub/.MainActivity
-            sleep 12
-            PROC=$(adb shell pidof com.editorshub || true)
-            if [ -z "$PROC" ]; then
-              echo "::error::EditorsHub process is not running after launch"
-              adb logcat -d -v brief | tail -120
-              exit 1
-            fi
-            if adb logcat -d | grep -q "FATAL EXCEPTION"; then
-              echo "::error::Crash detected in logcat"
-              adb logcat -d -v brief | tail -160
-              exit 1
-            fi
-            echo "Launch smoke test passed (pid $PROC)"
+            run_smoke() {
+              echo "== install =="
+              adb install -r artifacts/EditorsHub-debug.apk || { echo "INSTALL FAILED"; return 1; }
+              adb logcat -c || true
+              echo "== start =="
+              adb shell am start -W -n com.editorshub/.MainActivity || echo "START RETURNED NONZERO"
+              sleep 12
+              PROC=$(adb shell pidof com.editorshub || true)
+              echo "PROC=[$PROC]"
+              echo "== logcat tail =="
+              adb logcat -d -v brief | tail -140 || true
+              if [ -z "$PROC" ]; then
+                echo "::error::EditorsHub process is not running after launch"
+                return 1
+              fi
+              if adb logcat -d | grep -q "FATAL EXCEPTION"; then
+                echo "::error::Crash detected in logcat"
+                return 1
+              fi
+              echo "Launch smoke test passed (pid $PROC)"
+              return 0
+            }
+            run_smoke > smoke-diagnostics.txt 2>&1
+            STATUS=$?
+            cat smoke-diagnostics.txt
+            exit $STATUS
+
+      - name: Publish smoke diagnostics
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ci-logs
+          cp smoke-diagnostics.txt ci-logs/smoke-diagnostics.txt 2>/dev/null || \
+            echo "no diagnostics file was produced" > ci-logs/smoke-diagnostics.txt
+          git add -f ci-logs/
+          git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
+          git push origin HEAD:arena/fa6652a1-editorshub || true
