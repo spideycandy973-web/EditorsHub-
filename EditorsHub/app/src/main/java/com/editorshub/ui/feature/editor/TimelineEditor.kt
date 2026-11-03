@@ -25,6 +25,7 @@ import com.editorshub.core.domain.model.Layer
 import com.editorshub.core.domain.model.LayerType
 import com.editorshub.core.domain.model.Project
 import com.editorshub.core.domain.timeline.TimelineMath
+import com.editorshub.ui.theme.EditorPalette
 import kotlin.math.roundToLong
 
 @Composable
@@ -94,7 +95,7 @@ fun TimelineEditor(
                                 .offset(x = (state.playheadMs / 1000f * zoom).dp)
                                 .width(2.dp)
                                 .height(totalHeight)
-                                .background(Color(0xFFFF5A7A))
+                                .background(Color.White)
                         )
                     }
                 }
@@ -111,8 +112,8 @@ private fun Ruler(project: Project, zoom: Float, height: Dp) {
         while (t <= project.durationMs) {
             val x = (t / 1000f * zoom).dp
             Box(Modifier.offset(x = x).width(1.dp).height(height).background(Color(0xFF454A63)))
-            Text("${t / 1000f}s", fontSize = 8.sp,
-                modifier = Modifier.offset(x = x + 2.dp, y = 5.dp), color = Color(0xFF9AA0BC))
+            Text("${pad2(t / 60000)}:${pad2(t / 1000 % 60)}", fontSize = 8.sp,
+                modifier = Modifier.offset(x = x + 2.dp, y = 5.dp), color = EditorPalette.TextMuted)
             t += stepMs
         }
     }
@@ -123,8 +124,8 @@ private fun LayerLabel(layer: Layer, index: Int, state: EditorUiState, vm: Edito
     Row(
         modifier = Modifier
             .height(height).fillMaxWidth()
-            .background(if (layer.id == state.selectedLayerId) Color(0xFF262945) else MaterialTheme.colorScheme.surface)
-            .border(0.5.dp, Color(0xFF2A2E40))
+            .background(if (layer.id == state.selectedLayerId) Color(0xFF243247) else EditorPalette.Surface)
+            .border(0.5.dp, EditorPalette.OutlineSoft)
             .pointerInput(Unit) { },
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -138,7 +139,7 @@ private fun LayerLabel(layer: Layer, index: Int, state: EditorUiState, vm: Edito
                 LayerType.AUDIO -> Icons.Default.Audiotrack
                 else -> Icons.Default.Layers
             },
-            null, Modifier.size(14.dp), tint = Color(0xFFB9AEFF)
+            null, Modifier.size(14.dp), tint = EditorPalette.Purple
         )
         Spacer(Modifier.width(4.dp))
         Text(layer.name, fontSize = 10.sp, maxLines = 1, modifier = Modifier.weight(1f)
@@ -168,14 +169,14 @@ private fun ClipBar(
     val width = (layer.durationMs / 1000f * zoom).dp.coerceAtLeast(8.dp)
     val selected = layer.id == state.selectedLayerId
     val color = when (layer.type) {
-        LayerType.TEXT -> Color(0xFF8B3F70)
-        LayerType.IMAGE -> Color(0xFF2C6A48)
-        LayerType.VIDEO -> Color(0xFF1D6A80)
-        LayerType.AUDIO -> Color(0xFF7A6324)
-        LayerType.SOLID -> Color(0xFF393D5C)
-        else -> Color(0xFF4D4483)
+        LayerType.TEXT -> Color(0xFFF5A623)
+        LayerType.IMAGE, LayerType.VIDEO -> Color(0xFF3D8BEF)
+        LayerType.AUDIO -> Color(0xFF9B6CE0)
+        LayerType.SOLID -> Color(0xFFF06A6A)
+        LayerType.SHAPE, LayerType.VECTOR -> Color(0xFF10B89A)
+        else -> Color(0xFF5A6478)
     }
-    Box(Modifier.fillMaxWidth().height(height).border(0.5.dp, Color(0xFF232737))) {
+    Box(Modifier.fillMaxWidth().height(height).border(0.5.dp, EditorPalette.OutlineSoft)) {
         Box(
             Modifier
                 .offset(x = left)
@@ -184,7 +185,7 @@ private fun ClipBar(
                 .offset(y = 4.dp)
                 .background(color, RoundedCornerShape(5.dp))
                 .border(if (selected) 1.5.dp else 0.5.dp,
-                    if (selected) Color(0xFFC4B5FD) else Color(0xFF6F61B8), RoundedCornerShape(5.dp))
+                    if (selected) Color.White else EditorPalette.Outline, RoundedCornerShape(5.dp))
                 .pointerInput(layer.id, zoom) {
                     detectDragGestures(
                         onDragStart = { vm.selectLayer(layer.id) },
@@ -207,7 +208,7 @@ private fun ClipBar(
                         Modifier
                             .offset(x = (kf.timeMs / 1000f * zoom).dp, y = (height - 14.dp))
                             .size(6.dp)
-                            .background(Color.Yellow, RoundedCornerShape(1.dp))
+                            .background(EditorPalette.Purple, RoundedCornerShape(1.dp))
                     )
                 }
             }
@@ -229,3 +230,5 @@ private fun TrimHandle(modifier: Modifier, zoom: Float, density: Float, onDrag: 
             }
     )
 }
+
+private fun pad2(v: Long): String = v.toString().padStart(2, '0')

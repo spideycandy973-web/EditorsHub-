@@ -2,6 +2,31 @@
 
 All notable changes to this repository are documented here.
 
+## 2.1.0 — 2026-11-03 (Alight-Motion-style UI)
+
+### Added
+- **Light Projects launcher** (web/PWA): hamburger, centred wordmark, avatar, Explore Templates
+  circular carousel, Latest projects, dashed Create New Project card, Get started cards and a
+  bottom nav with the signature teal circular + button. Projects tab with XML upload card, filter
+  chips and saved-project cards; Templates and Tutorials tabs wired to real actions.
+- **AM-style Create Project sheet**: name, 6 aspect ratios, 480p–4K, 24/25/30/50/60 fps,
+  duration, background colour and editable demo composition.
+- **Dark midnight editor** restyle: AM navigation bar, control bar with tick ruler + timecode pill,
+  watermark pill, coloured clip bars (amber text / teal shape / blue media / purple audio / coral
+  solid), white playhead, teal Add Layer FAB, bottom tool dock and vertical inspector rail.
+- **AM-style Add menu**: Shape / Media / Audio / Object / Element / Text categories with a
+  quick-action rail; every item performs a real layer or import action.
+- Real **Settings modal** (grid, safe area, snap, loop, auto-key, zoom) and Settings gear in the
+  editor top bar.
+- Mint/teal `#10E0A0` on midnight navy `#141824` across web + native; launcher, splash,
+  notification and PWA icons recoloured; new `EditorsHub` wordmark for the light launcher.
+
+### Changed (native Android)
+- `EditorPalette` reskinned; editor top bar reduced to back / title / guides / overflow / export;
+  control bar rebuilt with transport + ruler + `00:00:00` timecode; timeline clip colours and
+  playhead recoloured; Add Layer FAB added; Home hero restyled as "What will you create?".
+- `versionCode 3`, `versionName 2.1.0`; releases `v2.1.0` and rolling `editorshub-latest`.
+
 ## 2.0.1 — 2026-11-03 (stability + brand)
 
 ### Fixed

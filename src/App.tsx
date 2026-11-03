@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { ChevronDown, PlusCircle, Folder, Sparkles, Diamond, SlidersHorizontal } from 'lucide-react';
+import {
+  ChevronDown, Diamond, Folder, Move, PlusCircle, SlidersHorizontal, Sparkles,
+} from 'lucide-react';
 import { editor, useEditor } from './editor/store';
 import { Renderer } from './editor/renderer';
 import { clamp } from './editor/utils';
@@ -7,6 +9,7 @@ import { TopBar } from './components/TopBar';
 import { Preview } from './components/Preview';
 import { PlayerBar } from './components/PlayerBar';
 import { Timeline, BottomNav } from './components/Timeline';
+import { HomeScreen } from './components/HomeScreen';
 import { AddPanel } from './components/panels/AddPanel';
 import { EditPanel } from './components/panels/EditPanel';
 import { EffectsPanel } from './components/panels/EffectsPanel';
@@ -14,16 +17,25 @@ import { KeyframesPanel } from './components/panels/KeyframesPanel';
 import { ProjectPanel } from './components/panels/ProjectPanel';
 import {
   ExportModal, XmlImportModal, ProjectsModal, NewProjectModal, LayerMenuModal, HelpModal,
+  SettingsModal,
 } from './components/Modals';
 import { IconBtn } from './components/ui';
 
 const PANEL_META = {
-  add: { title: 'Add', icon: <PlusCircle size={15} /> },
-  edit: { title: 'Edit layer', icon: <SlidersHorizontal size={15} /> },
+  add: { title: 'Add layer', icon: <PlusCircle size={15} /> },
+  edit: { title: 'Move & Transform', icon: <Move size={15} /> },
   effects: { title: 'Effects', icon: <Sparkles size={15} /> },
   keyframes: { title: 'Keyframes', icon: <Diamond size={15} /> },
   project: { title: 'Project', icon: <Folder size={15} /> },
 };
+
+const RAIL = [
+  { id: 'add', icon: <PlusCircle size={17} />, label: 'Add' },
+  { id: 'edit', icon: <SlidersHorizontal size={17} />, label: 'Move' },
+  { id: 'effects', icon: <Sparkles size={17} />, label: 'Effects' },
+  { id: 'keyframes', icon: <Diamond size={17} />, label: 'Keys' },
+  { id: 'project', icon: <Folder size={17} />, label: 'Project' },
+] as const;
 
 export default function App() {
   const e = useEditor();
@@ -74,6 +86,7 @@ export default function App() {
     let last = performance.now();
     let lastRender = 0;
     const loop = (now: number) => {
+      if (editor.screen === 'home') { raf = requestAnimationFrame(loop); return; }
       if (lastProject !== editor.project) {
         renderer.setProject(editor.project);
         lastProject = editor.project;
@@ -158,30 +171,45 @@ export default function App() {
   const meta = PANEL_META[e.panel];
 
   return (
-    <div className={`app ${e.sheetOpen ? '' : 'sheet-closed'}`}>
-      <TopBar />
-      <Preview canvasRef={canvasRef} stageRef={stageRef} rendererRef={rendererRef} />
-      <PlayerBar />
-      <Timeline />
+    <>
+      <div className={`app ${e.sheetOpen ? '' : 'sheet-closed'} ${e.screen === 'home' ? 'app-hidden' : ''} ${e.sheetOpen && e.panel === 'add' ? 'am-add-open' : ''}`}>
+        <TopBar />
+        <Preview canvasRef={canvasRef} stageRef={stageRef} rendererRef={rendererRef} />
+        <PlayerBar />
+        <Timeline />
 
-      <div className="dock">
-        <BottomNav />
-        {e.sheetOpen && (
-          <div className="sheet">
-            <div className="sheet-head">
-              <div className="sheet-title">{meta.icon}<span>{meta.title}</span></div>
-              <IconBtn title="Collapse panel" onClick={() => e.toggleSheet()}><ChevronDown size={17} /></IconBtn>
+        <div className="dock">
+          <BottomNav />
+          {e.sheetOpen && (
+            <div className="sheet">
+              <div className="sheet-head">
+                <div className="sheet-title">{meta.icon}<span>{meta.title}</span></div>
+                <IconBtn title="Collapse panel" onClick={() => e.toggleSheet()}><ChevronDown size={17} /></IconBtn>
+              </div>
+              <div className="am-sheet-body">
+                <div className="am-rail">
+                  {RAIL.map(r => (
+                    <button
+                      key={r.id} type="button" title={r.label}
+                      className={e.panel === r.id ? 'on' : ''}
+                      onClick={() => e.setPanel(r.id)}
+                    >{r.icon}</button>
+                  ))}
+                </div>
+                <div className="sheet-content">
+                  {e.panel === 'add' && <AddPanel />}
+                  {e.panel === 'edit' && <EditPanel />}
+                  {e.panel === 'effects' && <EffectsPanel />}
+                  {e.panel === 'keyframes' && <KeyframesPanel />}
+                  {e.panel === 'project' && <ProjectPanel />}
+                </div>
+              </div>
             </div>
-            <div className="sheet-content">
-              {e.panel === 'add' && <AddPanel />}
-              {e.panel === 'edit' && <EditPanel />}
-              {e.panel === 'effects' && <EffectsPanel />}
-              {e.panel === 'keyframes' && <KeyframesPanel />}
-              {e.panel === 'project' && <ProjectPanel />}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {e.screen === 'home' && <HomeScreen />}
 
       {e.modal === 'export' && <ExportModal />}
       {e.modal === 'xml' && <XmlImportModal />}
@@ -189,8 +217,9 @@ export default function App() {
       {e.modal === 'newProject' && <NewProjectModal />}
       {e.modal === 'layerMenu' && <LayerMenuModal />}
       {e.modal === 'help' && <HelpModal />}
+      {e.modal === 'settings' && <SettingsModal />}
 
       {e.toast && <div className={`toast ${e.toast.kind}`}>{e.toast.text}</div>}
-    </div>
+    </>
   );
 }

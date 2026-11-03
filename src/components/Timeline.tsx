@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import {
   Circle, Diamond, Eye, EyeOff, Film, Folder, Image as ImageIcon, Lock, Minus, Music2,
   MoreVertical, Plus, Scissors, Square, Trash2, Type, Unlock, Copy, ClipboardPaste,
-  ChevronUp, ChevronDown, PlusCircle,
+  ChevronUp, ChevronDown, PlusCircle, Shapes, Move, WandSparkles,
 } from 'lucide-react';
 import { useEditor, usePlayhead } from '../editor/store';
 import { PROP_MAP, type Layer } from '../editor/types';
@@ -249,6 +249,9 @@ export function Timeline() {
           </div>
         </div>
       </div>
+      <button type="button" className="am-fab" title="Add layer (1)" onClick={() => e.setPanel('add')}>
+        <Plus size={26} />
+      </button>
     </div>
   );
 }
@@ -256,10 +259,10 @@ export function Timeline() {
 export function BottomNav() {
   const e = useEditor();
   const tabs = [
-    { id: 'add' as const, label: 'Add', icon: <PlusCircle size={19} /> },
-    { id: 'edit' as const, label: 'Edit', icon: <Type size={19} /> },
-    { id: 'effects' as const, label: 'Effects', icon: <Diamond size={19} /> },
-    { id: 'keyframes' as const, label: 'Keys', icon: <Scissors size={19} /> },
+    { id: 'add' as const, label: 'Add', icon: <Shapes size={19} /> },
+    { id: 'edit' as const, label: 'Move', icon: <Move size={19} /> },
+    { id: 'effects' as const, label: 'Effects', icon: <WandSparkles size={19} /> },
+    { id: 'keyframes' as const, label: 'Keys', icon: <Diamond size={19} /> },
     { id: 'project' as const, label: 'Project', icon: <Folder size={19} /> },
   ];
   return (

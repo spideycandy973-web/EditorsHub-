@@ -34,6 +34,10 @@ class EditorStore {
   panel: PanelId = 'add';
   sheetOpen = typeof window === 'undefined' ? true : window.innerWidth >= 1024;
   modal: ModalId = null;
+  /** 'home' = Alight-Motion-style projects launcher, 'editor' = the dark timeline editor. */
+  screen: 'home' | 'editor' = 'home';
+  homeTab: 'home' | 'tutorials' | 'projects' | 'templates' = 'home';
+  addCategory: 'shape' | 'media' | 'audio' | 'object' | 'element' | 'text' = 'media';
   toast: { id: number; text: string; kind: 'info' | 'ok' | 'warn' } | null = null;
 
   time = 0;
@@ -143,6 +147,15 @@ class EditorStore {
   setPanel(p: PanelId): void { this.panel = p; this.sheetOpen = true; this.emit(); }
   toggleSheet(): void { this.sheetOpen = !this.sheetOpen; this.emit(); }
   setModal(m: ModalId): void { this.modal = m; this.emit(); }
+  setScreen(v: 'home' | 'editor'): void {
+    this.screen = v;
+    if (v === 'home') { this.playing = false; this.saveNow(); }
+    this.emit();
+  }
+  setHomeTab(v: 'home' | 'tutorials' | 'projects' | 'templates'): void { this.homeTab = v; this.emit(); }
+  setAddCategory(v: 'shape' | 'media' | 'audio' | 'object' | 'element' | 'text'): void {
+    this.addCategory = v; this.emit();
+  }
   notify(text: string, kind: 'info' | 'ok' | 'warn' = 'info'): void {
     this.toast = { id: Date.now(), text, kind };
     this.emit();

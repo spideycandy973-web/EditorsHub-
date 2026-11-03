@@ -181,14 +181,26 @@ private fun HeroCard(onNew: () -> Unit, onImport: () -> Unit, onMedia: () -> Uni
             Column(Modifier.padding(EditorDimens.Space4)) {
                 EditorsHubBrand()
                 Spacer(Modifier.height(EditorDimens.Space3))
-                Text("Create something that moves", style = MaterialTheme.typography.headlineMedium)
-                Text("Layers · keyframes · GPU effects · real MP4 export",
+                Text("What will you create?", style = MaterialTheme.typography.headlineMedium,
+                    color = EditorPalette.TextPrimary)
+                Text("Layers · keyframes · effects · real MP4 export",
                     style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextSecondary)
                 Spacer(Modifier.height(EditorDimens.Space3))
+                Button(
+                    onClick = onNew,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = EditorPalette.Purple,
+                        contentColor = EditorPalette.Black
+                    )
+                ) {
+                    Icon(Icons.Default.Add, null, Modifier.size(EditorDimens.IconSmall))
+                    Spacer(Modifier.width(EditorDimens.Space1))
+                    Text("Create New Project")
+                }
+                Spacer(Modifier.height(EditorDimens.Space2))
                 Row(horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2)) {
-                    Button(onClick = onNew) { Text("New project") }
-                    OutlinedButton(onClick = onImport) { Text("Import project") }
-                    OutlinedButton(onClick = onMedia) { Text("Media") }
+                    OutlinedButton(onClick = onImport) { Text("Import XML") }
+                    OutlinedButton(onClick = onMedia) { Text("Add media") }
                 }
             }
         }

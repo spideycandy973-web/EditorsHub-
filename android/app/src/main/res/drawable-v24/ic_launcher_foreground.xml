@@ -11,7 +11,7 @@
         <path android:fillColor="#FF22D3EE" android:pathData="M58.00,34.00 H61.00 A2.00,2.00 0 0 1 63.00,36.00 V72.00 A2.00,2.00 0 0 1 61.00,74.00 H58.00 A2.00,2.00 0 0 1 56.00,72.00 V36.00 A2.00,2.00 0 0 1 58.00,34.00 Z"/>
         <path android:fillColor="#FF22D3EE" android:pathData="M77.00,34.00 H80.00 A2.00,2.00 0 0 1 82.00,36.00 V72.00 A2.00,2.00 0 0 1 80.00,74.00 H77.00 A2.00,2.00 0 0 1 75.00,72.00 V36.00 A2.00,2.00 0 0 1 77.00,34.00 Z"/>
         <path android:fillColor="#FF22D3EE" android:pathData="M58.00,50.00 H80.00 A2.00,2.00 0 0 1 82.00,52.00 V55.00 A2.00,2.00 0 0 1 80.00,57.00 H58.00 A2.00,2.00 0 0 1 56.00,55.00 V52.00 A2.00,2.00 0 0 1 58.00,50.00 Z"/>
-        <path android:pathData="M60,27 L78,25 L84,31" android:strokeColor="#8822D3EE"
+        <path android:pathData="M60,27 L78,25 L84,31" android:strokeColor="#884C8DFF"
             android:strokeWidth="1.4" android:strokeLineCap="round" android:fillColor="#00000000"/>
         <path android:fillColor="#FF22D3EE"
             android:pathData="M60,27 m-2.2,0 a2.2,2.2 0,1 1,4.4 0 a2.2,2.2 0,1 1,-4.4 0"/>

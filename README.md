@@ -150,7 +150,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v2.0.1` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v2.1.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
