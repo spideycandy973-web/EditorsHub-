@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.launch
@@ -178,6 +179,8 @@ private fun HeroCard(onNew: () -> Unit, onImport: () -> Unit, onMedia: () -> Uni
         colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
         Box(Modifier.fillMaxWidth().background(EditorPalette.HeroBrush)) {
             Column(Modifier.padding(EditorDimens.Space4)) {
+                EditorsHubBrand()
+                Spacer(Modifier.height(EditorDimens.Space3))
                 Text("Create something that moves", style = MaterialTheme.typography.headlineMedium)
                 Text("Layers · keyframes · GPU effects · real MP4 export",
                     style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextSecondary)
@@ -626,6 +629,34 @@ fun TemplatesScreen(vm: HomeViewModel = hiltViewModel(), onBack: () -> Unit,
                     }
                 }
             }
+        }
+    }
+}
+
+/** In-app wordmark: the same "EH" monogram used by the launcher icon. */
+@Composable
+private fun EditorsHubBrand() {
+    Row(verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2)) {
+        Box(
+            modifier = Modifier.size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF1B1E3C), Color(0xFF0B0C14))))
+                .border(1.dp, Color(0x338B7BFF), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Row {
+                Text("E", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
+                    color = EditorPalette.Purple, letterSpacing = (-1).sp)
+                Text("H", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
+                    color = EditorPalette.Cyan, letterSpacing = (-1).sp)
+            }
+        }
+        Column {
+            Text("EditorsHub", style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold, color = EditorPalette.TextPrimary)
+            Text("VIDEO & MOTION EDITOR", fontSize = 8.sp,
+                color = EditorPalette.TextMuted, letterSpacing = 1.2.sp)
         }
     }
 }

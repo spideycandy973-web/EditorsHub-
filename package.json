@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "EditorsHub Motion — a real, offline-capable mobile motion graphics & video editor",
+  "description": "EditorsHub — a real, offline-capable mobile video & motion editor",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",

@@ -2,20 +2,6 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - arena/a6be4510-editorshub
-    paths:
-      - '.github/workflows/build-apk.yml'
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'capacitor.config.json'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
-      - 'android/**'
 
 permissions:
   contents: write
@@ -90,9 +76,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: EditorsHub Motion — Android APK
+          name: EditorsHub — Android APK
           body: |
-            Installable debug-signed Android APK for EditorsHub Motion.
+            Installable debug-signed Android APK for EditorsHub.
             Built from the Capacitor Android wrapper by GitHub Actions.
           files: EditorsHub-Motion.apk
           draft: false
@@ -107,4 +93,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f EditorsHub-Motion.apk
           git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
-          git push origin HEAD:arena/a6be4510-editorshub
+          git push origin HEAD:arena/fa6652a1-editorshub

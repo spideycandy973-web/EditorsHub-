@@ -11,9 +11,17 @@ class EditorsHubApp : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
 
+    /**
+     * WorkManager may initialise from a content provider before Hilt finishes
+     * injecting the Application. In that case fall back to WorkManager's own
+     * default factory instead of throwing UninitializedPropertyAccessException.
+     */
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
             .setMinimumLoggingLevel(android.util.Log.INFO)
+            .let { builder ->
+                if (::workerFactory.isInitialized) builder.setWorkerFactory(workerFactory)
+                else builder
+            }
             .build()
 }

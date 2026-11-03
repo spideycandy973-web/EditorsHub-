@@ -1,13 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t">
+  <title id="t">EditorsHub</title>
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6d5efc"/>
-      <stop offset="0.55" stop-color="#b14cf2"/>
-      <stop offset="1" stop-color="#ff5a8a"/>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1B1E3C"/>
+      <stop offset="1" stop-color="#0B0C14"/>
     </linearGradient>
+    <linearGradient id="e" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B79BFF"/>
+      <stop offset="0.55" stop-color="#8B7BFF"/>
+      <stop offset="1" stop-color="#6D5EFC"/>
+    </linearGradient>
+    <linearGradient id="h" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7DEBFA"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF8AB6"/>
+      <stop offset="1" stop-color="#FF5A8A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#8B7BFF" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#8B7BFF" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#10111a"/>
-  <rect x="40" y="40" width="432" height="432" rx="96" fill="url(#g)" opacity="0.16"/>
-  <path d="M150 352 L232 152 L280 152 L362 352 L312 352 L293 300 L219 300 L200 352 Z M232 258 L280 258 L256 190 Z" fill="url(#g)"/>
-  <circle cx="388" cy="132" r="26" fill="#ff5a8a"/>
+
+  <rect width="512" height="512" rx="112" fill="#0B0C14"/>
+  <rect x="40" y="40" width="432" height="432" rx="96" fill="url(#frame)"/>
+  <rect x="40" y="40" width="432" height="432" rx="96" fill="url(#glow)"/>
+  <rect x="40.75" y="40.75" width="430.5" height="430.5" rx="95.25"
+        fill="none" stroke="#8B7BFF" stroke-opacity="0.3" stroke-width="1.5"/>
+
+  <!-- "Hub": three connected editing nodes -->
+  <g stroke="#22D3EE" stroke-opacity="0.55" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M318 152 L386 126 L420 166"/>
+  </g>
+  <circle cx="318" cy="152" r="8" fill="#22D3EE"/>
+  <circle cx="420" cy="166" r="8" fill="#22D3EE"/>
+  <circle cx="386" cy="126" r="15" fill="url(#a)"/>
+
+  <!-- E -->
+  <g fill="url(#e)">
+    <rect x="118" y="180" width="34" height="200" rx="10"/>
+    <rect x="118" y="180" width="134" height="34" rx="10"/>
+    <rect x="118" y="263" width="112" height="34" rx="10"/>
+    <rect x="118" y="346" width="134" height="34" rx="10"/>
+  </g>
+
+  <!-- H -->
+  <g fill="url(#h)">
+    <rect x="278" y="180" width="34" height="200" rx="10"/>
+    <rect x="386" y="180" width="34" height="200" rx="10"/>
+    <rect x="278" y="263" width="142" height="34" rx="10"/>
+  </g>
 </svg>

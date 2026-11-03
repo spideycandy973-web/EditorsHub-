@@ -1,4 +1,4 @@
-# EditorsHub Motion XML format
+# EditorsHub XML project format
 
 Export: **Project → Export XML**. Import: **Project → Import XML** (paste, choose a file, or
 load the built-in example). Both full projects and layer/preset fragments are accepted.

@@ -1,6 +1,6 @@
 {
   "appId": "com.editorshub.motion",
-  "appName": "EditorsHub Motion",
+  "appName": "EditorsHub",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "android": {

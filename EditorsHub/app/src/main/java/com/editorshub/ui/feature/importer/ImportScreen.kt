@@ -51,9 +51,13 @@ class ImportViewModel @Inject constructor(
         job?.cancel()
         _ui.value = ImportUiState(running = true, label = "Starting…", fileName = name)
         job = viewModelScope.launch {
-            val r = importer.import(uri, { p, l ->
-                _ui.value = _ui.value.copy(percent = p, label = l)
-            }, { false })
+            val r = runCatching {
+                importer.import(uri, { p, l ->
+                    _ui.value = _ui.value.copy(percent = p, label = l)
+                }, { false })
+            }.getOrElse { e ->
+                ImportResult.Failure("Import failed: ${e.message ?: "unknown error"}", null)
+            }
             _ui.value = _ui.value.copy(running = false, result = r, percent = 100)
         }
     }

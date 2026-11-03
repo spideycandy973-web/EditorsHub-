@@ -17,6 +17,7 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.os.Build
+import android.util.Log
 import com.editorshub.core.domain.effects.EffectCatalog
 import com.editorshub.core.domain.model.BlendMode as ProjectBlendMode
 import com.editorshub.core.domain.model.ColorUtil
@@ -62,10 +63,19 @@ class CanvasCompositor @Inject constructor(
     @Volatile var previewQuality: Float = 1f
 
     fun draw(canvas: Canvas, frame: RenderFrame, width: Int, height: Int) {
-        drawBackground(canvas, frame.project, width, height)
-        // Layer 0 is topmost, so paint bottom-to-top.
-        for (resolved in frame.layers.asReversed()) {
-            drawLayer(canvas, frame, resolved, width, height)
+        if (width <= 0 || height <= 0) return
+        try {
+            drawBackground(canvas, frame.project, width, height)
+            // Layer 0 is topmost, so paint bottom-to-top.
+            for (resolved in frame.layers.asReversed()) {
+                drawLayer(canvas, frame, resolved, width, height)
+            }
+        } catch (e: OutOfMemoryError) {
+            Log.w(TAG, "Out of memory while compositing; frame skipped")
+            canvas.drawColor(Color.BLACK)
+        } catch (e: Exception) {
+            Log.w(TAG, "Compositing failed; frame skipped", e)
+            canvas.drawColor(Color.BLACK)
         }
     }
 
@@ -100,20 +110,34 @@ class CanvasCompositor @Inject constructor(
 
     /** Render the whole composition to a bitmap (used by GPU preview and GL export). */
     fun renderToBitmap(frame: RenderFrame, width: Int, height: Int): Bitmap {
-        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val c = Canvas(bmp)
-        draw(c, frame, width, height)
-        return bmp
+        val w = width.coerceIn(1, 4096)
+        val h = height.coerceIn(1, 4096)
+        return try {
+            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            draw(Canvas(bmp), frame, w, h)
+            bmp
+        } catch (e: OutOfMemoryError) {
+            fallbackBitmap()
+        } catch (e: Exception) {
+            Log.w(TAG, "renderToBitmap failed", e)
+            fallbackBitmap()
+        }
     }
 
+    private fun fallbackBitmap(): Bitmap =
+        Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLACK) }
+
     private fun obtain(width: Int, height: Int): Pair<Bitmap, Canvas> {
+        val w = width.coerceIn(1, 4096)
+        val h = height.coerceIn(1, 4096)
         var bmp = scratch
-        if (bmp == null || bmp.width != width || bmp.height != height || bmp.isRecycled) {
-            bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        if (bmp == null || bmp.width != w || bmp.height != h || bmp.isRecycled) {
+            bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             scratch = bmp
             scratchCanvas = Canvas(bmp)
         }
-        return bmp!! to scratchCanvas!!
+        val c = scratchCanvas ?: Canvas(bmp!!).also { scratchCanvas = it }
+        return bmp!! to c
     }
 
     private fun drawLayer(canvas: Canvas, frame: RenderFrame, resolved: ResolvedLayer, width: Int, height: Int) {
@@ -670,4 +694,7 @@ class CanvasCompositor @Inject constructor(
         if (spec.closed) p.close()
         return p
     }
+
+    private companion object { const val TAG = "EditorsHubCompositor" }
+
 }

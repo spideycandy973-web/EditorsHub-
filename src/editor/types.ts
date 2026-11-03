@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * EditorsHub Motion — project data model
+ * EditorsHub — project data model
  * All times are seconds. Keyframe times are LAYER-LOCAL (0 = layer start).
  * All positions are in composition pixels, relative to the composition centre.
  * ------------------------------------------------------------------------- */

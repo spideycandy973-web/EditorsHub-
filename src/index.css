@@ -1,4 +1,4 @@
-/* ========================= EditorsHub Motion UI ========================== */
+/* ============================== EditorsHub UI ============================== */
 :root {
   --bg: #0a0b11;
   --panel: #12141d;
@@ -56,13 +56,24 @@ code, kbd { font-family: "SFMono-Regular", Consolas, monospace; }
   border-bottom: 1px solid var(--line);
   min-width: 0; z-index: 20;
 }
-.brand { flex: none; }
+.brand { flex: none; display: flex; align-items: center; gap: 7px; }
 .brand-mark {
-  display: grid; place-items: center; width: 32px; height: 32px;
-  border-radius: 10px; font-weight: 900; font-size: 13px; letter-spacing: -.5px;
-  background: linear-gradient(135deg, #6d5efc, #b14cf2 55%, #ff5a8a);
-  color: #fff; box-shadow: 0 3px 14px rgba(139, 92, 255, .35);
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 10px; font-weight: 900; font-size: 14px; letter-spacing: -1px;
+  background: linear-gradient(135deg, #1b1e3c, #0b0c14);
+  border: 1px solid rgba(139, 123, 255, .22);
+  box-shadow: 0 3px 14px rgba(139, 92, 255, .18);
 }
+.brand-mark b { font-weight: 900; }
+.brand-e { color: #8b7bff; }
+.brand-h { color: #22d3ee; }
+.brand-word {
+  font-weight: 800; font-size: 13px; letter-spacing: -.3px; white-space: nowrap;
+  background: linear-gradient(90deg, #f2f4fb, #c9c3ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.help-brand { display: flex; justify-content: center; margin: 2px 0 14px; }
+.help-brand img { height: 44px; width: auto; max-width: 100%; }
 .project-name {
   flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start;
   background: none; border: 0; text-align: left; padding: 4px 6px; border-radius: 8px;
@@ -571,6 +582,7 @@ code, kbd { font-family: "SFMono-Regular", Consolas, monospace; }
 
 @media (max-width: 620px) {
   .hide-mobile { display: none; }
+  .brand-word { display: none; }
   .export-btn span { display: none; }
   .export-btn { padding: 7px 9px; }
   .project-name small { display: none; }

@@ -97,7 +97,7 @@ class ExportWorker @AssistedInject constructor(
             }
         }
         val notification = NotificationCompat.Builder(appContext, CHANNEL)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_export)
             .setContentTitle(appContext.getString(R.string.app_name))
             .setContentText(appContext.getString(R.string.export_in_progress, 0))
             .setOngoing(true)

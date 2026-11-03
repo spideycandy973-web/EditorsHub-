@@ -141,6 +141,9 @@ class VideoExporter @Inject constructor(
         } catch (e: Exception) {
             cleanup(encoder, writer, muxer)
             ExportResult.Failure(e.message ?: "Unknown render error")
+        } catch (e: OutOfMemoryError) {
+            cleanup(encoder, writer, muxer)
+            ExportResult.Failure("Not enough memory to render this resolution. Try a lower export size.")
         }
     }
 

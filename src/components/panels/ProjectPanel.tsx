@@ -129,7 +129,7 @@ export function ProjectPanel() {
       </Section>
 
       <Section title="About" defaultOpen={false}>
-        <p className="hint block">EditorsHub Motion is a real browser-based compositor. Every frame is drawn from your layers, keyframes and effects by the canvas renderer — nothing is faked. Exports are encoded with MediaRecorder or exported as a PNG frame sequence.</p>
+        <p className="hint block">EditorsHub is a real browser-based compositor. Every frame is drawn from your layers, keyframes and effects by the canvas renderer — nothing is faked. Exports are encoded with MediaRecorder or exported as a PNG frame sequence.</p>
         <div className="info-list">
           <div><span>Layers</span><b>{e.project.layers.length}</b></div>
           <div><span>Assets</span><b>{Object.keys(e.assets).length}</b></div>
