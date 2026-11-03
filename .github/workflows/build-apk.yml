@@ -2,6 +2,13 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - arena/fa6652a1-editorshub
+    # Narrow trigger so a web/Capacitor rebuild does not race the native CI push.
+    paths:
+      - '.github/workflows/build-apk.yml'
+      - 'rebuild-capacitor-apk.txt'
 
 permissions:
   contents: write
