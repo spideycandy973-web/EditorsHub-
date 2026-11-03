@@ -121,7 +121,7 @@ export function defaultName(type: LayerType): string {
   } as Record<LayerType, string>)[type];
 }
 
-export function createProject(name = 'Untitled Project', width = 1080, height = 1920): Project {
+export function createProject(name = 'Untitled Project', width = 1080, height = 1350): Project {
   const now = Date.now();
   return {
     id: uid('proj'),

@@ -2,6 +2,24 @@
 
 All notable changes to this repository are documented here.
 
+## 2.4.0 — 2026-11-04 (APK release, runtime fixes, closer proportions)
+
+### Fixed
+- **Package unified**: Capacitor `appId`, `applicationId`, `package_name` and `custom_url_scheme`
+  are now `com.editorshub` (was `com.editorshub.motion`), matching the native project. The launcher
+  activity is referenced by its fully-qualified class name so the namespace can differ safely.
+- **Timeline scroll desync**: horizontal scrolling no longer detaches the playhead from the current
+  time. `onScroll` now scrubs (`time = scrollLeft / zoom`) and the playhead stays centred.
+- Regression audit: clip move/trim, split, duplicate, undo/redo, XML export/import, still export,
+  project save/open, effects, keyframes and 134 inspector buttons all pass with zero console errors.
+
+### Added / changed
+- `EditorsHub-Motion.apk` attached to `apk-latest`, `v2.4.0` and `editorshub-latest` releases.
+- New `ci/smoke-capacitor.sh` + emulator smoke job in `build-apk.yml` verifies the real APK launches.
+- Default new project ratio changed to 4:5; mobile grid rows compacted (timeline 140 px,
+  inspector 28dvh) so the composition preview fills ~75% of the screen width.
+- `versionCode 6`, `versionName 2.4.0`, PWA cache `editorshub-v6`, CI/release bumped to `v2.4.0`.
+
 ## 2.3.0 — 2026-11-03 (pixel-level Alight Motion geometry)
 
 ### Added / changed

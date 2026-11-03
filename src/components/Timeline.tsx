@@ -42,6 +42,7 @@ export function Timeline() {
   const scrubbing = useRef(false);
   const scrubStart = useRef<{ x: number; t: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const syncingScroll = useRef(false);
   const [viewportW, setViewportW] = useState(390);
   const kfDrag = useRef<{ layerId: string; key: string; kfId: string; x: number; time: number } | null>(null);
 
@@ -70,8 +71,20 @@ export function Timeline() {
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollLeft = time * zoom;
+    if (!el) return;
+    syncingScroll.current = true;
+    el.scrollLeft = time * zoom;
+    requestAnimationFrame(() => { syncingScroll.current = false; });
   }, [time, zoom]);
+
+  /* Alight Motion scrubs when the timeline is scrolled: keep time and the
+     centre-anchored playhead in sync even after a manual horizontal scroll. */
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el || syncingScroll.current) return;
+    const t = clamp(el.scrollLeft / zoom, 0, e.project.duration);
+    if (Math.abs(t - e.time) > 0.002) e.setTime(t, false);
+  };
   const tickStep = zoom >= 110 ? 0.25 : zoom >= 70 ? 0.5 : zoom >= 34 ? 1 : zoom >= 18 ? 2 : 5;
   const ticks: number[] = [];
   for (let t = 0; t <= e.project.duration + tickStep; t += tickStep) ticks.push(Number(t.toFixed(3)));
@@ -179,7 +192,7 @@ export function Timeline() {
         </div>
       </div>
 
-      <div className="tl-scroll" ref={scrollRef}>
+      <div className="tl-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="tl-content" style={{ width: contentW }}>
           <div className="tl-timecode" style={{ left: LABEL_W + gap + time * zoom }}>
             {formatTime(time, e.project.fps)}

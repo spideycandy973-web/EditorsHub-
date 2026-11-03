@@ -604,7 +604,7 @@ class EditorStore {
     this.setTime(Math.min(this.time, this.project.duration));
   }
 
-  newProject(width = 1080, height = 1920, blank = true): void {
+  newProject(width = 1080, height = 1350, blank = true): void {
     this.pushUndo();
     this.project = blank ? createProject('Untitled Project', width, height) : createDemoProject();
     this.selectedLayerId = this.project.layers[0]?.id ?? null;
