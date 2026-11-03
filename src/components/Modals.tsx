@@ -408,7 +408,7 @@ export function HelpModal() {
       <div className="help-grid">
         <div>
           <h3><Keyboard size={16} /> Keyboard</h3>
-          <table className="shortcuts">{shortcuts.map(([k, v]) => <tr key={k}><td><kbd>{k}</kbd></td><td>{v}</td></tr>)}</table>
+          <table className="shortcuts"><tbody>{shortcuts.map(([k, v]) => <tr key={k}><td><kbd>{k}</kbd></td><td>{v}</td></tr>)}</tbody></table>
         </div>
         <div>
           <h3><Sparkles size={16} /> Editing</h3>

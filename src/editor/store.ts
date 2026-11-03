@@ -37,7 +37,7 @@ class EditorStore {
   /** 'home' = Alight-Motion-style projects launcher, 'editor' = the dark timeline editor. */
   screen: 'home' | 'editor' = 'home';
   homeTab: 'home' | 'tutorials' | 'projects' | 'templates' = 'home';
-  addCategory: 'shape' | 'media' | 'audio' | 'object' | 'element' | 'text' = 'media';
+  addCategory: 'shape' | 'media' | 'audio' | 'object' | 'element' | 'drawing' | 'text' = 'media';
   toast: { id: number; text: string; kind: 'info' | 'ok' | 'warn' } | null = null;
 
   time = 0;
@@ -153,7 +153,7 @@ class EditorStore {
     this.emit();
   }
   setHomeTab(v: 'home' | 'tutorials' | 'projects' | 'templates'): void { this.homeTab = v; this.emit(); }
-  setAddCategory(v: 'shape' | 'media' | 'audio' | 'object' | 'element' | 'text'): void {
+  setAddCategory(v: 'shape' | 'media' | 'audio' | 'object' | 'element' | 'drawing' | 'text'): void {
     this.addCategory = v; this.emit();
   }
   notify(text: string, kind: 'info' | 'ok' | 'warn' = 'info'): void {

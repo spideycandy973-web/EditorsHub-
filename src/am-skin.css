@@ -665,3 +665,170 @@ body { background: var(--am-navy); }
 .am-add-rail { display: none; }
 .am-rail-right { display: flex; }
 .am-rail-right button.close { margin-top: auto; color: var(--am-coral); border-color: rgba(255, 107, 107, .45); }
+
+/* ==========================================================================
+   v2.3.0 — exact Alight Motion editor geometry
+   ========================================================================== */
+:root {
+  --am-nav: #2b3046;
+  --am-sheet: #22263a;
+  --am-rail: #191d2b;
+}
+.topbar { background: var(--am-nav); border-bottom-color: #353b52; }
+.stage { background: #10121c; }
+.playerbar { background: #10121c; border-top-color: #232838; border-bottom-color: #232838; }
+.timeline { background: #10121c; border-top-color: #232838; }
+.sheet { background: var(--am-sheet); border-top-color: #333a50; }
+.sheet-head { background: var(--am-nav); border-bottom-color: #353b52; }
+.am-rail, .am-add-rail, .am-rail-right { background: var(--am-rail); border-color: #30364a; }
+.am-add-cats { background: var(--am-sheet); border-bottom-color: #333a50; }
+.am-add-main { background: var(--am-sheet); }
+
+/* Seven transport icons spread evenly across the full width, like AM. */
+.am-transport { justify-content: space-between; padding: 0 8px; gap: 0; }
+.am-transport .icon-btn, .am-transport .play-btn {
+  flex: 1 1 0; width: auto; height: 38px; border-radius: 0;
+}
+.am-transport-sep { display: none; }
+.am-transport .icon-btn svg { stroke-width: 1.8; }
+
+/* With a panel open the bottom tab bar is replaced by the panel itself. */
+@media (max-width: 1023px) {
+  .app { grid-template-rows: 50px minmax(0, 1fr) 38px 180px minmax(0, calc(30dvh + 46px)) 0px; }
+  .app.sheet-closed { grid-template-rows: 50px minmax(0, 1fr) 38px 200px 0px 46px; }
+  .app .bottomnav { display: none; }
+  .app.sheet-closed .bottomnav { display: flex; }
+}
+
+/* Sheet head dropdown (AM's "▼ Property" chooser). */
+.sheet-title { position: relative; }
+.am-sheet-dropdown {
+  display: flex; align-items: center; gap: 7px; border: 0; background: none;
+  color: #eef1f8; font-size: 13px; font-weight: 700; cursor: pointer; padding: 3px 4px;
+}
+.am-sheet-dropdown svg { color: #cfd7e8; }
+.am-panel-pop, .am-cat-pop {
+  position: absolute; z-index: 120; top: 100%; left: 0; min-width: 190px;
+  background: #2b3146; border: 1px solid #454d66; border-radius: 9px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .6); padding: 5px;
+}
+.am-panel-pop button, .am-cat-pop button {
+  display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none;
+  color: #d7dfef; font-size: 11px; font-weight: 600; padding: 8px 9px; border-radius: 6px;
+  text-align: left; cursor: pointer;
+}
+.am-panel-pop button:hover, .am-cat-pop button:hover { background: #38415b; }
+.am-panel-pop button.on { color: var(--am-teal); background: rgba(16, 224, 160, .12); }
+.am-cat-pop { left: 42px; top: 74px; min-width: 160px; }
+.am-rail { position: relative; }
+.am-rail button[data-label], .am-rail-right button[data-label] {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.am-rail button[data-label]::after, .am-rail-right button[data-label]::after {
+  content: attr(data-label); font-size: 8px; font-weight: 650; line-height: 1.05;
+  color: #aab4c8; text-align: center; max-width: 46px; letter-spacing: -.1px;
+}
+.am-rail-right button[data-label] { height: 46px; width: 40px; border: 0; background: none; }
+.am-rail-right button[data-label]:hover { color: var(--am-teal); }
+.am-rail-right button[data-label]::after { color: #c2cadb; }
+.am-rail button[data-label] { height: 46px; width: 40px; border: 0; }
+.am-rail-right button.close { margin-top: auto; }
+
+/* Add-menu categories: six AM labels, teal selected icon box. */
+.am-add-cats button { min-width: 54px; padding: 5px 1px; font-size: 8.5px; line-height: 1.12; }
+.am-add-cats button svg { padding: 3px; box-sizing: content-box; border-radius: 7px; }
+.am-add-cats button.on { color: var(--am-teal); background: transparent; border-bottom: 0; }
+.am-add-cats button.on svg { background: rgba(16, 224, 160, .16); box-shadow: inset 0 0 0 1px rgba(16, 224, 160, .55); }
+.am-add-cats button span { max-width: 60px; text-align: center; }
+
+/* AM's two-column media thumbnail grid. */
+@media (max-width: 620px) { .builtin-grid { grid-template-columns: repeat(2, 1fr); } }
+.builtin-card { border-radius: 4px; }
+.builtin-card span { font-size: 9px; }
+
+/* Real freehand drawing pad. */
+.am-draw-canvas {
+  display: block; width: 100%; max-width: 270px; max-height: 46dvh;
+  background: #fff; border: 1px solid #414a63; border-radius: 5px;
+  touch-action: none; cursor: crosshair; margin: 0 auto;
+}
+.am-draw-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.am-draw-tools input[type=color] { width: 32px; height: 30px; padding: 0; border: 1px solid #414a63; border-radius: 6px; background: none; }
+.am-draw-tools label { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #c5cde0; }
+.am-draw-tools input[type=range] { width: 74px; accent-color: var(--am-teal); }
+.am-draw-tools .btn { padding: 6px 9px; font-size: 10px; }
+
+/* Flat AM-style clip bars, layer hamburger and selected-layer arrow. */
+.tl-clip {
+  border-radius: 2px; border: 0; box-shadow: none;
+  background: #3d8bef;
+}
+.tl-clip.selected { border: 0; outline: 1px solid rgba(255, 255, 255, .85); outline-offset: 1px; box-shadow: none; }
+.tl-clip.t-text { background: #f5a623; }
+.tl-clip.t-shape { background: #10b89a; }
+.tl-clip.t-video, .tl-clip.t-image { background: #3d8bef; }
+.tl-clip.t-audio { background: #9b6ce0; }
+.tl-clip.t-solid { background: #f06a6a; }
+.tl-clip.t-group { background: #5a6478; }
+.tl-clip.t-text .clip-name, .tl-clip.t-shape .clip-name { color: #14202a; text-shadow: none; font-weight: 700; }
+.clip-name { font-size: 10px; }
+.clip-menu-btn {
+  position: absolute; right: 3px; top: 50%; transform: translateY(-50%); z-index: 4;
+  width: 20px; height: 20px; border: 0; background: none; color: rgba(0, 0, 0, .55);
+  display: grid; place-items: center; cursor: pointer; padding: 0;
+}
+.tl-clip.t-video .clip-menu-btn, .tl-clip.t-image .clip-menu-btn,
+.tl-clip.t-audio .clip-menu-btn { color: rgba(255, 255, 255, .8); }
+.clip-menu-btn:hover { color: #fff; background: rgba(0, 0, 0, .2); border-radius: 3px; }
+.tl-clip-prev {
+  position: absolute; top: 6px; z-index: 5; width: 20px; height: 22px; border: 0;
+  border-radius: 11px; background: #3c455c; color: #e6ecf7; display: grid; place-items: center;
+  cursor: pointer; padding: 0;
+}
+.tl-clip-prev:hover { background: var(--am-teal); color: #062018; }
+.tl-watermark {
+  position: absolute; top: 15px; z-index: 1; transform: translateX(-50%);
+  font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #fff; opacity: .055;
+  pointer-events: none; white-space: nowrap;
+}
+
+/* Classic AM "Welcome" card on the launcher. */
+.am-welcome-card { background: #fff; border: 1px solid #dfe4ee; border-radius: 10px; padding: 14px 16px 18px; }
+.am-welcome-brand { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; color: #20263a; letter-spacing: -.6px; }
+.am-welcome-mark { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #141824; color: #10e0a0; font-size: 11px; font-weight: 800; }
+.am-welcome-card h3 { margin: 12px 0 5px; font-size: 14px; font-weight: 700; color: #2b3348; }
+.am-welcome-card p { margin: 0 0 13px; font-size: 11px; line-height: 1.55; color: #6d7690; }
+.am-pill {
+  display: block; width: 100%; margin: 0 0 8px; padding: 10px 8px;
+  border: 1px solid #c9d1e0; border-radius: 24px; background: #fff;
+  color: #5a6480; font-size: 10px; font-weight: 700; letter-spacing: .7px; cursor: pointer;
+}
+.am-pill:hover { border-color: var(--am-teal); color: #0b8f68; }
+.am-tutorial-card {
+  display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 12px;
+  padding: 18px 16px; border: 0; border-radius: 10px; text-align: left; cursor: pointer;
+  background: linear-gradient(115deg, #f59e0b, #ef7d1a); color: #231402;
+}
+.am-tutorial-card span { font-size: 13px; font-weight: 900; letter-spacing: .4px; }
+.am-tutorial-card small { font-size: 10px; font-weight: 600; opacity: .8; }
+
+/* Prevent wide property controls from stretching the mobile grid past the viewport. */
+@media (max-width: 1023px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .topbar, .dock, .sheet, .am-sheet-body, .sheet-content { min-width: 0; max-width: 100%; }
+  .sheet-content { overflow-x: hidden; }
+}
+.am-add-cats button { min-width: 46px; flex: 1 1 0; }
+.am-add-cats button span { max-width: 52px; }
+
+/* AM keeps the selected-layer control attached to the clip, not floating. */
+.tl-layer-chip { display: none; }
+.app:not(.sheet-closed) .am-fab { display: none; }
+.tl-toolbar { display: none; }
+@media (min-width: 1024px) {
+  .am-transport { max-width: 460px; margin: 0 auto; width: 100%; }
+  .tl-ruler { height: 26px; }
+}
+
+.layer-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+.tl-label .layer-icon { width: 20px; height: 20px; border-radius: 4px; }

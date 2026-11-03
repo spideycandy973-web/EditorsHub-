@@ -1,4 +1,4 @@
-# EditorsHub v2.2.0 — Alight Motion fidelity
+# EditorsHub v2.3.0 — pixel-level Alight Motion geometry
 
 An original, production-structured Android motion editor: Kotlin + Jetpack Compose + Material 3,
 Room, Hilt, WorkManager, Media3, OpenGL ES 2.0, MediaCodec/MediaMuxer and the Storage Access
@@ -8,10 +8,38 @@ Framework. Package `com.editorshub`, application label `EditorsHub`.
 `EditorsHub-debug.apk` is installable for development (`adb install`). The release APK is
 unsigned by design — configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run the
 `android-release.yml` workflow with keystore secrets. `EditorsHub-release.aab` is for Play upload.
-`EditorsHub-source-v2.2.0.zip` contains the complete source tree (source only, no build outputs).
+`EditorsHub-source-v2.3.0.zip` contains the complete source tree (source only, no build outputs).
 The web/PWA editor and its Capacitor APK (`EditorsHub-Motion.apk` / `apk-latest`) are also rebuilt.
 
-## What's new in 2.2.0 — closer Alight Motion fidelity
+## What's new in 2.3.0 — pixel-level Alight Motion geometry
+
+The editor's layout and interaction model now follow the Alight Motion screenshots closely, while
+keeping **EditorsHub**'s own name, logo and original code. No proprietary assets are copied.
+
+- **Seven transport icons spread across the full width** of a 38 px control bar; separators removed.
+- **Contextual navigation bar**: with a property panel open it becomes back / panel name / overflow
+  (`Move & Transform`, `Effects`, `Keyframes`, `Project`); otherwise project name / gear / export.
+- **Panel replaces the bottom tab bar**: the inspector fills the bottom of the screen with AM's
+  `▼ property` dropdown, a left rail (back / keyframes / fit / layers) and a labelled right rail
+  ending in the big **X**. Closing the panel reveals the icon-only tab bar again.
+- **Add menu rebuilt** to AM's six categories (Shape, Media, Audio, Object, Element, Freehand
+  Drawing) with a teal selected-icon box, an **All / Browse** filter rail, a two-column built-in
+  thumbnail grid and a right rail of **All / Vector Drawing / Text / X** with text labels.
+- **Real freehand drawing**: a pointer-driven canvas with brush colour, size, undo and clear; the
+  result is rasterised to a PNG and added as a genuine image layer. No simulated features.
+- **Property sheet header** (`▼ Move & Transform`) with a working panel-switch dropdown; top bar
+  overflow opens the real Layer options dialog.
+- **AM-style timeline**: flat orange / teal / blue clip bars with dark labels, a hamburger on every
+  clip, a grey `‹` selected-layer arrow attached to the bar, real asset thumbnails in the layer
+  gutter, a faint `EditorsHub` ruler watermark, and short ruler ticks. The floating layer chip was
+  removed because AM attaches that control to the clip.
+- Lighter AM navigation-bar navy (`#2b3046`), panel navy (`#22263a`), rail navy (`#191d2b`).
+- Launcher gained the classic AM **Welcome** card with three outlined pill buttons and a tutorial
+  card; all buttons perform real actions (help, templates, XML import).
+- Mobile grid locked to the viewport so wide property controls can no longer push the UI off-screen.
+- `versionCode 5`, `versionName 2.3.0`; PWA cache `editorshub-v5`.
+
+## Previous release — 2.2.0 (closer Alight Motion fidelity)
 
 This release tightens the editor to Alight Motion's actual layout and interaction model while
 keeping **EditorsHub**'s own name, logo and original code. No proprietary assets are copied.
