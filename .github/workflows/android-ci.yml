@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/050655c5-editorshub
+      - arena/17e07022-editorshub
     paths:
       - 'EditorsHub/**'
       - '.github/workflows/android-ci.yml'
@@ -58,7 +58,7 @@ jobs:
           cp android-build.log ci-logs/android-build.log 2>/dev/null || true
           git add -f ci-logs/ || true
           git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/050655c5-editorshub || true
+          git push origin HEAD:arena/17e07022-editorshub || true
 
       - name: Collect artifacts
         if: success()
@@ -73,9 +73,9 @@ jobs:
         if: success()
         # Source only: exclude committed build outputs so the ZIP stays small.
         run: |
-          git archive --format=zip --prefix=EditorsHub-v2.1.0/ HEAD -- \
+          git archive --format=zip --prefix=EditorsHub-v2.2.0/ HEAD -- \
             . ':(exclude)artifacts' ':(exclude)artifacts/**' \
-            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v2.1.0.zip
+            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v2.2.0.zip
           ls -lh artifacts/
 
       - name: Upload artifact bundle
@@ -100,24 +100,24 @@ jobs:
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v2.1.0.zip
+            artifacts/EditorsHub-source-v2.2.0.zip
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish versioned release v2.1.0
+      - name: Publish versioned release v2.2.0
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.1.0
-          name: EditorsHub v2.1.0 — Professional Motion Editor
+          tag_name: v2.2.0
+          name: EditorsHub v2.2.0 — Alight Motion fidelity
           body_path: RELEASE_NOTES.md
           files: |
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v2.1.0.zip
+            artifacts/EditorsHub-source-v2.2.0.zip
           draft: false
           prerelease: false
         env:
@@ -130,7 +130,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f artifacts/
           git commit -m "build: add Android APK + AAB [skip ci]" || echo "artifacts already committed"
-          git push origin HEAD:arena/050655c5-editorshub
+          git push origin HEAD:arena/17e07022-editorshub
 
   # Verifies the debug APK actually launches on a real Android system image.
   # Verifies the v2.0.0 launch-crash fix still holds after every UI change.
@@ -179,8 +179,8 @@ jobs:
           else
             echo "no diagnostics file was produced" > ci-logs/smoke-diagnostics.txt
           fi
-          git fetch origin arena/050655c5-editorshub
-          git reset --hard origin/arena/050655c5-editorshub
+          git fetch origin arena/17e07022-editorshub
+          git reset --hard origin/arena/17e07022-editorshub
           git add -f ci-logs/
           git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/050655c5-editorshub || true
+          git push origin HEAD:arena/17e07022-editorshub || true

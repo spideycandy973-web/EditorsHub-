@@ -7,11 +7,14 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
-**v2.1.0 UI** — an Alight-Motion-style layout: a light **Projects** launcher (template carousel,
-project cards, XML upload, filter chips, teal **+** bottom nav) and a midnight-navy **editor**
-(navigation bar, control bar with ruler/timecode, coloured layer bars, white playhead, Add Layer
-FAB, vertical tool rail and AM-style Add menu). The same skin is applied to the native Android
-app. EditorsHub keeps its own name, logo and original code — no Alight Motion assets are copied.
+**v2.2.0 UI** — a much closer Alight-Motion-style layout: a light **Projects** launcher (teal-ringed
+template carousel, project cards, XML upload, filter chips, teal **+** bottom nav) and a
+midnight-navy **editor** with a clean light composition preview, vertical watermark, seven-icon
+transport row, a **centre-anchored playhead** that the timeline scrolls underneath, plain
+`00:00:00` timecode on the ruler, coloured layer bars with a pinned eye/thumbnail gutter, a
+circular teal Add Layer button, an icon-only tool dock and a two-rail Add menu with the big **X**
+close. The same skin is applied to the native Android app. EditorsHub keeps its own name, logo and
+original code — no Alight Motion assets are copied.
 
 ---
 
@@ -156,7 +159,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v2.1.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v2.2.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -166,4 +169,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the v2.1.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the v2.2.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).

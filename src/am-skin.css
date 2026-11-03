@@ -500,3 +500,168 @@ body { background: var(--am-navy); }
   .tl-toolbar { justify-content: flex-end; padding: 2px 5px; }
   .tl-actions .icon-btn { width: 26px; height: 26px; }
 }
+
+/* ==========================================================================
+   v2.2.0 — closer Alight Motion fidelity
+   ========================================================================== */
+.app { grid-template-rows: 50px minmax(0, 1fr) 38px 180px minmax(0, 30dvh) 46px; }
+.app.sheet-closed { grid-template-rows: 50px minmax(0, 1fr) 38px 200px 0px 46px; }
+.playerbar { height: 38px; }
+.am-transport { height: 38px; }
+.am-ruler-wrap { display: none; }
+
+/* Single ruler: timecode pill sits on the timeline ruler at the playhead. */
+.tl-ruler { height: 26px; }
+.tl-timecode {
+  position: absolute; top: 2px; z-index: 12; transform: translateX(-50%);
+  background: #303a50; border: 1px solid #43506b; border-radius: 5px;
+  padding: 2px 8px; font-size: 10.5px; font-weight: 700; color: #f2f5fa;
+  font-variant-numeric: tabular-nums; letter-spacing: .3px; white-space: nowrap;
+  pointer-events: none; box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+}
+.tl-layer-chip {
+  position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 12;
+  display: flex; align-items: center; gap: 5px;
+  background: #2c3549; border: 1px solid #43506b; border-radius: 20px;
+  padding: 2px 5px; box-shadow: 0 3px 12px rgba(0, 0, 0, .4);
+  max-width: 210px; white-space: nowrap;
+}
+.tl-layer-chip button {
+  width: 22px; height: 22px; border: 0; border-radius: 50%; background: #3a4560;
+  color: #dbe2ef; font-size: 15px; line-height: 1; cursor: pointer; flex: none;
+}
+.tl-layer-chip button:hover { background: var(--am-teal); color: #062018; }
+.tl-layer-chip .tl-chip-icon {
+  width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center;
+  background: #3a4560; color: #cfd7e8; flex: none;
+}
+.tl-layer-chip .tl-chip-icon.t-text { color: #ffc65c; background: rgba(245, 166, 35, .2); }
+.tl-layer-chip .tl-chip-icon.t-shape { color: #4fe3c1; background: rgba(16, 224, 160, .2); }
+.tl-layer-chip strong { font-size: 10.5px; font-weight: 700; color: #f0f3f8; overflow: hidden; text-overflow: ellipsis; }
+
+/* AM-style Add menu: left filter rail + content + right quick-action rail. */
+.am-add { grid-template-columns: 44px 1fr 48px; }
+.am-add-cats { grid-column: 1 / 4; }
+.am-add-cats button.on { border-bottom: 2px solid var(--am-teal); }
+.am-add-left {
+  grid-column: 1; grid-row: 2; border-right: 1px solid var(--am-line); background: #161c2b;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0;
+}
+.am-add-left button {
+  width: 34px; height: 34px; border: 1px solid var(--am-line); border-radius: 9px;
+  background: var(--am-surface2); color: var(--am-muted); display: grid; place-items: center;
+}
+.am-add-left button:hover { color: var(--am-teal); border-color: var(--am-teal); }
+.am-add-main { grid-column: 2; grid-row: 2; }
+.am-add-rail { grid-column: 3; grid-row: 2; }
+.am-add-rail button.close { width: 40px; height: 40px; border-radius: 11px; border-color: rgba(255, 107, 107, .5); }
+
+/* Inspector right rail (AM's transform/quick-action rail). */
+.am-rail-right {
+  width: 42px; flex: none; background: #161c2b; border-left: 1px solid var(--am-line);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 9px 0;
+}
+.am-rail-right button {
+  width: 32px; height: 32px; border: 1px solid var(--am-line); border-radius: 8px;
+  background: var(--am-surface2); color: var(--am-muted); display: grid; place-items: center;
+}
+.am-rail-right button:hover { color: var(--am-teal); border-color: var(--am-teal); }
+
+/* Settings: real editor-action grid. */
+.am-action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.am-action-grid button {
+  display: flex; align-items: center; gap: 6px; border: 1px solid var(--am-line);
+  background: #151b29; border-radius: 8px; padding: 8px 7px; font-size: 10px;
+  font-weight: 650; color: #d0d9ea; cursor: pointer;
+}
+.am-action-grid button:hover { border-color: var(--am-teal); color: var(--am-teal); }
+.am-action-grid button svg { color: var(--am-teal); flex: none; }
+
+/* Thin icon-only tool dock on phones (AM has no labelled tab bar). */
+@media (max-width: 620px) {
+  .bottomnav { height: 46px; }
+  .bottomnav button span { display: none; }
+  .bottomnav button svg { width: 21px; height: 21px; }
+  .bottomnav button { gap: 0; }
+  .am-add-cats button { min-width: 56px; }
+}
+@media (min-width: 1024px) {
+  .app { grid-template-rows: 50px minmax(0, 1fr) 38px 238px; }
+  .app.sheet-closed { grid-template-rows: 50px minmax(0, 1fr) 38px 238px; }
+  .am-fab { bottom: 12px; }
+}
+
+/* All template circles get the Alight Motion teal ring. */
+.am-template-circle:not(.first) .am-circle-art { border-color: #10e0a0; }
+
+/* ==========================================================================
+   v2.2.0 — Alight Motion editor proportions: clean preview, centred playhead
+   ========================================================================== */
+.stage { background: #10131d; }
+.stage-topinfo, .am-preview-search, .stage-zoom, .stage-bottom-left { display: none; }
+.am-watermark {
+  top: 50%; left: auto; right: 3px; transform: translateY(-50%);
+  writing-mode: vertical-rl; text-orientation: mixed;
+  background: none; border: 0; border-radius: 0; padding: 0;
+  color: rgba(255, 255, 255, .24); font-size: 10px; font-weight: 600;
+  letter-spacing: 1.4px; backdrop-filter: none;
+}
+.top-actions .am-export-icon { color: #cfd7e8; }
+
+.tl-lead { flex: none; }
+.tl-timecode {
+  background: transparent; border: 0; border-radius: 0; padding: 0;
+  box-shadow: none; color: #fff; font-size: 11px; font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .8); top: 4px;
+}
+.ruler-tick { top: 14px; bottom: auto; height: 8px; border-left: 1px solid #4a5570; }
+.ruler-tick.major { top: 10px; height: 12px; border-left-color: #6b7896; }
+.ruler-tick span { display: none; }
+.tl-ruler-label { color: transparent; }
+.tl-ruler-label svg { opacity: 0; }
+
+/* Layer gutter: eye + thumbnail, like Alight Motion. */
+.tl-label { gap: 3px; padding: 0 3px 0 6px; }
+.layer-index, .layer-name { display: none; }
+.layer-toggles button:nth-child(n+2) { display: none; }
+.tl-row.selected .tl-label { background: #1c2637; }
+
+/* Circular outlined Add Layer button. */
+.am-fab {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(12, 28, 32, .6); border: 2px solid #10e0a0;
+  color: #10e0a0; box-shadow: none;
+}
+.am-fab svg { width: 22px; height: 22px; }
+
+@media (max-width: 620px) {
+  .tl-toolbar { display: none; }
+  .tl-ruler { height: 26px; }
+}
+@media (min-width: 1024px) {
+  .tl-toolbar { display: flex; }
+  .ruler-tick span { display: block; }
+}
+
+/* One panel rail + one Add-menu rail (Alight Motion uses two, not four). */
+.am-add { grid-template-columns: 1fr 48px; }
+.am-add-cats { grid-column: 1 / 3; }
+.am-add-left, .am-rail-right { display: none; }
+.tl-playhead { top: 26px; }
+.playhead-cap { top: -6px; }
+.ruler-tick { top: 17px; height: 7px; }
+.ruler-tick.major { top: 14px; height: 10px; }
+.tl-timecode { top: 2px; }
+.tl-no-layers { display: none; }
+
+/* Restore the two-column Add menu grid after the earlier 3-column experiment. */
+.am-add-main { grid-column: 1; grid-row: 2; }
+.am-add-rail { grid-column: 2; grid-row: 2; }
+
+/* Persistent quick-action rail on the right of the inspector (with AM's X). */
+.am-add { grid-template-columns: 1fr; }
+.am-add-cats { grid-column: 1; }
+.am-add-main { grid-column: 1; grid-row: 2; }
+.am-add-rail { display: none; }
+.am-rail-right { display: flex; }
+.am-rail-right button.close { margin-top: auto; color: var(--am-coral); border-color: rgba(255, 107, 107, .45); }

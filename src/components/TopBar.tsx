@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Settings2, Share2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Settings } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import { IconBtn } from './ui';
 
@@ -14,8 +14,8 @@ export function TopBar() {
         <small>{e.project.width}×{e.project.height} · {e.project.fps}fps</small>
       </button>
       <div className="top-actions">
-        <IconBtn title="Editor settings" onClick={() => e.setModal('settings')}><Settings2 size={18} /></IconBtn>
-        <IconBtn className="am-export-icon" title="Export video" onClick={() => e.setModal('export')}><Share2 size={18} /></IconBtn>
+        <IconBtn title="Editor settings" onClick={() => e.setModal('settings')}><Settings size={18} /></IconBtn>
+        <IconBtn className="am-export-icon" title="Export video" onClick={() => e.setModal('export')}><ExternalLink size={18} /></IconBtn>
       </div>
     </header>
   );

@@ -2,6 +2,25 @@
 
 All notable changes to this repository are documented here.
 
+## 2.2.0 — 2026-11-03 (Alight Motion fidelity)
+
+### Added / changed
+- Clean light-grey composition preview with a vertical `EditorsHub` watermark; removed the floating
+  resolution/FPS badges, zoom toolbar, layer chip and search button from the canvas. Their real
+  functions remain in Settings and the Add menu.
+- Navigation bar reduced to back / name / settings gear / export; single-line title on phones.
+- Single-row seven-icon transport bar; the old second ruler row was removed.
+- **Centre-anchored playhead**: timeline layers scroll under a fixed centre playhead; drag-delta
+  scrubbing stays stable; verified with headless Chromium during playback and scrubbing.
+- AM-style ruler (tiny ticks, no numeric labels on phones), plain `mm:ss:ff` timecode above the
+  playhead, layer chip with prev/next arrows above the clip bars.
+- Pinned eye/thumbnail layer gutter; phone timeline toolbar hidden (actions remain in Layer
+  options); circular outlined teal Add Layer FAB.
+- Add menu reduced to a single left panel rail + a persistent right quick-action rail with the
+  big **X** close; all buttons are real actions.
+- Teal rings on all template circles; Settings gained a grid of real editor actions.
+- `versionCode 4`, `versionName 2.2.0`; PWA cache `editorshub-v4`; CI/release bumped to `v2.2.0`.
+
 ## 2.1.0 — 2026-11-03 (Alight-Motion-style UI)
 
 ### Added

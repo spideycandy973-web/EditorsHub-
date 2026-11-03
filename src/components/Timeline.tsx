@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Circle, Diamond, Eye, EyeOff, Film, Folder, Image as ImageIcon, Lock, Minus, Music2,
   MoreVertical, Plus, Scissors, Square, Trash2, Type, Unlock, Copy, ClipboardPaste,
@@ -6,10 +6,14 @@ import {
 } from 'lucide-react';
 import { useEditor, usePlayhead } from '../editor/store';
 import { PROP_MAP, type Layer } from '../editor/types';
-import { clamp, formatShortTime, round } from '../editor/utils';
+import { clamp, formatTime, round } from '../editor/utils';
 import { IconBtn } from './ui';
 
 const LABEL_W = 128;
+const mmss = (t: number) => {
+  const total = Math.max(0, Math.floor(t));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+};
 
 const LAYER_ICONS: Record<Layer['type'], React.ReactNode> = {
   solid: <Square size={13} />, shape: <Circle size={13} />, text: <Type size={13} />,
@@ -35,18 +39,45 @@ export function Timeline() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [drag, setDrag] = useState<ClipDrag | null>(null);
   const scrubbing = useRef(false);
+  const scrubStart = useRef<{ x: number; t: number } | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [viewportW, setViewportW] = useState(390);
   const kfDrag = useRef<{ layerId: string; key: string; kfId: string; x: number; time: number } | null>(null);
 
   const zoom = e.timelineZoom;
   const W = e.project.duration * zoom + 60;
-  const contentW = LABEL_W + W;
+  // Alight Motion anchors the playhead at the horizontal centre and scrolls
+  // the layers beneath it. A leading spacer puts time zero at that centre
+  // while the layer gutter stays pinned to the left edge.
+  const center = viewportW / 2;
+  const gap = Math.max(0, center - LABEL_W);
+  const contentW = LABEL_W + gap + W + center;
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const measure = () => setViewportW(el.clientWidth || 390);
+    measure();
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = time * zoom;
+  }, [time, zoom]);
   const tickStep = zoom >= 110 ? 0.25 : zoom >= 70 ? 0.5 : zoom >= 34 ? 1 : zoom >= 18 ? 2 : 5;
   const ticks: number[] = [];
   for (let t = 0; t <= e.project.duration + tickStep; t += tickStep) ticks.push(Number(t.toFixed(3)));
 
   const scrubFromEvent = (ev: React.PointerEvent, el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
-    e.setTime((ev.clientX - rect.left) / zoom);
+    return clamp((ev.clientX - rect.left) / zoom, 0, e.project.duration);
   };
 
   const startClipDrag = (ev: React.PointerEvent, l: Layer, mode: DragMode) => {
@@ -118,8 +149,24 @@ export function Timeline() {
   const propsWithKeys = (l: Layer) => Object.entries(l.props).filter(([, a]) => a.keyframes.length > 0)
     .sort((a, b) => (PROP_MAP[a[0]]?.label ?? a[0]).localeCompare(PROP_MAP[b[0]]?.label ?? b[0]));
 
+  const layers = e.project.layers;
+  const selIndex = layers.findIndex(l => l.id === e.selectedLayerId);
+  const cycleLayer = (dir: number) => {
+    if (!layers.length) return;
+    const next = selIndex < 0 ? 0 : (selIndex + dir + layers.length) % layers.length;
+    e.selectLayer(layers[next].id);
+  };
+
   return (
     <div className="timeline">
+      {e.selectedLayer && (
+        <div className="tl-layer-chip">
+          <button type="button" title="Previous layer" onClick={() => cycleLayer(-1)}>‹</button>
+          <span className={`tl-chip-icon t-${e.selectedLayer.type}`}>{LAYER_ICONS[e.selectedLayer.type]}</span>
+          <strong title={e.selectedLayer.name}>{e.selectedLayer.name}</strong>
+          <button type="button" title="Next layer" onClick={() => cycleLayer(1)}>›</button>
+        </div>
+      )}
       <div className="tl-toolbar">
         <span className="tl-heading">TIMELINE</span>
         <div className="tl-zoom">
@@ -139,27 +186,36 @@ export function Timeline() {
         </div>
       </div>
 
-      <div className="tl-scroll">
+      <div className="tl-scroll" ref={scrollRef}>
         <div className="tl-content" style={{ width: contentW }}>
+          <div className="tl-timecode" style={{ left: LABEL_W + gap + time * zoom }}>
+            {formatTime(time, e.project.fps)}
+          </div>
           <div className="tl-ruler">
             <div className="tl-ruler-label" style={{ width: LABEL_W }}>
               <Diamond size={12} /> {e.project.layers.length} layers
             </div>
+            <div className="tl-lead" style={{ width: gap }} />
             <div
               className="tl-ruler-track" style={{ width: W }}
               onPointerDown={ev => {
                 scrubbing.current = true;
                 (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
                 e.setPlaying(false);
-                scrubFromEvent(ev, ev.currentTarget);
+                const t = scrubFromEvent(ev, ev.currentTarget);
+                scrubStart.current = { x: ev.clientX, t };
+                e.setTime(t);
               }}
-              onPointerMove={ev => { if (scrubbing.current) scrubFromEvent(ev, ev.currentTarget); }}
+              onPointerMove={ev => {
+                const st = scrubStart.current;
+                if (scrubbing.current && st) e.setTime(clamp(st.t + (st.x - ev.clientX) / zoom, 0, e.project.duration));
+              }}
               onPointerUp={() => { scrubbing.current = false; }}
               onPointerCancel={() => { scrubbing.current = false; }}
             >
               {ticks.map(t => (
                 <div key={t} className={`ruler-tick ${Number.isInteger(t) ? 'major' : ''}`} style={{ left: t * zoom }}>
-                  <span>{formatShortTime(t)}</span>
+                  <span>{mmss(t)}</span>
                 </div>
               ))}
             </div>
@@ -192,9 +248,10 @@ export function Timeline() {
                       </button>
                     </div>
                   </div>
+                  <div className="tl-lead" style={{ width: gap }} />
                   <div
                     className="tl-track" style={{ width: W }}
-                    onPointerDown={ev => { e.setPlaying(false); scrubFromEvent(ev, ev.currentTarget); }}
+                    onPointerDown={ev => { e.setPlaying(false); e.setTime(scrubFromEvent(ev, ev.currentTarget)); }}
                   >
                     <div
                       className={`tl-clip t-${l.type} ${isSel ? 'selected' : ''} ${!l.visible ? 'hidden-layer' : ''}`}
@@ -221,6 +278,7 @@ export function Timeline() {
                         <div className="tl-prop-label" style={{ width: LABEL_W }} onClick={() => e.selectProperty(key)}>
                           <span className="prop-dot" /> {PROP_MAP[key]?.label ?? key}
                         </div>
+                        <div className="tl-lead" style={{ width: gap }} />
                         <div className="tl-track prop" style={{ width: W }}>
                           <div className="prop-line" style={{ left: l.start * zoom, width: l.duration * zoom }} />
                           {a.keyframes.map(k => (
@@ -244,7 +302,7 @@ export function Timeline() {
             );
           })}
 
-          <div className="tl-playhead" style={{ left: LABEL_W + time * zoom }}>
+          <div className="tl-playhead" style={{ left: LABEL_W + gap + time * zoom }}>
             <div className="playhead-cap" />
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle, Check, Copy, Diamond, Download, Eye, EyeOff, FileCode2, FileInput,
   FilePlus2, Film, FolderOpen, Keyboard, Lock, Music2, Plus, Scissors, Sparkles,
-  Trash2, Unlock, Upload, X,
+  Trash2, Unlock, Upload, X, Undo2, Redo2, Maximize2, Save, Layers, HelpCircle,
 } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import {
@@ -244,7 +244,7 @@ export function NewProjectModal() {
   const [res, setRes] = useState('1080');
   const [fps, setFps] = useState(30);
   const [duration, setDuration] = useState(10);
-  const [background, setBackground] = useState('#141824');
+  const [background, setBackground] = useState('#e9e9ec');
   const [demo, setDemo] = useState(false);
 
   const ratios = [
@@ -339,6 +339,18 @@ export function SettingsModal() {
       <label className="field"><span>Preview zoom — {Math.round(e.previewZoom * 100)}%</span>
         <input type="range" min={40} max={300} value={Math.round(e.previewZoom * 100)} onChange={ev => e.setPreviewZoom(Number(ev.target.value) / 100)} />
       </label>
+      <div className="am-create-section">Editor actions</div>
+      <div className="am-action-grid">
+        <button type="button" onClick={() => { e.undo(); e.setModal(null); }}><Undo2 size={15} /> Undo</button>
+        <button type="button" onClick={() => { e.redo(); e.setModal(null); }}><Redo2 size={15} /> Redo</button>
+        <button type="button" onClick={() => { e.setPreviewZoom(1); e.setModal(null); }}><Maximize2 size={15} /> Fit preview</button>
+        <button type="button" onClick={() => { e.saveNow(); e.setModal(null); }}><Save size={15} /> Save now</button>
+        <button type="button" onClick={() => e.setModal('layerMenu')}><Layers size={15} /> Layer options</button>
+        <button type="button" onClick={() => e.setModal('projects')}><FolderOpen size={15} /> Projects</button>
+        <button type="button" onClick={() => e.setModal('xml')}><FileInput size={15} /> Import XML</button>
+        <button type="button" onClick={() => e.setModal('export')}><Download size={15} /> Export</button>
+        <button type="button" onClick={() => e.setModal('help')}><HelpCircle size={15} /> Help</button>
+      </div>
       <p className="hint block">Settings apply immediately to the editor. No fake controls.</p>
     </Modal>
   );
