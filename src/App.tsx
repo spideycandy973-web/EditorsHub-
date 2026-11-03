@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  ChevronDown, Diamond, Folder, LayoutGrid, Move, PlusCircle, Shapes, SlidersHorizontal,
-  Sparkles, Type, X,
+  AArrowUp, ArrowLeft, Brush, ChevronDown, Diamond, Folder, Layers, LayoutGrid, Maximize2,
+  MoreVertical, Move, PlusCircle, Shapes, Sparkles, Type, X,
 } from 'lucide-react';
 import { editor, useEditor } from './editor/store';
 import { Renderer } from './editor/renderer';
@@ -30,12 +30,19 @@ const PANEL_META = {
   project: { title: 'Project', icon: <Folder size={15} /> },
 };
 
-const RAIL = [
-  { id: 'add', icon: <PlusCircle size={17} />, label: 'Add' },
-  { id: 'edit', icon: <SlidersHorizontal size={17} />, label: 'Move' },
-  { id: 'effects', icon: <Sparkles size={17} />, label: 'Effects' },
-  { id: 'keyframes', icon: <Diamond size={17} />, label: 'Keys' },
-  { id: 'project', icon: <Folder size={17} />, label: 'Project' },
+const PANEL_TABS = [
+  { id: 'add', label: 'Add layer', icon: <PlusCircle size={15} /> },
+  { id: 'edit', label: 'Move & Transform', icon: <Move size={15} /> },
+  { id: 'effects', label: 'Effects', icon: <Sparkles size={15} /> },
+  { id: 'keyframes', label: 'Keyframes', icon: <Diamond size={15} /> },
+  { id: 'project', label: 'Project', icon: <Folder size={15} /> },
+] as const;
+
+const ADD_CATS = [
+  { id: 'shape', label: 'Shape' }, { id: 'media', label: 'Media' },
+  { id: 'audio', label: 'Audio' }, { id: 'object', label: 'Object' },
+  { id: 'element', label: 'Element' }, { id: 'drawing', label: 'Freehand Drawing' },
+  { id: 'text', label: 'Text' },
 ] as const;
 
 export default function App() {
@@ -43,6 +50,8 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
+  const [panelMenu, setPanelMenu] = useState(false);
+  const [catMenu, setCatMenu] = useState(false);
 
   /* Restore media stored in IndexedDB from previous sessions. */
   useEffect(() => { void editor.hydrateStoredAssets(); }, []);
@@ -182,20 +191,49 @@ export default function App() {
         <div className="dock">
           <BottomNav />
           {e.sheetOpen && (
-            <div className="sheet">
-              <div className="sheet-head">
-                <div className="sheet-title">{meta.icon}<span>{meta.title}</span></div>
-                <IconBtn title="Collapse panel" onClick={() => e.toggleSheet()}><ChevronDown size={17} /></IconBtn>
-              </div>
+            <div className={`sheet ${e.panel === 'add' ? 'am-sheet-add' : ''}`}>
+              {e.panel !== 'add' && (
+                <div className="sheet-head">
+                  <div className="sheet-title">
+                    <button type="button" className="am-sheet-dropdown" onClick={() => setPanelMenu(!panelMenu)}>
+                      <ChevronDown size={14} /><span>{meta.title}</span>
+                    </button>
+                    {panelMenu && (
+                      <div className="am-panel-pop">
+                        {PANEL_TABS.map(t => (
+                          <button key={t.id} type="button" className={e.panel === t.id ? 'on' : ''}
+                            onClick={() => { e.setPanel(t.id); setPanelMenu(false); }}>
+                            {t.icon}<span>{t.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <IconBtn title="Layer options" onClick={() => e.setModal('layerMenu')}><MoreVertical size={17} /></IconBtn>
+                </div>
+              )}
               <div className="am-sheet-body">
                 <div className="am-rail">
-                  {RAIL.map(r => (
-                    <button
-                      key={r.id} type="button" title={r.label}
-                      className={e.panel === r.id ? 'on' : ''}
-                      onClick={() => e.setPanel(r.id)}
-                    >{r.icon}</button>
-                  ))}
+                  {e.panel === 'add' ? (
+                    <>
+                      <button type="button" data-label="All" title="All categories" onClick={() => { e.setAddCategory('media'); setCatMenu(false); }}><LayoutGrid size={18} /></button>
+                      <button type="button" data-label="Browse" title="Browse categories" onClick={() => setCatMenu(!catMenu)}><ChevronDown size={18} /></button>
+                      {catMenu && (
+                        <div className="am-cat-pop">
+                          {ADD_CATS.map(c => (
+                            <button key={c.id} type="button" onClick={() => { e.setAddCategory(c.id); setCatMenu(false); }}>{c.label}</button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" title="Close panel" onClick={() => e.toggleSheet()}><ArrowLeft size={18} /></button>
+                      <button type="button" title="Keyframes" onClick={() => e.setPanel('keyframes')}><Diamond size={18} /></button>
+                      <button type="button" title="Reset preview zoom" onClick={() => e.setPreviewZoom(1)}><Maximize2 size={18} /></button>
+                      <button type="button" title="Layer options" onClick={() => e.setModal('layerMenu')}><Layers size={18} /></button>
+                    </>
+                  )}
                 </div>
                 <div className="sheet-content">
                   {e.panel === 'add' && <AddPanel />}
@@ -205,10 +243,21 @@ export default function App() {
                   {e.panel === 'project' && <ProjectPanel />}
                 </div>
                 <div className="am-rail-right">
-                  <button type="button" title="All categories" onClick={() => { e.setPanel('add'); e.setAddCategory('media'); }}><LayoutGrid size={17} /></button>
-                  <button type="button" title="Add text layer" onClick={() => { e.addLayer('text'); e.setPanel('edit'); }}><Type size={17} /></button>
-                  <button type="button" title="Add shape layer" onClick={() => { e.setPanel('add'); e.setAddCategory('shape'); }}><Shapes size={17} /></button>
-                  <button type="button" className="close" title="Close panel" onClick={() => e.toggleSheet()}><X size={19} /></button>
+                  {e.panel === 'add' ? (
+                    <>
+                      <button type="button" data-label="All" title="All categories" onClick={() => { e.setPanel('add'); e.setAddCategory('media'); }}><LayoutGrid size={17} /></button>
+                      <button type="button" data-label="Vector Drawing" title="Vector / freehand drawing" onClick={() => { e.setPanel('add'); e.setAddCategory('drawing'); }}><Brush size={17} /></button>
+                      <button type="button" data-label="Text" title="Text and fonts" onClick={() => { e.setPanel('add'); e.setAddCategory('text'); }}><AArrowUp size={17} /></button>
+                      <button type="button" className="close" title="Close panel" onClick={() => e.toggleSheet()}><X size={19} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" data-label="Add" title="Add layer" onClick={() => e.setPanel('add')}><PlusCircle size={17} /></button>
+                      <button type="button" data-label="Text" title="Add text layer" onClick={() => { e.addLayer('text'); e.setPanel('edit'); }}><Type size={17} /></button>
+                      <button type="button" data-label="Shapes" title="Add shape layer" onClick={() => { e.setPanel('add'); e.setAddCategory('shape'); }}><Shapes size={17} /></button>
+                      <button type="button" className="close" title="Close panel" onClick={() => e.toggleSheet()}><X size={19} /></button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

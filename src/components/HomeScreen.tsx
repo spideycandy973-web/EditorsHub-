@@ -123,6 +123,22 @@ export function HomeScreen() {
                 </button>
               </div>
             </section>
+
+            <section className="am-section">
+              <div className="am-welcome-card">
+                <div className="am-welcome-brand"><span className="am-welcome-mark">EH</span> EditorsHub</div>
+                <h3>Welcome to EditorsHub</h3>
+                <p>A real motion-graphics editor: layers, keyframes, effects, blending, masks,
+                  XML projects and frame-accurate export — everything runs on your device.</p>
+                <button type="button" className="am-pill" onClick={() => e.setModal('help')}>GETTING STARTED – PART 1</button>
+                <button type="button" className="am-pill" onClick={() => e.setHomeTab('templates')}>GETTING STARTED – PART 2</button>
+                <button type="button" className="am-pill" onClick={() => e.setModal('xml')}>IMPORT AN XML PROJECT</button>
+              </div>
+              <button type="button" className="am-tutorial-card" onClick={() => e.setModal('help')}>
+                <span>ECHO KEYFRAMES + UNSHARP MASK</span>
+                <small>Open the built-in editing guide →</small>
+              </button>
+            </section>
           </>
         )}
 

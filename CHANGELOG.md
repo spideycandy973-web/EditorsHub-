@@ -2,6 +2,24 @@
 
 All notable changes to this repository are documented here.
 
+## 2.3.0 — 2026-11-03 (pixel-level Alight Motion geometry)
+
+### Added / changed
+- Transport icons spread evenly across the full control-bar width, AM-style thin white glyphs.
+- Contextual top bar: property-panel name + back + overflow when a panel is open; project name +
+  settings + export otherwise.
+- Panel replaces the bottom tab bar; sheet head with `▼ property` dropdown (real panel switching),
+  left back/keyframes/fit/layers rail, labelled right rail with the big X close.
+- Add menu: six AM categories including **Freehand Drawing**, teal selected icon box, All/Browse
+  filter rail, two-column thumbnail grid, right rail All / Vector Drawing / Text / X.
+- **Real freehand drawing pad**: brush colour, size, undo, clear; strokes become a PNG image layer.
+- Timeline: flat clip colours, dark labels, per-clip hamburger (real Layer options), grey `‹`
+  selected-layer arrow attached to the clip, real asset thumbnails, faint ruler watermark, short ticks.
+- Launcher: classic Welcome card with three outlined pill buttons + tutorial card, all wired to
+  real actions.
+- Mobile grid clamped to viewport; top bar / sheet no longer overflow horizontally.
+- `versionCode 5`, `versionName 2.3.0`, PWA cache `editorshub-v5`, CI/release bumped to `v2.3.0`.
+
 ## 2.2.0 — 2026-11-03 (Alight Motion fidelity)
 
 ### Added / changed

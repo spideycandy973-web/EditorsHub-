@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Circle, Diamond, Eye, EyeOff, Film, Folder, Image as ImageIcon, Lock, Minus, Music2,
   MoreVertical, Plus, Scissors, Square, Trash2, Type, Unlock, Copy, ClipboardPaste,
-  ChevronUp, ChevronDown, PlusCircle, Shapes, Move, WandSparkles,
+  ChevronUp, ChevronDown, PlusCircle, Shapes, Move, WandSparkles, Menu as MenuIcon,
+  ChevronLeft,
 } from 'lucide-react';
 import { useEditor, usePlayhead } from '../editor/store';
 import { PROP_MAP, type Layer } from '../editor/types';
@@ -159,14 +160,6 @@ export function Timeline() {
 
   return (
     <div className="timeline">
-      {e.selectedLayer && (
-        <div className="tl-layer-chip">
-          <button type="button" title="Previous layer" onClick={() => cycleLayer(-1)}>‹</button>
-          <span className={`tl-chip-icon t-${e.selectedLayer.type}`}>{LAYER_ICONS[e.selectedLayer.type]}</span>
-          <strong title={e.selectedLayer.name}>{e.selectedLayer.name}</strong>
-          <button type="button" title="Next layer" onClick={() => cycleLayer(1)}>›</button>
-        </div>
-      )}
       <div className="tl-toolbar">
         <span className="tl-heading">TIMELINE</span>
         <div className="tl-zoom">
@@ -191,6 +184,7 @@ export function Timeline() {
           <div className="tl-timecode" style={{ left: LABEL_W + gap + time * zoom }}>
             {formatTime(time, e.project.fps)}
           </div>
+          <div className="tl-watermark" style={{ left: LABEL_W + gap }}>EditorsHub</div>
           <div className="tl-ruler">
             <div className="tl-ruler-label" style={{ width: LABEL_W }}>
               <Diamond size={12} /> {e.project.layers.length} layers
@@ -234,7 +228,13 @@ export function Timeline() {
                 <div className={`tl-row ${isSel ? 'selected' : ''}`}>
                   <div className="tl-label" style={{ width: LABEL_W }} onClick={() => e.selectLayer(l.id)}>
                     <span className="layer-index">{idx + 1}</span>
-                    <span className={`layer-icon t-${l.type}`}>{LAYER_ICONS[l.type]}</span>
+                    <span className={`layer-icon t-${l.type}`}>
+                      {(() => {
+                        const a = l.sourceId ? e.assets[l.sourceId] : undefined;
+                        const src = a?.thumbnail || (a?.type === 'image' ? a.url : '');
+                        return src ? <img src={src} alt="" /> : LAYER_ICONS[l.type];
+                      })()}
+                    </span>
                     <span className="layer-name" title={l.name}>{l.name}</span>
                     <div className="layer-toggles">
                       <button type="button" title={l.visible ? 'Hide' : 'Show'} onClick={ev => { ev.stopPropagation(); e.toggleVisible(l.id); }}>
@@ -253,6 +253,12 @@ export function Timeline() {
                     className="tl-track" style={{ width: W }}
                     onPointerDown={ev => { e.setPlaying(false); e.setTime(scrubFromEvent(ev, ev.currentTarget)); }}
                   >
+                    {isSel && (
+                      <button type="button" className="tl-clip-prev" title="Previous layer"
+                        style={{ left: Math.max(0, l.start * zoom - 22) }}
+                        onPointerDown={ev => ev.stopPropagation()}
+                        onClick={() => cycleLayer(-1)}><ChevronLeft size={14} /></button>
+                    )}
                     <div
                       className={`tl-clip t-${l.type} ${isSel ? 'selected' : ''} ${!l.visible ? 'hidden-layer' : ''}`}
                       style={{ left: l.start * zoom, width: Math.max(6, l.duration * zoom) }}
@@ -264,6 +270,11 @@ export function Timeline() {
                       <span className="clip-name">{l.name}</span>
                       <span className="trim-handle left" onPointerDown={ev => startClipDrag(ev, l, 'trimLeft')} onPointerMove={moveClipDrag} onPointerUp={endClipDrag} onPointerCancel={endClipDrag} />
                       <span className="trim-handle right" onPointerDown={ev => startClipDrag(ev, l, 'trimRight')} onPointerMove={moveClipDrag} onPointerUp={endClipDrag} onPointerCancel={endClipDrag} />
+                      <button type="button" className="clip-menu-btn" title={`Options for ${l.name}`}
+                        onPointerDown={ev => ev.stopPropagation()}
+                        onClick={ev => { ev.stopPropagation(); e.selectLayer(l.id); e.setModal('layerMenu'); }}>
+                        <MenuIcon size={13} />
+                      </button>
                       {isSel && Object.entries(l.props).flatMap(([key, a]) => a.keyframes.map(k => (
                         <span key={k.id} className="clip-kf" style={{ left: k.time * zoom }} title={`${PROP_MAP[key]?.label ?? key} @ ${k.time}s`} />
                       )))}

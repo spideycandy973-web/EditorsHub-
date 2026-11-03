@@ -7,14 +7,19 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
-**v2.2.0 UI** — a much closer Alight-Motion-style layout: a light **Projects** launcher (teal-ringed
-template carousel, project cards, XML upload, filter chips, teal **+** bottom nav) and a
-midnight-navy **editor** with a clean light composition preview, vertical watermark, seven-icon
-transport row, a **centre-anchored playhead** that the timeline scrolls underneath, plain
-`00:00:00` timecode on the ruler, coloured layer bars with a pinned eye/thumbnail gutter, a
-circular teal Add Layer button, an icon-only tool dock and a two-rail Add menu with the big **X**
-close. The same skin is applied to the native Android app. EditorsHub keeps its own name, logo and
-original code — no Alight Motion assets are copied.
+**v2.3.0 UI** — Alight Motion's editor geometry, closely matched: a light **Projects** launcher
+(template carousel, welcome card with outlined pill buttons, project cards, XML upload, teal **+**
+bottom nav) and a midnight-navy **editor** whose seven transport icons span the full width, whose
+**centre-anchored playhead** stays fixed while the layers scroll underneath, and whose ruler shows
+only a plain `mm:ss:ff` timecode and short ticks. With a property panel open the top bar becomes
+**back / panel name / overflow**, the bottom tab bar is replaced by the panel, and the sheet has
+AM's `▼ property` dropdown plus a left keyframe rail and a labelled right rail ending in the big
+**X**. The Add menu has AM's six categories (Shape / Media / Audio / Object / Element / Freehand
+Drawing), an All/Browse filter rail, a two-column thumbnail grid and a labelled right rail
+(All / Vector Drawing / Text / X). **Freehand drawing is real** — strokes become a PNG image layer.
+Layer bars are flat AM colours with dark labels, a hamburger and a grey `‹` selected-layer arrow;
+the Add Layer button is a circular teal outline. EditorsHub keeps its own name, logo and original
+code — no Alight Motion assets are copied.
 
 ---
 
@@ -159,7 +164,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v2.2.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v2.3.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -169,4 +174,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the v2.2.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the v2.3.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
