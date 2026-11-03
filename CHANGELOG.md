@@ -4,7 +4,7 @@ All notable changes to this repository are documented here.
 
 ## 1.0.0 — 2026-11-02
 
-### Motion Studio (native Android, `com.motionstudio.editor`)
+### EditorsHub (native Android, `com.editorshub`)
 - Complete Kotlin / Jetpack Compose / Material 3 app: home dashboard, project management
   (create, rename, duplicate, delete, thumbnails, templates), settings and tutorials.
 - Multilayer timeline with drag-to-move, edge trimming, split, reorder, visibility, lock,
@@ -25,7 +25,7 @@ All notable changes to this repository are documented here.
   MediaRecorder video export and PNG frame ZIP export.
 - Signed Capacitor APK (`EditorsHub-Motion.apk`) built by CI.
 
-## 1.1.0 — 2026-11-03 (EditorsHub Motion Studio v2)
+## 1.1.0 — 2026-11-03 (EditorsHub EditorsHub v2)
 
 - Animated six-tab navigation, animated inspector/play transitions, premium dark design system,
   UI scaling and language switching.

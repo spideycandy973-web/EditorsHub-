@@ -1,3 +1,0 @@
--keepattributes *Annotation*
--keep class com.motionstudio.editor.core.domain.model.** { *; }
--dontwarn kotlinx.serialization.**
