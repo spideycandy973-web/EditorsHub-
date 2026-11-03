@@ -7,6 +7,12 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
+**v2.1.0 UI** — an Alight-Motion-style layout: a light **Projects** launcher (template carousel,
+project cards, XML upload, filter chips, teal **+** bottom nav) and a midnight-navy **editor**
+(navigation bar, control bar with ruler/timecode, coloured layer bars, white playhead, Add Layer
+FAB, vertical tool rail and AM-style Add menu). The same skin is applied to the native Android
+app. EditorsHub keeps its own name, logo and original code — no Alight Motion assets are copied.
+
 ---
 
 ## Run it
