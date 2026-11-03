@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/e355fcba-editorshub
+      - arena/d29c2eb6-editorshub
     # Narrow trigger so a web/Capacitor rebuild does not race the native CI push.
     paths:
       - '.github/workflows/build-apk.yml'
@@ -93,6 +93,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Attach APK to versioned and rolling releases
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v2.4.0 EditorsHub-Motion.apk --clobber || true
+          gh release upload editorshub-latest EditorsHub-Motion.apk --clobber || true
+
       - name: Add APK to repository
         if: success()
         run: |
@@ -100,5 +108,47 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f EditorsHub-Motion.apk
           git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
-          git pull origin arena/e355fcba-editorshub --no-rebase || true
-          git push origin HEAD:arena/e355fcba-editorshub
+          git pull origin arena/d29c2eb6-editorshub --no-rebase || true
+          git push origin HEAD:arena/d29c2eb6-editorshub
+
+  # Installs and launches the actual Capacitor APK on a real Android image.
+  smoke:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: EditorsHub-Motion-apk
+          path: .
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules || true
+          sudo udevadm trigger --name-match=kvm || true
+          ls -l /dev/kvm || true
+
+      - name: Launch Capacitor APK smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          script: sh ci/smoke-capacitor.sh
+
+      - name: Publish smoke diagnostics
+        if: failure()
+        run: |
+          mkdir -p ci-logs
+          if [ -f smoke-capacitor-diagnostics.txt ]; then
+            cp smoke-capacitor-diagnostics.txt ci-logs/smoke-capacitor-diagnostics.txt
+          else
+            echo "no diagnostics file was produced" > ci-logs/smoke-capacitor-diagnostics.txt
+          fi

@@ -1,5 +1,5 @@
 /* EditorsHub — minimal offline shell cache. */
-const CACHE = 'editorshub-v5';
+const CACHE = 'editorshub-v6';
 const SHELL = [
   './', './index.html', './manifest.json',
   './icon.svg', './logo.svg',

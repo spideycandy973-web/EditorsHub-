@@ -1,4 +1,4 @@
-# EditorsHub v2.3.0 — pixel-level Alight Motion geometry
+# EditorsHub v2.4.0 — Alight Motion parity + fixes
 
 An original, production-structured Android motion editor: Kotlin + Jetpack Compose + Material 3,
 Room, Hilt, WorkManager, Media3, OpenGL ES 2.0, MediaCodec/MediaMuxer and the Storage Access
@@ -8,10 +8,30 @@ Framework. Package `com.editorshub`, application label `EditorsHub`.
 `EditorsHub-debug.apk` is installable for development (`adb install`). The release APK is
 unsigned by design — configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run the
 `android-release.yml` workflow with keystore secrets. `EditorsHub-release.aab` is for Play upload.
-`EditorsHub-source-v2.3.0.zip` contains the complete source tree (source only, no build outputs).
+`EditorsHub-source-v2.4.0.zip` contains the complete source tree (source only, no build outputs).
 The web/PWA editor and its Capacitor APK (`EditorsHub-Motion.apk` / `apk-latest`) are also rebuilt.
 
-## What's new in 2.3.0 — pixel-level Alight Motion geometry
+## What's new in 2.4.0 — fixes, APK release and closer proportions
+
+- **The installable Capacitor APK is now published on GitHub**: `EditorsHub-Motion.apk` is attached
+  to `apk-latest`, to this versioned release and to the rolling `editorshub-latest` release, and is
+  committed at the repository root. Its package was unified to **`com.editorshub`** (the native
+  project and the web wrapper now use the same application id), as required.
+- **The APK is verified before release**: a new Android 33 emulator smoke test installs and launches
+  `EditorsHub-Motion.apk` itself (not just the native debug build), then checks the process is alive
+  and that logcat contains no `FATAL EXCEPTION`.
+- **Fixed timeline scrolling**: manually scrolling the timeline used to leave the centre-anchored
+  playhead off-screen and the time unchanged. Scrolling now scrubs the composition in real time and
+  the playhead stays exactly at the centre (verified in headless Chromium).
+- **Composition preview enlarged**: the default new project is 4:5 (matching Alight Motion's
+  getting-started canvas); the timeline and inspector were compacted so the preview fills roughly
+  three quarters of the screen width instead of one third.
+- Verified real workflows end-to-end: clip move/trim, split, duplicate, undo/redo, XML export
+  download, XML import validation, still-frame export download, project save/open, effects,
+  keyframes and 134 inspector buttons with zero console errors.
+- `versionCode 6`, `versionName 2.4.0`; PWA cache `editorshub-v6`.
+
+## Previous release — 2.3.0 (pixel-level Alight Motion geometry)
 
 The editor's layout and interaction model now follow the Alight Motion screenshots closely, while
 keeping **EditorsHub**'s own name, logo and original code. No proprietary assets are copied.

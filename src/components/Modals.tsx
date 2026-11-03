@@ -240,7 +240,7 @@ export function ProjectsModal() {
 export function NewProjectModal() {
   const e = useEditor();
   const [name, setName] = useState('New Project');
-  const [ratio, setRatio] = useState('9:16');
+  const [ratio, setRatio] = useState('4:5');
   const [res, setRes] = useState('1080');
   const [fps, setFps] = useState(30);
   const [duration, setDuration] = useState(10);

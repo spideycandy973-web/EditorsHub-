@@ -7,7 +7,7 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
-**v2.3.0 UI** — Alight Motion's editor geometry, closely matched: a light **Projects** launcher
+**v2.4.0 UI** — Alight Motion's editor geometry, closely matched: a light **Projects** launcher
 (template carousel, welcome card with outlined pill buttons, project cards, XML upload, teal **+**
 bottom nav) and a midnight-navy **editor** whose seven transport icons span the full width, whose
 **centre-anchored playhead** stays fixed while the layers scroll underneath, and whose ruler shows
@@ -22,6 +22,11 @@ the Add Layer button is a circular teal outline. EditorsHub keeps its own name, 
 code — no Alight Motion assets are copied.
 
 ---
+
+**Android APK** — `EditorsHub-Motion.apk` (package `com.editorshub`) is published in the
+[`apk-latest`](https://github.com/spideycandy973-web/EditorsHub-/releases/tag/apk-latest) release
+and attached to every versioned release. It is built from the same web app with Capacitor and is
+smoke-tested on an Android 33 emulator before release.
 
 ## Run it
 
@@ -164,7 +169,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v2.3.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v2.4.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -174,4 +179,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the v2.3.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the v2.4.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).

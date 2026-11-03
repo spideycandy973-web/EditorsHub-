@@ -1,5 +1,5 @@
 {
-  "appId": "com.editorshub.motion",
+  "appId": "com.editorshub",
   "appName": "EditorsHub",
   "webDir": "dist",
   "bundledWebRuntime": false,
