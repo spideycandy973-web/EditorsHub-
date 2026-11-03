@@ -42,6 +42,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     val projects: StateFlow<List<ProjectSummary>> = repository.observeProjects()
+        .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val appSettings: StateFlow<AppSettings> = settings.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
@@ -77,20 +78,25 @@ class HomeViewModel @Inject constructor(
     fun showInfo(s: ProjectSummary?) { _info.value = s }
 
     fun createProject(spec: ProjectSpec) = viewModelScope.launch {
-        val project = repository.create(spec)
-        saveThumbnail(project)
-        _open.emit(project.id)
+        runCatching {
+            val project = repository.create(spec)
+            saveThumbnail(project)
+            _open.emit(project.id)
+        }.onFailure { _message.emit("Could not create project: ${it.message}") }
     }
 
     fun createFromTemplate(template: TemplateCatalog.Template) = viewModelScope.launch {
-        val project = template.build().copy(id = UUID.randomUUID().toString())
-        repository.save(project)
-        saveThumbnail(project)
-        _open.emit(project.id)
+        runCatching {
+            val project = template.build().copy(id = UUID.randomUUID().toString())
+            repository.save(project)
+            saveThumbnail(project)
+            _open.emit(project.id)
+        }.onFailure { _message.emit("Could not create from template: ${it.message}") }
     }
 
     fun importMedia(uris: List<Uri>, names: List<String?>) = viewModelScope.launch {
-        val project = repository.create(ProjectSpec(name = "Imported media"))
+        val project = runCatching { repository.create(ProjectSpec(name = "Imported media")) }
+            .getOrElse { _message.emit("Could not create project: ${it.message}"); return@launch }
         val layers = mutableListOf<Layer>()
         val audio = mutableListOf<AudioTrack>()
         uris.forEachIndexed { i, uri ->
@@ -112,40 +118,50 @@ class HomeViewModel @Inject constructor(
         }
         val updated = project.copy(layers = layers, audioTracks = audio,
             durationMs = maxOf(5000L, layers.maxOfOrNull { it.durationMs } ?: 5000L))
-        repository.save(updated)
-        saveThumbnail(updated)
-        _open.emit(updated.id)
+        runCatching {
+            repository.save(updated)
+            saveThumbnail(updated)
+            _open.emit(updated.id)
+        }.onFailure { _message.emit("Import failed: ${it.message}") }
     }
 
     private suspend fun saveThumbnail(project: Project) {
-        val path = withContext(Dispatchers.Default) { thumbnails.generate(project) }
-        if (path != null) repository.save(project, thumbnailPath = path, autosaveOnly = true)
+        runCatching {
+            val path = withContext(Dispatchers.Default) { thumbnails.generate(project) }
+            if (path != null) repository.save(project, thumbnailPath = path, autosaveOnly = true)
+        }
     }
 
-    fun rename(id: String, name: String) = viewModelScope.launch { repository.rename(id, name) }
+    fun rename(id: String, name: String) = viewModelScope.launch {
+        runCatching { repository.rename(id, name) }
+    }
     fun duplicate(id: String) = viewModelScope.launch {
-        val copy = repository.duplicate(id)
+        val copy = runCatching { repository.duplicate(id) }.getOrNull()
         if (copy != null) { saveThumbnail(copy); _message.emit("Project duplicated") }
         else _message.emit("Duplicate failed")
     }
-    fun delete(id: String) = viewModelScope.launch { repository.delete(id); _message.emit("Project deleted") }
+    fun delete(id: String) = viewModelScope.launch {
+        runCatching { repository.delete(id) }
+        _message.emit("Project deleted")
+    }
 
     /** Real share: writes the versioned native project JSON and returns its path. */
-    suspend fun shareProject(id: String): String? {
-        val project = repository.load(id) ?: return null
-        val configured = settings.settings.first()
+    suspend fun shareProject(id: String): String? = runCatching {
+        val project = repository.load(id) ?: throw NoSuchElementException("Project not found")
+        val configured = runCatching { settings.settings.first() }.getOrDefault(AppSettings())
         val base = if (configured.defaultProjectLocation == "external")
             (context.getExternalFilesDir(null) ?: context.filesDir) else context.cacheDir
         val dir = File(base, "shared").apply { mkdirs() }
         val safe = project.name.replace(Regex("[^A-Za-z0-9_-]"), "_")
         val f = File(dir, "$safe.ehproj")
         f.writeText(ProjectSerializer.encode(project.copy(name = project.name)))
-        return f.absolutePath
-    }
+        f.absolutePath
+    }.getOrNull()
 
     /** Real export: enqueues the background MediaCodec/MediaMuxer worker. */
     fun exportProject(id: String, config: ExportConfig, onQueued: (UUID) -> Unit) = viewModelScope.launch {
-        val project = repository.load(id) ?: run { _message.emit("Project not found"); return@launch }
+        val project = runCatching { repository.load(id) }.getOrNull()
+            ?: run { _message.emit("Project not found"); return@launch }
         val data = Data.Builder()
             .putString(ExportWorker.KEY_PROJECT, ProjectSerializer.encode(project))
             .putInt(ExportWorker.KEY_WIDTH, config.width)
@@ -160,21 +176,24 @@ class HomeViewModel @Inject constructor(
             .build()
         val request = OneTimeWorkRequestBuilder<ExportWorker>()
             .setInputData(data).addTag("export").build()
-        workManager.enqueue(request)
+        runCatching { workManager.enqueue(request) }.onFailure {
+            _message.emit("Could not start export: ${it.message}")
+            return@launch
+        }
         onQueued(request.id)
         _message.emit("Export started in background")
     }
 
     fun updateSettings(transform: (AppSettings) -> AppSettings) = viewModelScope.launch {
-        settings.update(transform)
+        runCatching { settings.update(transform) }
     }
     fun setAiKey(plain: String) = viewModelScope.launch {
-        settings.update { it.copy(aiApiKey = AiKeyStore.encrypt(plain)) }
+        runCatching { settings.update { it.copy(aiApiKey = AiKeyStore.encrypt(plain)) } }
     }
     fun aiKeyConfigured(): Boolean {
         return appSettings.value.aiApiKey.isNotBlank()
     }
-    fun clearCache() = settings.clearCache()
+    fun clearCache(): Long = settings.clearCache(appSettings.value.cacheLimitMb)
     fun cacheSize() = settings.cacheSizeBytes()
 
     fun formatDate(ms: Long): String =

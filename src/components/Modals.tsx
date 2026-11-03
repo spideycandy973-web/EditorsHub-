@@ -324,6 +324,7 @@ export function HelpModal() {
   ];
   return (
     <Modal title="Quick start & shortcuts" onClose={() => e.setModal(null)} wide footer={<Btn variant="primary" onClick={() => e.setModal(null)}>Got it</Btn>}>
+      <div className="help-brand"><img src="./logo.svg" alt="EditorsHub — video & motion editor" /></div>
       <div className="help-grid">
         <div>
           <h3><Keyboard size={16} /> Keyboard</h3>

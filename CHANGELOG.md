@@ -2,6 +2,27 @@
 
 All notable changes to this repository are documented here.
 
+## 2.0.1 — 2026-11-03 (stability + brand)
+
+### Fixed
+- **Cold-start crash**: `MainActivity` (AppCompatActivity) used a plain `android:Theme.Material`
+  descendant; AppCompat rejected it when `setContent` was called. Themes now inherit
+  `Theme.AppCompat.NoActionBar`.
+- Missing `INTERNET` / `ACCESS_NETWORK_STATE` permissions for AI Studio's real inference.
+- Runtime guards for Hilt/WorkManager initialisation order, DataStore corruption, project load,
+  autosave/thumbnails, import, export enqueue, language switching, invalid composition
+  dimensions, GL/EGL/shader failures and `OutOfMemoryError` during compositing/export.
+- Playback modulo-by-zero and invalid `coerceIn` ranges for zero-duration projects; preview-guides
+  setting mapping; notification small icon now uses density-specific PNGs.
+- CI now runs an Android 33 emulator launch smoke test (fails on process death or
+  `FATAL EXCEPTION` in logcat).
+
+### Changed
+- New **EditorsHub "EH" logo** applied consistently to the native adaptive/legacy launcher icons,
+  splash, notification icon, in-app wordmark, PWA icons/manifest, and Capacitor wrapper icons.
+- App label / page title / PWA name / Capacitor `appName` unified as **EditorsHub**.
+- `versionCode 2`, `versionName 2.0.1`; releases `v2.0.1` and rolling `editorshub-latest`.
+
 ## 1.0.0 — 2026-11-02
 
 ### EditorsHub (native Android, `com.editorshub`)

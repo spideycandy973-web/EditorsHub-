@@ -1,4 +1,4 @@
-# EditorsHub Motion
+# EditorsHub
 
 A **real, working mobile video & motion-graphics editor** that runs entirely in the browser.
 It is an Alight‑Motion‑style tool: layers, keyframes, effects, blending, masks, media and
@@ -92,7 +92,7 @@ src/
                     panels (Add/Edit/Effects/Keys/Project), Modals, ui primitives
   App.tsx           app shell, render loop (rAF), keyboard shortcuts
   index.css         full mobile + desktop responsive design
-public/             PWA manifest, icon, service worker
+public/             PWA manifest, EditorsHub logo/icons, service worker
 ```
 
 **Rendering pipeline** — each frame the compositor clears the background, walks layers
@@ -150,7 +150,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v2.0.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v2.0.1` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),

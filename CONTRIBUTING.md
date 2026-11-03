@@ -3,7 +3,7 @@
 Thanks for helping improve EditorsHub / EditorsHub.
 
 ## Repository layout
-- `/` — the EditorsHub Motion web/PWA editor (Vite + React + Capacitor) and its APK.
+- `/` — the EditorsHub web/PWA editor (Vite + React + Capacitor) and its APK.
 - `/EditorsHub` — the native **EditorsHub** Android Studio project (Kotlin + Compose).
 - `/artifacts` — CI-generated Android APK/AAB builds.
 

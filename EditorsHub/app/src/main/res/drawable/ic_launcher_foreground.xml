@@ -2,8 +2,22 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FF8B7BFF"
-        android:pathData="M34,72 L50,32 L58,32 L74,72 L64,72 L60,60 L48,60 L44,72 Z M51,52 L57,52 L54,41 Z" />
-    <path android:fillColor="#FF22D3EE"
-        android:pathData="M78,28 m-7,0 a7,7 0,1 1,14 0 a7,7 0,1 1,-14 0" />
+    <!-- EditorsHub "EH" monogram: E (violet) + H (cyan) + connected hub nodes. -->
+    <group>
+        <path android:fillColor="#FF8B7BFF" android:pathData="M28.00,34.00 H31.00 A2.00,2.00 0 0 1 33.00,36.00 V72.00 A2.00,2.00 0 0 1 31.00,74.00 H28.00 A2.00,2.00 0 0 1 26.00,72.00 V36.00 A2.00,2.00 0 0 1 28.00,34.00 Z"/>
+        <path android:fillColor="#FF8B7BFF" android:pathData="M28.00,34.00 H50.00 A2.00,2.00 0 0 1 52.00,36.00 V39.00 A2.00,2.00 0 0 1 50.00,41.00 H28.00 A2.00,2.00 0 0 1 26.00,39.00 V36.00 A2.00,2.00 0 0 1 28.00,34.00 Z"/>
+        <path android:fillColor="#FF8B7BFF" android:pathData="M28.00,50.00 H46.00 A2.00,2.00 0 0 1 48.00,52.00 V55.00 A2.00,2.00 0 0 1 46.00,57.00 H28.00 A2.00,2.00 0 0 1 26.00,55.00 V52.00 A2.00,2.00 0 0 1 28.00,50.00 Z"/>
+        <path android:fillColor="#FF8B7BFF" android:pathData="M28.00,67.00 H50.00 A2.00,2.00 0 0 1 52.00,69.00 V72.00 A2.00,2.00 0 0 1 50.00,74.00 H28.00 A2.00,2.00 0 0 1 26.00,72.00 V69.00 A2.00,2.00 0 0 1 28.00,67.00 Z"/>
+        <path android:fillColor="#FF22D3EE" android:pathData="M58.00,34.00 H61.00 A2.00,2.00 0 0 1 63.00,36.00 V72.00 A2.00,2.00 0 0 1 61.00,74.00 H58.00 A2.00,2.00 0 0 1 56.00,72.00 V36.00 A2.00,2.00 0 0 1 58.00,34.00 Z"/>
+        <path android:fillColor="#FF22D3EE" android:pathData="M77.00,34.00 H80.00 A2.00,2.00 0 0 1 82.00,36.00 V72.00 A2.00,2.00 0 0 1 80.00,74.00 H77.00 A2.00,2.00 0 0 1 75.00,72.00 V36.00 A2.00,2.00 0 0 1 77.00,34.00 Z"/>
+        <path android:fillColor="#FF22D3EE" android:pathData="M58.00,50.00 H80.00 A2.00,2.00 0 0 1 82.00,52.00 V55.00 A2.00,2.00 0 0 1 80.00,57.00 H58.00 A2.00,2.00 0 0 1 56.00,55.00 V52.00 A2.00,2.00 0 0 1 58.00,50.00 Z"/>
+        <path android:pathData="M60,27 L78,25 L84,31" android:strokeColor="#8822D3EE"
+            android:strokeWidth="1.4" android:strokeLineCap="round" android:fillColor="#00000000"/>
+        <path android:fillColor="#FF22D3EE"
+            android:pathData="M60,27 m-2.2,0 a2.2,2.2 0,1 1,4.4 0 a2.2,2.2 0,1 1,-4.4 0"/>
+        <path android:fillColor="#FF22D3EE"
+            android:pathData="M84,31 m-2.2,0 a2.2,2.2 0,1 1,4.4 0 a2.2,2.2 0,1 1,-4.4 0"/>
+        <path android:fillColor="#FFFF5A8A"
+            android:pathData="M78,25 m-3.2,0 a3.2,3.2 0,1 1,6.4 0 a3.2,3.2 0,1 1,-6.4 0"/>
+    </group>
 </vector>

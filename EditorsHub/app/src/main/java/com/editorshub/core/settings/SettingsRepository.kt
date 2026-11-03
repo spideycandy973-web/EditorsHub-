@@ -16,12 +16,9 @@ import com.editorshub.core.domain.model.VideoCodec
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.map
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -106,8 +103,9 @@ class SettingsRepository @Inject constructor(
         val AI_MAX = intPreferencesKey("ai_max_tokens")
     }
 
+    // A corrupt/unreadable DataStore must degrade to defaults, never crash collection.
     val settings: Flow<AppSettings> = context.dataStore.data
-        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .catch { emit(emptyPreferences()) }
         .map { p -> p.toSettings() }
 
     private fun Preferences.toSettings() = AppSettings(
@@ -177,14 +175,15 @@ class SettingsRepository @Inject constructor(
         return size(context.cacheDir)
     }
 
-    /** Removes caches and enforces the configured size limit by deleting oldest files first. */
-    fun clearCache(): Long {
+    /** Removes caches and enforces the configured size limit by deleting oldest files first.
+     *  The limit is supplied by the caller so this never blocks the main thread with runBlocking. */
+    fun clearCache(limitMb: Int = 256): Long {
         var removed = 0L
         val dirs = listOf(File(context.cacheDir, "frames"), File(context.cacheDir, "thumbs"))
         for (dir in dirs) dir.listFiles()?.forEach { f ->
             if (f.isFile) { removed += f.length(); f.delete() }
         }
-        val limit = runBlocking { settings.first().cacheLimitMb.toLong() * 1024L * 1024L }
+        val limit = limitMb.coerceAtLeast(0).toLong() * 1024L * 1024L
         fun allFiles(): List<File> = context.cacheDir.walkTopDown()
             .filter { it.isFile && it.name != "keystore.properties" }.toList()
         var files = allFiles().sortedBy { it.lastModified() }

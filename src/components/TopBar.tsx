@@ -9,8 +9,9 @@ export function TopBar() {
   const e = useEditor();
   return (
     <header className="topbar">
-      <div className="brand" title="EditorsHub Motion">
-        <span className="brand-mark">EH</span>
+      <div className="brand" title="EditorsHub — video & motion editor">
+        <span className="brand-mark"><b className="brand-e">E</b><b className="brand-h">H</b></span>
+        <span className="brand-word">EditorsHub</span>
       </div>
       <button type="button" className="project-name" onClick={() => e.setModal('projects')} title="Open projects">
         <span>{e.project.name}</span>

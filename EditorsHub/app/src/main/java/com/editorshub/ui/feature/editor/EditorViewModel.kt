@@ -30,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -111,14 +112,16 @@ class EditorViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val p = repository.load(projectId)
+            val p = runCatching { repository.load(projectId) }.getOrNull()
             if (p != null) {
                 _ui.value = _ui.value.copy(
                     project = p,
                     selectedLayerId = p.layers.firstOrNull()?.id,
                     playheadMs = 0L
                 )
-                settings.settings.collectLatest { s ->
+                settings.settings
+                    .catch { emit(AppSettings()) }
+                    .collectLatest { s ->
                     currentSettings = s
                     _ui.value = _ui.value.copy(
                         snapping = s.snapping,
@@ -190,20 +193,24 @@ class EditorViewModel @Inject constructor(
         autosaveJob?.cancel()
         autosaveJob = viewModelScope.launch {
             delay(_ui.value.autosaveIntervalMs)
-            val thumb = withContext(Dispatchers.Default) { thumbnails.generate(p) }
-            repository.save(p, thumbnailPath = thumb, autosaveOnly = true)
+            runCatching {
+                val thumb = withContext(Dispatchers.Default) { thumbnails.generate(p) }
+                repository.save(p, thumbnailPath = thumb, autosaveOnly = true)
+            }
         }
     }
 
     fun saveNow() = viewModelScope.launch {
         val p = project()
-        val thumb = withContext(Dispatchers.Default) { thumbnails.generate(p) }
-        repository.save(p, thumbnailPath = thumb, autosaveOnly = false)
-        message("Project saved (version recorded)")
+        runCatching {
+            val thumb = withContext(Dispatchers.Default) { thumbnails.generate(p) }
+            repository.save(p, thumbnailPath = thumb, autosaveOnly = false)
+            message("Project saved (version recorded)")
+        }.onFailure { message("Save failed: ${it.message}") }
     }
 
     fun recover() = viewModelScope.launch {
-        val interrupted = repository.recoverInterrupted()
+        val interrupted = runCatching { repository.recoverInterrupted() }.getOrDefault(emptyList())
         message(if (interrupted.isEmpty()) "No interrupted sessions" else "${interrupted.size} recoverable session(s)")
     }
 
@@ -224,11 +231,10 @@ class EditorViewModel @Inject constructor(
             val frameMs = (1000.0 / exact).toLong().coerceAtLeast(1L)
             val origin = System.nanoTime()
             val start = _ui.value.playheadMs
+            val duration = p.durationMs.coerceAtLeast(1L)
             while (isActive && _ui.value.playing) {
                 var t = start + (System.nanoTime() - origin) / 1_000_000L
-                if (t >= p.durationMs) {
-                    t %= p.durationMs
-                }
+                if (t >= duration) t %= duration
                 _ui.value = _ui.value.copy(playheadMs = t)
                 delay(frameMs)
             }
@@ -241,7 +247,8 @@ class EditorViewModel @Inject constructor(
     }
 
     fun seek(ms: Long) {
-        _ui.value = _ui.value.copy(playheadMs = ms.coerceIn(0L, project().durationMs))
+        val end = project().durationMs.coerceAtLeast(0L)
+        _ui.value = _ui.value.copy(playheadMs = ms.coerceIn(0L, end))
     }
 
     fun stepFrames(count: Int) {
@@ -799,12 +806,7 @@ class EditorViewModel @Inject constructor(
     }
 
     fun setGuide(name: String, value: Boolean) {
-        val field = when (name) {
-            "checkerboard" -> "checkerboard"; "safe" -> "showSafeArea"
-            "grid" -> "showGrid"; "center" -> "showCenterGuides"
-            else -> "showAspectGuides"
-        }
-        _ui.value = when (field) {
+        _ui.value = when (name) {
             "checkerboard" -> _ui.value.copy(checkerboard = value)
             "safe" -> _ui.value.copy(showSafeArea = value)
             "grid" -> _ui.value.copy(showGrid = value)
@@ -812,13 +814,15 @@ class EditorViewModel @Inject constructor(
             else -> _ui.value.copy(showAspectGuides = value)
         }
         viewModelScope.launch {
-            settings.update { st -> when (field) {
-                "checkerboard" -> st.copy(checkerboard = value)
-                "safe" -> st.copy(showSafeArea = value)
-                "grid" -> st.copy(showGrid = value)
-                "center" -> st.copy(showCenterGuides = value)
-                else -> st.copy(showAspectGuides = value)
-            } }
+            runCatching {
+                settings.update { st -> when (name) {
+                    "checkerboard" -> st.copy(checkerboard = value)
+                    "safe" -> st.copy(showSafeArea = value)
+                    "grid" -> st.copy(showGrid = value)
+                    "center" -> st.copy(showCenterGuides = value)
+                    else -> st.copy(showAspectGuides = value)
+                } }
+            }
         }
     }
 
@@ -829,9 +833,11 @@ class EditorViewModel @Inject constructor(
             // Direct foreground export path (still real rendering, no WorkManager).
             viewModelScope.launch {
                 _ui.value = _ui.value.copy(export = ExportUiState.Running(0, "Rendering"))
-                val result = exporter.export(p, config, { percent, label ->
-                    _ui.value = _ui.value.copy(export = ExportUiState.Running(percent, label))
-                }, { false })
+                val result = runCatching {
+                    exporter.export(p, config, { percent, label ->
+                        _ui.value = _ui.value.copy(export = ExportUiState.Running(percent, label))
+                    }, { false })
+                }.getOrElse { ExportResult.Failure("Render failed: ${it.message}") }
                 _ui.value = _ui.value.copy(export = when (result) {
                     is ExportResult.Success -> ExportUiState.Success(result.file.absolutePath,
                         result.uri?.toString() ?: "")
@@ -858,7 +864,13 @@ class EditorViewModel @Inject constructor(
             .addTag("export")
             .build()
         exportUuid = request.id
-        workManager.enqueue(request)
+        try {
+            workManager.enqueue(request)
+        } catch (e: Exception) {
+            _ui.value = _ui.value.copy(export = ExportUiState.Failure(
+                "Could not start background render: ${e.message}"))
+            return
+        }
         _ui.value = _ui.value.copy(export = ExportUiState.Running(0, "Starting…"))
         viewModelScope.launch {
             workManager.getWorkInfoByIdLiveData(request.id).asFlow().collect { info ->

@@ -90,8 +90,14 @@ fun EditorsHubTheme(
 /** Actually applies the selected language across the whole app. */
 object LanguageManager {
     fun apply(tag: String) {
-        val locales = if (tag == "system") LocaleListCompat.getEmptyLocaleList()
-        else LocaleListCompat.forLanguageTags(tag)
-        AppCompatDelegate.setApplicationLocales(locales)
+        // Some OEMs ship an AppCompat build that rejects setApplicationLocales on
+        // certain configurations. A language change must never crash the app.
+        try {
+            val locales = if (tag == "system") LocaleListCompat.getEmptyLocaleList()
+            else LocaleListCompat.forLanguageTags(tag)
+            AppCompatDelegate.setApplicationLocales(locales)
+        } catch (e: Throwable) {
+            android.util.Log.w("EditorsHub", "Could not apply locale $tag", e)
+        }
     }
 }

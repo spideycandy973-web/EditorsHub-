@@ -1,6 +1,7 @@
 package com.editorshub.ui.feature.editor
 
-import android.graphics.Bitmap
+import android.app.ActivityManager
+import android.content.Context
 import android.opengl.GLSurfaceView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -17,12 +18,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.editorshub.core.di.AppEntryPoint
-import com.editorshub.core.rendering.RenderFrame
-import com.editorshub.core.rendering.canvas.RenderView
 import com.editorshub.core.rendering.RenderGraph
-import com.editorshub.core.rendering.canvas.CanvasCompositor
+import com.editorshub.core.rendering.canvas.RenderView
 import com.editorshub.core.rendering.gl.EffectUniformBuilder
 import com.editorshub.core.rendering.gl.GlPreviewRenderer
+import com.editorshub.core.rendering.gl.GlUniforms
 import dagger.hilt.android.EntryPointAccessors
 import java.util.concurrent.atomic.AtomicReference
 
@@ -30,6 +30,10 @@ import java.util.concurrent.atomic.AtomicReference
  * Preview with two real backends:
  *  - GLSurfaceView + OpenGL ES shader chain (GPU effects)
  *  - hardware Canvas (fast compositing fallback)
+ *
+ * Every external boundary is guarded: a malformed project, a device without
+ * OpenGL ES 2.0, a failed EGL context, or a compositor OOM degrades to a
+ * black/canvas preview instead of killing the process.
  */
 @Composable
 fun PreviewSurface(state: EditorUiState, modifier: Modifier = Modifier) {
@@ -40,7 +44,18 @@ fun PreviewSurface(state: EditorUiState, modifier: Modifier = Modifier) {
     }
     val compositor = remember { entry.compositor() }
     val density = LocalDensity.current
-    val ratio = project.width.toFloat() / project.height.toFloat()
+
+    val glEs2 = remember {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        (am?.deviceConfigurationInfo?.reqGlEsVersion ?: 0) >= 0x20000
+    }
+    val useGpu = state.gpuPreview && glEs2
+
+    // Guard against zero/negative dimensions from a corrupted or imported project.
+    val ratio = (project.width.coerceAtLeast(1).toFloat() /
+        project.height.coerceAtLeast(1).toFloat()).coerceIn(0.1f, 10f)
+    val zoom = state.previewZoom.coerceIn(0.1f, 4f)
+
     LaunchedEffect(state.previewQuality, state.proxyEnabled, state.proxyScale) {
         compositor.previewQuality = (state.previewQuality *
             if (state.proxyEnabled) state.proxyScale else 1f).coerceIn(0.15f, 1f)
@@ -48,49 +63,64 @@ fun PreviewSurface(state: EditorUiState, modifier: Modifier = Modifier) {
 
     BoxWithConstraints(modifier = modifier.background(MaterialTheme.colorScheme.background)
         .clipToBounds(), contentAlignment = Alignment.Center) {
-        val w = minOf(maxWidth, maxHeight * ratio) * state.previewZoom
-        val h = w / ratio
+        val w = minOf(maxWidth, maxHeight * ratio) * zoom
+        val h = (w / ratio).coerceAtLeast(1.dp)
 
-        if (state.gpuPreview) {
+        if (useGpu) {
             val holder = remember { AtomicReference<Pair<com.editorshub.core.domain.model.Project, Long>?>(null) }
             val renderer = remember {
                 GlPreviewRenderer(
                     bitmapProvider = {
                         val pair = holder.get() ?: return@GlPreviewRenderer null
-                        val frame = RenderGraph.resolve(pair.first, pair.second)
-                        compositor.renderToBitmap(frame, pair.first.width, pair.first.height)
+                        runCatching {
+                            val frame = RenderGraph.resolve(pair.first, pair.second)
+                            compositor.renderToBitmap(frame, pair.first.width, pair.first.height)
+                        }.getOrNull()
                     },
                     uniformsProvider = {
-                        val pair = holder.get()
-                        if (pair == null) com.editorshub.core.rendering.gl.GlUniforms()
-                        else {
+                        val pair = holder.get() ?: return@GlPreviewRenderer GlUniforms()
+                        runCatching {
                             val frame = RenderGraph.resolve(pair.first, pair.second)
                             EffectUniformBuilder.from(frame.layers.flatMap { it.effects }, pair.second)
-                        }
+                        }.getOrDefault(GlUniforms())
                     }
                 )
             }
             AndroidView(
                 modifier = Modifier.size(w, h),
                 factory = { ctx ->
-                    GLSurfaceView(ctx).apply {
-                        setEGLContextClientVersion(2)
-                        setRenderer(renderer)
-                        renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+                    try {
+                        GLSurfaceView(ctx).apply {
+                            setEGLContextClientVersion(2)
+                            setRenderer(renderer)
+                            renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+                        }
+                    } catch (e: Throwable) {
+                        // No usable EGL/GL context on this device: use the Canvas backend.
+                        RenderView(ctx, compositor)
                     }
                 },
                 update = { view ->
                     holder.set(project to state.playheadMs)
-                    view.requestRender()
+                    if (view is GLSurfaceView) {
+                        view.requestRender()
+                    } else if (view is RenderView) {
+                        val frame = runCatching { RenderGraph.resolve(project, state.playheadMs) }.getOrNull()
+                        if (frame != null) view.update(frame)
+                    }
                 }
             )
         } else {
-            val frame = remember(project, state.playheadMs) { RenderGraph.resolve(project, state.playheadMs) }
-            AndroidView(
-                modifier = Modifier.size(w, h),
-                factory = { ctx -> RenderView(ctx, compositor) },
-                update = { view -> view.update(frame) }
-            )
+            val frame = remember(project, state.playheadMs) {
+                runCatching { RenderGraph.resolve(project, state.playheadMs) }.getOrNull()
+            }
+            if (frame != null) {
+                AndroidView(
+                    modifier = Modifier.size(w, h),
+                    factory = { ctx -> RenderView(ctx, compositor) },
+                    update = { view -> view.update(frame) }
+                )
+            }
         }
         PreviewGuides(state, Modifier.size(w, h))
     }
@@ -99,6 +129,7 @@ fun PreviewSurface(state: EditorUiState, modifier: Modifier = Modifier) {
 /** Real overlay: transparency checkerboard, safe areas, grid, centre and aspect guides. */
 @Composable
 private fun PreviewGuides(state: EditorUiState, modifier: Modifier) {
+    val density = LocalDensity.current
     val transparent = state.project?.backgroundType ==
         com.editorshub.core.domain.model.BackgroundType.TRANSPARENT
     if (!transparent && !state.showGrid && !state.showSafeArea &&
@@ -106,7 +137,7 @@ private fun PreviewGuides(state: EditorUiState, modifier: Modifier) {
     Canvas(modifier) {
         val w = size.width; val h = size.height
         if (transparent && state.checkerboard) {
-            val cell = 16f * density
+            val cell = 16f * density.density
             var y = 0f
             var row = 0
             while (y < h) {

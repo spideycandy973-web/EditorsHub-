@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/3e8a65b0-editorshub
+      - arena/fa6652a1-editorshub
     paths:
       - 'EditorsHub/**'
       - '.github/workflows/android-ci.yml'
@@ -58,7 +58,7 @@ jobs:
           cp android-build.log ci-logs/android-build.log 2>/dev/null || true
           git add -f ci-logs/ || true
           git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/3e8a65b0-editorshub || true
+          git push origin HEAD:arena/fa6652a1-editorshub || true
 
       - name: Collect artifacts
         if: success()
@@ -71,8 +71,11 @@ jobs:
 
       - name: Package complete source archive
         if: success()
+        # Source only: exclude committed build outputs so the ZIP stays small.
         run: |
-          git archive --format=zip --prefix=EditorsHub-v2.0.0/ HEAD > artifacts/EditorsHub-source-v2.0.0.zip
+          git archive --format=zip --prefix=EditorsHub-v2.0.1/ HEAD -- \
+            . ':(exclude)artifacts' ':(exclude)artifacts/**' \
+            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v2.0.1.zip
           ls -lh artifacts/
 
       - name: Upload artifact bundle
@@ -97,24 +100,24 @@ jobs:
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v2.0.0.zip
+            artifacts/EditorsHub-source-v2.0.1.zip
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish versioned release v2.0.0
+      - name: Publish versioned release v2.0.1
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.0.0
-          name: EditorsHub v2.0.0 — Professional Motion Editor
+          tag_name: v2.0.1
+          name: EditorsHub v2.0.1 — Professional Motion Editor
           body_path: RELEASE_NOTES.md
           files: |
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v2.0.0.zip
+            artifacts/EditorsHub-source-v2.0.1.zip
           draft: false
           prerelease: false
         env:
@@ -127,4 +130,57 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f artifacts/
           git commit -m "build: add Android APK + AAB [skip ci]" || echo "artifacts already committed"
-          git push origin HEAD:arena/3e8a65b0-editorshub
+          git push origin HEAD:arena/fa6652a1-editorshub
+
+  # Verifies the debug APK actually launches on a real Android system image.
+  # The v2.0.0 crash was a startup-only failure that unit tests could not catch.
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout for diagnostics
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: editorshub-android
+          path: artifacts
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules || true
+          sudo udevadm trigger --name-match=kvm || true
+          ls -l /dev/kvm || true
+
+      - name: Launch smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          # The action runs each line with its own `sh -c`, so use a script file.
+          script: sh ci/smoke.sh
+
+      - name: Publish smoke diagnostics
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ci-logs
+          if [ -f smoke-diagnostics.txt ]; then
+            cp smoke-diagnostics.txt ci-logs/smoke-diagnostics.txt
+          else
+            echo "no diagnostics file was produced" > ci-logs/smoke-diagnostics.txt
+          fi
+          git fetch origin arena/fa6652a1-editorshub
+          git reset --hard origin/arena/fa6652a1-editorshub
+          git add -f ci-logs/
+          git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
+          git push origin HEAD:arena/fa6652a1-editorshub || true
