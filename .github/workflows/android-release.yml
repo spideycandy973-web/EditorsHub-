@@ -1,12 +1,12 @@
-name: Signed Android release (Motion Studio)
+name: Signed Android release (EditorsHub)
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release tag (e.g. v1.0.0)'
+        description: 'Release tag (e.g. v2.0.0)'
         required: true
-        default: 'v1.0.0'
+        default: 'v2.0.0'
 
 permissions:
   contents: write
@@ -30,8 +30,8 @@ jobs:
             echo "::error::KEYSTORE_BASE64 secret is not configured. Debug keys are not used for releases."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > MotionStudio/app/release.jks
-          cat > MotionStudio/app/keystore.properties <<PROPS
+          echo "$KEYSTORE_BASE64" | base64 -d > EditorsHub/app/release.jks
+          cat > EditorsHub/app/keystore.properties <<PROPS
           storeFile=release.jks
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
@@ -42,29 +42,29 @@ jobs:
         run: |
           if [ -z "$ANDROID_HOME" ]; then export ANDROID_HOME="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"; fi
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          chmod +x MotionStudio/gradlew
-          cd MotionStudio
+          chmod +x EditorsHub/gradlew
+          cd EditorsHub
           ./gradlew :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease --stacktrace
           cd ..
           mkdir -p artifacts
-          cp MotionStudio/app/build/outputs/apk/release/app-release.apk artifacts/MotionStudio-release.apk
-          cp MotionStudio/app/build/outputs/bundle/release/app-release.aab artifacts/MotionStudio-release.aab
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose artifacts/MotionStudio-release.apk
+          cp EditorsHub/app/build/outputs/apk/release/app-release.apk artifacts/EditorsHub-release.apk
+          cp EditorsHub/app/build/outputs/bundle/release/app-release.aab artifacts/EditorsHub-release.aab
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose artifacts/EditorsHub-release.apk
 
       - name: Remove decoded key from workspace
         if: always()
-        run: rm -f MotionStudio/app/release.jks MotionStudio/app/keystore.properties
+        run: rm -f EditorsHub/app/release.jks EditorsHub/app/keystore.properties
 
       - name: Publish signed release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
-          name: Motion Studio ${{ inputs.version }}
+          name: EditorsHub ${{ inputs.version }}
           body: |
-            Signed production build of Motion Studio.
+            Signed production build of EditorsHub.
             Configure KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD secrets.
           files: |
-            artifacts/MotionStudio-release.apk
-            artifacts/MotionStudio-release.aab
+            artifacts/EditorsHub-release.apk
+            artifacts/EditorsHub-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

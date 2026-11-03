@@ -1,0 +1,3 @@
+-keepattributes *Annotation*
+-keep class com.editorshub.core.domain.model.** { *; }
+-dontwarn kotlinx.serialization.**

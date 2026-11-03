@@ -136,25 +136,26 @@ Alight-Motion-style preset fragments (`<Layer>`, `<Item>`, `<Track>`…), shorth
 
 ---
 
-## Motion Studio — native Android app (`MotionStudio/`)
+## EditorsHub — native Android app (`EditorsHub/`)
 
-This repository also contains **Motion Studio**, a complete, original Android Studio project:
-Kotlin + Jetpack Compose + Material 3, package `com.motionstudio.editor`. It implements a real
+This repository also contains **EditorsHub**, a complete, original Android Studio project:
+Kotlin + Jetpack Compose + Material 3, package `com.editorshub`. It implements a real
 multilayer compositor, keyframe engine with Bezier curves and graph editor, 18 animatable GPU/Canvas
 effects, transitions, text/shape/vector editing, masks, audio mixing with waveforms, Room project
 autosave/versioning, and genuine MediaCodec/MediaMuxer MP4 export (480p–4K, H.264/H.265, AAC).
 
 ```bash
-cd MotionStudio
+cd EditorsHub
 ./gradlew :app:assembleDebug :app:testDebugUnitTest
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK and an AAB to the `motion-studio-latest` release and to `/artifacts`.
+release APK, an AAB and a complete source archive to the `v2.0.0` and `editorshub-latest`
+GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
-or password is committed. Full docs: [MotionStudio/README.md](MotionStudio/README.md),
-[architecture](MotionStudio/docs/ARCHITECTURE.md), [dependencies](MotionStudio/docs/DEPENDENCIES.md),
-[release signing](MotionStudio/docs/RELEASE_SIGNING.md).
+or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
+[architecture](EditorsHub/docs/ARCHITECTURE.md), [dependencies](EditorsHub/docs/DEPENDENCIES.md),
+[release signing](EditorsHub/docs/RELEASE_SIGNING.md).
 
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.

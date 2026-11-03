@@ -1,16 +1,16 @@
 # Contributing
 
-Thanks for helping improve EditorsHub / Motion Studio.
+Thanks for helping improve EditorsHub / EditorsHub.
 
 ## Repository layout
 - `/` — the EditorsHub Motion web/PWA editor (Vite + React + Capacitor) and its APK.
-- `/MotionStudio` — the native **Motion Studio** Android Studio project (Kotlin + Compose).
+- `/EditorsHub` — the native **EditorsHub** Android Studio project (Kotlin + Compose).
 - `/artifacts` — CI-generated Android APK/AAB builds.
 
 ## Development
-1. Open `MotionStudio/` in Android Studio (Ladybug or newer), or run:
+1. Open `EditorsHub/` in Android Studio (Ladybug or newer), or run:
    ```bash
-   cd MotionStudio
+   cd EditorsHub
    ./gradlew :app:assembleDebug :app:testDebugUnitTest
    ```
 2. Requires JDK 17+, Android SDK 35 and build-tools 35.0.0.
