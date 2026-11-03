@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { editor } from './editor/store';
 import './index.css';
+import './am-skin.css';
 
 // Exposed for debugging/automation; the editor is fully usable without it.
 (window as unknown as { __editor: typeof editor }).__editor = editor;

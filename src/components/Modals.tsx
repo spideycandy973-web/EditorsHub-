@@ -239,43 +239,111 @@ export function ProjectsModal() {
 
 export function NewProjectModal() {
   const e = useEditor();
-  const [width, setWidth] = useState(1080);
-  const [height, setHeight] = useState(1920);
+  const [name, setName] = useState('New Project');
+  const [ratio, setRatio] = useState('9:16');
+  const [res, setRes] = useState('1080');
+  const [fps, setFps] = useState(30);
+  const [duration, setDuration] = useState(10);
+  const [background, setBackground] = useState('#141824');
   const [demo, setDemo] = useState(false);
-  const presets = [
-    { label: '9:16 Story', w: 1080, h: 1920 }, { label: '1:1', w: 1080, h: 1080 },
-    { label: '16:9', w: 1920, h: 1080 }, { label: '4:5', w: 1080, h: 1350 },
+
+  const ratios = [
+    { id: '9:16', label: '9:16', sub: 'Story', w: 1080, h: 1920 },
+    { id: '1:1', label: '1:1', sub: 'Square', w: 1080, h: 1080 },
+    { id: '16:9', label: '16:9', sub: 'Video', w: 1920, h: 1080 },
+    { id: '4:5', label: '4:5', sub: 'Post', w: 1080, h: 1350 },
+    { id: '3:4', label: '3:4', sub: 'Portrait', w: 1080, h: 1440 },
+    { id: '2:3', label: '2:3', sub: 'Reels', w: 1080, h: 1620 },
   ];
   const create = () => {
+    const r = ratios.find(x => x.id === ratio) ?? ratios[0];
+    const scale = Number(res) / 1080;
+    const w = Math.round(r.w * scale);
+    const h = Math.round(r.h * scale);
     if (demo) {
       const p = createDemoProject();
-      p.width = width; p.height = height;
+      p.name = name.trim() || 'New Project';
+      p.width = w; p.height = h; p.fps = fps; p.duration = duration; p.background = background;
       e.replaceProject(p);
-    } else e.newProject(width, height, true);
+    } else {
+      e.newProject(w, h, true);
+      e.setProjectSettings({ name: name.trim() || 'New Project', fps, duration, background });
+    }
     e.setModal(null);
+    e.setScreen('editor');
     e.setPanel('add');
     e.notify('Project created', 'ok');
   };
   return (
-    <Modal title="New project" onClose={() => e.setModal(null)} footer={
-      <><Btn variant="ghost" onClick={() => e.setModal(null)}>Cancel</Btn><Btn variant="primary" onClick={create}>Create</Btn></>
+    <Modal title="Create Project" onClose={() => e.setModal(null)} footer={
+      <><Btn variant="ghost" onClick={() => e.setModal(null)}>Cancel</Btn><Btn variant="primary" onClick={create}>CREATE PROJECT</Btn></>
     }>
-      <div className="chip-row">
-        {presets.map(p => (
-          <button type="button" key={p.label} className={`chip ${width === p.w && height === p.h ? 'on' : ''}`} onClick={() => { setWidth(p.w); setHeight(p.h); }}>
-            {p.label}<small>{p.w}×{p.h}</small>
+      <label className="field"><span>Project name</span><input type="text" value={name} onChange={ev => setName(ev.target.value)} placeholder="New Project" /></label>
+      <div className="am-create-section">Aspect ratio</div>
+      <div className="am-ratio-grid">
+        {ratios.map(r => (
+          <button type="button" key={r.id} className={`am-ratio ${ratio === r.id ? 'on' : ''}`} onClick={() => setRatio(r.id)}>
+            <span className={`am-ratio-box r-${r.id.replace(':', '-')}`} />
+            <strong>{r.label}</strong><small>{r.sub}</small>
           </button>
         ))}
       </div>
       <div className="field-grid">
-        <label className="field"><span>Width</span><input type="number" value={width} onChange={ev => setWidth(Number(ev.target.value))} /></label>
-        <label className="field"><span>Height</span><input type="number" value={height} onChange={ev => setHeight(Number(ev.target.value))} /></label>
+        <label className="field"><span>Resolution</span>
+          <select value={res} onChange={ev => setRes(ev.target.value)}>
+            <option value="480">480p</option><option value="720">720p</option>
+            <option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option>
+          </select>
+        </label>
+        <label className="field"><span>Frame rate</span>
+          <select value={fps} onChange={ev => setFps(Number(ev.target.value))}>
+            {[24, 25, 30, 50, 60].map(f => <option key={f} value={f}>{f} fps</option>)}
+          </select>
+        </label>
+        <label className="field"><span>Duration (seconds)</span>
+          <input type="number" min={1} max={600} value={duration} onChange={ev => setDuration(Number(ev.target.value))} />
+        </label>
+        <label className="field"><span>Background</span>
+          <div className="am-color-field"><input type="color" value={background} onChange={ev => setBackground(ev.target.value)} /><span>{background.toUpperCase()}</span></div>
+        </label>
       </div>
       <label className="check-row"><input type="checkbox" checked={demo} onChange={ev => setDemo(ev.target.checked)} /> Start with the animated demo composition</label>
-      <p className="hint block">Your current project stays saved and can be re-opened from the Projects list.</p>
+      <p className="hint block">Your current project stays saved and can be re-opened from Projects.</p>
     </Modal>
   );
 }
+
+/** Real editor preferences — every control changes behaviour. */
+export function SettingsModal() {
+  const e = useEditor();
+  const rows: { label: string; sub: string; on: boolean; set: () => void }[] = [
+    { label: 'Grid overlay', sub: ' thirds grid on the preview', on: e.showGrid, set: () => e.toggleGrid() },
+    { label: 'Safe area guides', sub: 'title and action safe zones', on: e.showGuides, set: () => e.toggleGuides() },
+    { label: 'Snap to frame', sub: 'align clips and keyframes to exact frames', on: e.snapToFrame, set: () => e.setSnap(!e.snapToFrame) },
+    { label: 'Loop playback', sub: 'restart at the end of the composition', on: e.loop, set: () => e.setLoop(!e.loop) },
+    { label: 'Auto keyframe', sub: 'create a keyframe whenever a value changes', on: e.autoKey, set: () => e.setAutoKey(!e.autoKey) },
+  ];
+  return (
+    <Modal title="Settings" onClose={() => e.setModal(null)} footer={<Btn variant="primary" onClick={() => e.setModal(null)}>Done</Btn>}>
+      <div className="am-settings-list">
+        {rows.map(r => (
+          <button type="button" key={r.label} className="toggle-row" onClick={r.set}>
+            <span><b>{r.label}</b><small>{r.sub}</small></span>
+            <span className={`switch ${r.on ? 'on' : ''}`}><i /></span>
+          </button>
+        ))}
+      </div>
+      <label className="field"><span>Timeline zoom — {Math.round(e.timelineZoom)} px/s</span>
+        <input type="range" min={12} max={220} value={e.timelineZoom} onChange={ev => e.setTimelineZoom(Number(ev.target.value))} />
+      </label>
+      <label className="field"><span>Preview zoom — {Math.round(e.previewZoom * 100)}%</span>
+        <input type="range" min={40} max={300} value={Math.round(e.previewZoom * 100)} onChange={ev => e.setPreviewZoom(Number(ev.target.value) / 100)} />
+      </label>
+      <p className="hint block">Settings apply immediately to the editor. No fake controls.</p>
+    </Modal>
+  );
+}
+
 
 /* ----------------------------- layer menu modal ---------------------------- */
 

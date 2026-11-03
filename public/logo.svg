@@ -6,12 +6,12 @@
       <stop offset="1" stop-color="#0B0C14"/>
     </linearGradient>
     <linearGradient id="le" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#B79BFF"/>
-      <stop offset="1" stop-color="#6D5EFC"/>
+      <stop offset="0" stop-color="#4BEFC0"/>
+      <stop offset="1" stop-color="#00B98A"/>
     </linearGradient>
     <linearGradient id="lh" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7DEBFA"/>
-      <stop offset="1" stop-color="#22D3EE"/>
+      <stop offset="0" stop-color="#7FB0FF"/>
+      <stop offset="1" stop-color="#4C8DFF"/>
     </linearGradient>
     <linearGradient id="la" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#FF8AB6"/>
@@ -19,13 +19,13 @@
     </linearGradient>
   </defs>
   <rect x="0" y="8" width="152" height="152" rx="40" fill="url(#lframe)"/>
-  <rect x="0.75" y="8.75" width="150.5" height="150.5" rx="39.25" fill="none" stroke="#8B7BFF" stroke-opacity="0.32" stroke-width="1.5"/>
+  <rect x="0.75" y="8.75" width="150.5" height="150.5" rx="39.25" fill="none" stroke="#10E0A0" stroke-opacity="0.32" stroke-width="1.5"/>
   <g transform="translate(14 22) scale(0.2421875)">
-    <g stroke="#22D3EE" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round" fill="none">
+    <g stroke="#4C8DFF" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round" fill="none">
       <path d="M318 152 L386 126 L420 166"/>
     </g>
-    <circle cx="318" cy="152" r="8" fill="#22D3EE"/>
-    <circle cx="420" cy="166" r="8" fill="#22D3EE"/>
+    <circle cx="318" cy="152" r="8" fill="#4C8DFF"/>
+    <circle cx="420" cy="166" r="8" fill="#4C8DFF"/>
     <circle cx="386" cy="126" r="15" fill="url(#la)"/>
     <g fill="url(#le)">
       <rect x="118" y="180" width="34" height="200" rx="10"/>
