@@ -165,3 +165,5 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
+
+Screenshots of the v2.1.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
