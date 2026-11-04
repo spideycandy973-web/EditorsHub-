@@ -107,7 +107,15 @@ jobs:
           git add -f EditorsHub-Motion.apk
           git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
           git pull origin arena/78bc8dd9-editorshub --no-rebase || true
-          git push origin HEAD:arena/78bc8dd9-editorshub
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push origin HEAD:arena/78bc8dd9-editorshub; then pushed=1; break; fi
+            echo "push attempt $attempt failed; retrying"
+            sleep 10
+            git fetch origin arena/78bc8dd9-editorshub
+            git pull origin arena/78bc8dd9-editorshub --no-rebase || true
+          done
+          [ "$pushed" = "1" ]
 
   # Installs and launches the actual Capacitor APK on a real Android image.
   smoke:

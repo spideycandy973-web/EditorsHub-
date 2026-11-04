@@ -59,7 +59,15 @@ jobs:
           cp android-build.log ci-logs/android-build.log 2>/dev/null || true
           git add -f ci-logs/ || true
           git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/78bc8dd9-editorshub || true
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push origin HEAD:arena/78bc8dd9-editorshub; then pushed=1; break; fi
+            echo "push attempt $attempt failed; retrying"
+            sleep 10
+            git fetch origin arena/78bc8dd9-editorshub
+            git pull origin arena/78bc8dd9-editorshub --no-rebase || true
+          done
+          [ "$pushed" = "1" ] || true
 
       - name: Collect artifacts
         if: success()
@@ -134,7 +142,15 @@ jobs:
           # The Capacitor APK workflow may have pushed to this branch in parallel.
           git fetch origin arena/78bc8dd9-editorshub
           git pull origin arena/78bc8dd9-editorshub --no-rebase || true
-          git push origin HEAD:arena/78bc8dd9-editorshub
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push origin HEAD:arena/78bc8dd9-editorshub; then pushed=1; break; fi
+            echo "push attempt $attempt failed; retrying"
+            sleep 10
+            git fetch origin arena/78bc8dd9-editorshub
+            git pull origin arena/78bc8dd9-editorshub --no-rebase || true
+          done
+          [ "$pushed" = "1" ]
 
   # Verifies the debug APK actually launches on a real Android system image.
   # Verifies the v2.0.0 launch-crash fix still holds after every UI change.
@@ -187,4 +203,12 @@ jobs:
           git reset --hard origin/arena/78bc8dd9-editorshub
           git add -f ci-logs/
           git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/78bc8dd9-editorshub || true
+          pushed=0
+          for attempt in 1 2 3; do
+            if git push origin HEAD:arena/78bc8dd9-editorshub; then pushed=1; break; fi
+            echo "push attempt $attempt failed; retrying"
+            sleep 10
+            git fetch origin arena/78bc8dd9-editorshub
+            git pull origin arena/78bc8dd9-editorshub --no-rebase || true
+          done
+          [ "$pushed" = "1" ] || true
