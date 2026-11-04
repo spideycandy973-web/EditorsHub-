@@ -4,11 +4,14 @@
  * All positions are in composition pixels, relative to the composition centre.
  * ------------------------------------------------------------------------- */
 
-export type Easing =
+export type EasingName =
   | 'linear' | 'hold' | 'easeIn' | 'easeOut' | 'easeInOut'
   | 'easeInBack' | 'easeOutBack' | 'elastic' | 'bounce' | 'spring';
 
-export const EASINGS: Easing[] = [
+/** Named easing or a real cubic-bezier curve: cubic(p1x,p1y,p2x,p2y). */
+export type Easing = EasingName | `cubic(${number},${number},${number},${number})`;
+
+export const EASINGS: EasingName[] = [
   'linear', 'hold', 'easeIn', 'easeOut', 'easeInOut',
   'easeInBack', 'easeOutBack', 'elastic', 'bounce', 'spring',
 ];
@@ -25,7 +28,7 @@ export interface Anim {
   keyframes: Keyframe[];
 }
 
-export type LayerType = 'solid' | 'shape' | 'text' | 'image' | 'video' | 'audio' | 'group';
+export type LayerType = 'solid' | 'shape' | 'text' | 'image' | 'video' | 'audio' | 'group' | 'camera';
 
 export type BlendMode =
   | 'source-over' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten'
@@ -40,7 +43,33 @@ export const BLEND_LABELS: Record<BlendMode, string> = {
   color: 'Color', luminosity: 'Luminosity', lighter: 'Add',
 };
 
-export type ShapeKind = 'rectangle' | 'ellipse' | 'triangle' | 'star' | 'polygon' | 'line' | 'heart' | 'arrow';
+export type ShapeKind =
+  | 'rectangle' | 'rounded' | 'ellipse' | 'triangle' | 'diamond' | 'pentagon' | 'hexagon'
+  | 'star' | 'sparkle' | 'burst' | 'heart' | 'arrow' | 'line' | 'cross' | 'ring' | 'arc'
+  | 'crescent' | 'halfCircle' | 'pie' | 'callout' | 'flower' | 'trapezoid' | 'beam'
+  | 'flag' | 'seal' | 'polygon' | 'customPath';
+
+/** The 18 shapes shown in the shape picker, in picker order. */
+export const SHAPE_PICKER: { kind: ShapeKind; label: string }[] = [
+  { kind: 'ellipse', label: 'Circle' },
+  { kind: 'rounded', label: 'Rounded rectangle' },
+  { kind: 'cross', label: 'Plus' },
+  { kind: 'arc', label: 'Arc' },
+  { kind: 'triangle', label: 'Triangle' },
+  { kind: 'callout', label: 'Callout' },
+  { kind: 'pie', label: 'Pie' },
+  { kind: 'hexagon', label: 'Hexagon' },
+  { kind: 'flower', label: 'Flower' },
+  { kind: 'arrow', label: 'Arrow' },
+  { kind: 'trapezoid', label: 'Trapezoid' },
+  { kind: 'crescent', label: 'Crescent' },
+  { kind: 'rectangle', label: 'Rectangle' },
+  { kind: 'star', label: 'Star' },
+  { kind: 'line', label: 'Line' },
+  { kind: 'beam', label: 'Beam' },
+  { kind: 'flag', label: 'Curve' },
+  { kind: 'seal', label: 'Burst seal' },
+];
 
 export type FillType = 'solid' | 'linear' | 'radial';
 
@@ -90,6 +119,8 @@ export interface LayerStyle {
   fit: 'cover' | 'contain' | 'stretch' | 'none';
   audio: boolean;   // include sound from a video source
   loop: boolean;    // loop media shorter than the layer
+  /** SVG path data in a normalized 0..1 box, used by the vector pen tool. */
+  pathData: string;
 }
 
 export interface Mask {
@@ -251,8 +282,13 @@ export const EFFECT_DEFS: EffectDef[] = [
 export const EFFECT_MAP: Record<string, EffectDef> = Object.fromEntries(EFFECT_DEFS.map(d => [d.type, d]));
 
 export const SHAPE_LABELS: Record<ShapeKind, string> = {
-  rectangle: 'Rectangle', ellipse: 'Ellipse', triangle: 'Triangle', star: 'Star',
-  polygon: 'Polygon', line: 'Line', heart: 'Heart', arrow: 'Arrow',
+  rectangle: 'Rectangle', rounded: 'Rounded rectangle', ellipse: 'Ellipse',
+  triangle: 'Triangle', diamond: 'Diamond', pentagon: 'Pentagon', hexagon: 'Hexagon',
+  star: 'Star', sparkle: 'Sparkle', burst: 'Burst', heart: 'Heart', arrow: 'Arrow',
+  line: 'Line', cross: 'Plus', ring: 'Ring', arc: 'Arc', crescent: 'Crescent',
+  halfCircle: 'Half circle', pie: 'Pie', callout: 'Callout', flower: 'Flower',
+  trapezoid: 'Trapezoid', beam: 'Beam', flag: 'Curve', seal: 'Burst seal',
+  polygon: 'Polygon', customPath: 'Vector path',
 };
 
 export const FONT_FAMILIES = [

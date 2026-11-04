@@ -1,15 +1,34 @@
-# EditorsHub v2.4.0 — Alight Motion parity + fixes
+# EditorsHub v3.0.0 — dark studio rebuild
 
 An original, production-structured Android motion editor: Kotlin + Jetpack Compose + Material 3,
 Room, Hilt, WorkManager, Media3, OpenGL ES 2.0, MediaCodec/MediaMuxer and the Storage Access
 Framework. Package `com.editorshub`, application label `EditorsHub`.
 
+## What's new in 3.0.0
+
+- **The UI was rebuilt to the supplied black/lavender reference screens**, not incrementally
+  restyled: near-black launcher with centred wordmark, lavender Upload / Import / Create actions,
+  QR package import, pill nav, segmented Projects/Templates/Elements, settings and create sheets,
+  black 9:16 editor, seven-icon transport, centre playhead, striped clips, right zoom rail, teal
+  FAB, 11-tile Add grid, 18-shape picker and eight railed property sheets.
+- **Real interaction throughout**: 28 canvas shapes, freehand and vector drawing, camera layers,
+  cubic-bezier easing, masks, 20 effects, motion presets, multi-layer clipboard, split/trim,
+  undo/redo, autosave, XML/QR/ZIP package import and video/frames/still/XML export.
+- **New engine capabilities**: composition-wide camera transforms, real cubic-bezier easing
+  curves, audio resampling in the Web Audio export mix, low-quality preview rendering.
+- Verified with `npm run typecheck`, `npm run build` and three headless Chromium E2E suites
+  (46 checks, zero console errors/warnings).
+- `versionCode 7`, `versionName 3.0.0`; PWA cache `editorshub-v7`.
+
 ## Install
-`EditorsHub-debug.apk` is installable for development (`adb install`). The release APK is
-unsigned by design — configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run the
-`android-release.yml` workflow with keystore secrets. `EditorsHub-release.aab` is for Play upload.
-`EditorsHub-source-v2.4.0.zip` contains the complete source tree (source only, no build outputs).
-The web/PWA editor and its Capacitor APK (`EditorsHub-Motion.apk` / `apk-latest`) are also rebuilt.
+
+`EditorsHub-Motion.apk` (Capacitor, package `com.editorshub`) is the installable web editor build;
+it is attached to `apk-latest`, `v3.0.0` and `editorshub-latest` and committed at the repo root.
+`EditorsHub-debug.apk` is the native Compose build; release APK/AAB are unsigned by design —
+configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run `android-release.yml` with
+keystore secrets. `EditorsHub-source-v3.0.0.zip` contains the complete source tree.
+
+## Previous releases
 
 ## What's new in 2.4.0 — fixes, APK release and closer proportions
 

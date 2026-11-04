@@ -19,7 +19,7 @@ const mmss = (t: number) => {
 const LAYER_ICONS: Record<Layer['type'], React.ReactNode> = {
   solid: <Square size={13} />, shape: <Circle size={13} />, text: <Type size={13} />,
   image: <ImageIcon size={13} />, video: <Film size={13} />, audio: <Music2 size={13} />,
-  group: <Folder size={13} />,
+  group: <Folder size={13} />, camera: <Film size={13} />,
 };
 
 type DragMode = 'move' | 'trimLeft' | 'trimRight';

@@ -88,6 +88,7 @@ function serializeLayer(l: Layer, indent: number): string {
     `fit="${style.fit}"`,
     `audio="${style.audio ? 1 : 0}"`,
     `loop="${style.loop ? 1 : 0}"`,
+    `pathData="${escapeXml(style.pathData ?? '')}"`,
   ].join(' ');
   return [
     `${pad}<Layer id="${escapeXml(l.id)}" name="${escapeXml(l.name)}" type="${l.type}" ` +
@@ -140,6 +141,7 @@ const TYPE_ALIASES: Record<string, LayerType> = {
   video: 'video', movie: 'video', clip: 'video', footage: 'video',
   audio: 'audio', sound: 'audio', music: 'audio',
   group: 'group', null: 'group', folder: 'group', parent: 'group',
+  camera: 'camera', cam: 'camera',
 };
 
 const PROP_ALIASES: Record<string, string> = {
@@ -189,6 +191,11 @@ const SHAPE_ALIASES: Record<string, ShapeKind> = {
   ellipse: 'ellipse', circle: 'ellipse', oval: 'ellipse',
   triangle: 'triangle', star: 'star', polygon: 'polygon', hexagon: 'polygon',
   line: 'line', heart: 'heart', arrow: 'arrow',
+  rounded: 'rounded', diamond: 'diamond', pentagon: 'pentagon',
+  sparkle: 'sparkle', burst: 'burst', cross: 'cross', plus: 'cross', ring: 'ring',
+  arc: 'arc', crescent: 'crescent', halfcircle: 'halfCircle', pie: 'pie',
+  callout: 'callout', flower: 'flower', trapezoid: 'trapezoid', beam: 'beam',
+  flag: 'flag', seal: 'seal', custompath: 'customPath',
 };
 
 const norm = (s: string): string => s.toLowerCase().replace(/[\s_\-:]/g, '');
@@ -310,6 +317,8 @@ function readStyle(layerEl: Element, layer: Layer): void {
   if (audio) layer.style.audio = truthy(audio);
   const loop = get(['loop', 'looping']);
   if (loop) layer.style.loop = truthy(loop);
+  const pathData = get(['pathData', 'vectorPath', 'd'], '');
+  if (pathData) layer.style.pathData = pathData;
 }
 
 type LayerStyleAlign = 'left' | 'center' | 'right';
@@ -455,7 +464,7 @@ export async function parseMotionXml(source: string): Promise<XmlImportResult> {
   const layerEls: Element[] = [];
   for (const el of all(root)) {
     const t = tag(el);
-    if (['layer', 'item', 'track', 'clip', 'element', 'object', 'shape', 'text', 'solid', 'image', 'video', 'audio', 'group'].includes(t)
+    if (['layer', 'item', 'track', 'clip', 'element', 'object', 'shape', 'text', 'solid', 'image', 'video', 'audio', 'group', 'camera'].includes(t)
       && (el.hasAttribute('type') || el.hasAttribute('start') || el.hasAttribute('duration') || ['layer', 'item', 'track'].includes(t))) {
       layerEls.push(el);
     }

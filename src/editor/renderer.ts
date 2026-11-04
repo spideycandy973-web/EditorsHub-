@@ -395,16 +395,46 @@ export class Renderer {
   private shapePath(ctx: CanvasRenderingContext2D, layer: Layer, t: number, w: number, h: number): void {
     const r = prop(layer, 'cornerRadius', t, 0);
     const kind = layer.style.shape;
+    const W = w / 2, H = h / 2;
+    const poly = (n: number, rot = -Math.PI / 2, rx = W, ry = H) => {
+      for (let i = 0; i < n; i++) {
+        const a = rot + i * Math.PI * 2 / n;
+        const x = Math.cos(a) * rx, y = Math.sin(a) * ry;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    };
+    const starPoly = (points: number, inner: number) => {
+      const count = points * 2;
+      for (let i = 0; i < count; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / count;
+        const rad = i % 2 === 1 ? inner : 1;
+        const x = Math.cos(a) * W * rad, y = Math.sin(a) * H * rad;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    };
+    const R = Math.min(W, H);
     ctx.beginPath();
     switch (kind) {
       case 'rectangle':
-        ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(r, Math.min(w, h) / 2));
+      case 'rounded':
+        ctx.roundRect(-W, -H, w, h, kind === 'rounded' ? Math.max(r, R * 0.28) : Math.min(r, R));
         break;
       case 'ellipse':
-        ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, W, H, 0, 0, Math.PI * 2);
         break;
       case 'triangle':
-        ctx.moveTo(0, -h / 2); ctx.lineTo(w / 2, h / 2); ctx.lineTo(-w / 2, h / 2); ctx.closePath();
+        ctx.moveTo(0, -H); ctx.lineTo(W, H); ctx.lineTo(-W, H); ctx.closePath();
+        break;
+      case 'diamond':
+        ctx.moveTo(0, -H); ctx.lineTo(W, 0); ctx.lineTo(0, H); ctx.lineTo(-W, 0); ctx.closePath();
+        break;
+      case 'pentagon': poly(5); break;
+      case 'hexagon': poly(6); break;
+      case 'trapezoid':
+        ctx.moveTo(-W * 0.62, -H); ctx.lineTo(W * 0.62, -H);
+        ctx.lineTo(W, H); ctx.lineTo(-W, H); ctx.closePath();
         break;
       case 'star':
       case 'polygon': {
@@ -412,21 +442,92 @@ export class Renderer {
           ? Math.round(prop(layer, 'starPoints', t, 5))
           : Math.round(prop(layer, 'polygonSides', t, 6));
         const inner = prop(layer, 'innerRadius', t, 45) / 100;
-        const count = kind === 'star' ? n * 2 : n;
-        for (let i = 0; i < count; i++) {
-          const a = -Math.PI / 2 + i * Math.PI * 2 / count;
-          const rad = kind === 'star' && i % 2 === 1 ? inner : 1;
-          const x = Math.cos(a) * w / 2 * rad, y = Math.sin(a) * h / 2 * rad;
+        if (kind === 'star') starPoly(Math.max(3, Math.min(20, n)), inner);
+        else poly(Math.max(3, Math.min(20, n)));
+        break;
+      }
+      case 'sparkle': {
+        const n = 4;
+        for (let i = 0; i < n * 2; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / n;
+          const rad = i % 2 === 1 ? 0.24 : 1;
+          const x = Math.cos(a) * W * rad, y = Math.sin(a) * H * rad;
           if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.closePath();
         break;
       }
+      case 'burst': starPoly(12, 0.68); break;
+      case 'seal': starPoly(24, 0.9); break;
       case 'line':
-        ctx.moveTo(-w / 2, 0); ctx.lineTo(w / 2, 0);
+        ctx.roundRect(-W, -Math.max(2, H * 0.035), w, Math.max(4, H * 0.07), Math.max(2, H * 0.035));
+        break;
+      case 'beam': {
+        const th = Math.max(4, H * 0.16);
+        const dx = W * 0.72, dy = H * 0.72;
+        const nx = -dy / Math.hypot(dx, dy) * th / 2, ny = dx / Math.hypot(dx, dy) * th / 2;
+        ctx.moveTo(-dx + nx, -dy + ny); ctx.lineTo(dx + nx, dy + ny);
+        ctx.lineTo(dx - nx, dy - ny); ctx.lineTo(-dx - nx, -dy - ny); ctx.closePath();
+        break;
+      }
+      case 'cross': {
+        const a = W * 0.34, b = H * 0.34;
+        ctx.moveTo(-a, -H); ctx.lineTo(a, -H); ctx.lineTo(a, -b);
+        ctx.lineTo(W, -b); ctx.lineTo(W, b); ctx.lineTo(a, b);
+        ctx.lineTo(a, H); ctx.lineTo(-a, H); ctx.lineTo(-a, b);
+        ctx.lineTo(-W, b); ctx.lineTo(-W, -b); ctx.lineTo(-a, -b); ctx.closePath();
+        break;
+      }
+      case 'ring':
+        ctx.ellipse(0, 0, W, H, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, W * 0.6, H * 0.6, 0, 0, Math.PI * 2);
+        break;
+      case 'arc':
+        ctx.ellipse(0, 0, W, H, 0, Math.PI * 0.22, Math.PI * 1.78);
+        ctx.ellipse(0, 0, W * 0.68, H * 0.68, 0, Math.PI * 1.78, Math.PI * 0.22, true);
+        ctx.closePath();
+        break;
+      case 'crescent':
+        ctx.ellipse(0, 0, W, H, 0, 0, Math.PI * 2);
+        ctx.ellipse(W * 0.52, -H * 0.12, W * 0.88, H * 0.88, 0, 0, Math.PI * 2);
+        break;
+      case 'halfCircle':
+        ctx.ellipse(0, 0, W, H, 0, Math.PI, Math.PI * 2); ctx.closePath();
+        break;
+      case 'pie':
+        ctx.moveTo(0, 0); ctx.lineTo(W, 0);
+        ctx.ellipse(0, 0, W, H, 0, 0, Math.PI * 1.5); ctx.closePath();
+        break;
+      case 'callout': {
+        const cr = Math.min(R * 0.18, 40);
+        ctx.roundRect(-W, -H, w, h * 0.84, cr);
+        ctx.moveTo(W * 0.62, H * 0.58);
+        ctx.ellipse(W * 0.62, H * 0.74, R * 0.16, R * 0.16, 0, 0, Math.PI * 2);
+        break;
+      }
+      case 'flower': {
+        const petals = 5;
+        for (let i = 0; i < petals; i++) {
+          const a = -Math.PI / 2 + i * Math.PI * 2 / petals;
+          const da = Math.PI / petals;
+          const ox = Math.cos(a) * W, oy = Math.sin(a) * H;
+          const c1x = Math.cos(a - da) * W * 0.55, c1y = Math.sin(a - da) * H * 0.55;
+          const c2x = Math.cos(a + da) * W * 0.55, c2y = Math.sin(a + da) * H * 0.55;
+          if (i === 0) ctx.moveTo(c1x, c1y);
+          ctx.quadraticCurveTo(ox * 1.3, oy * 1.3, c2x, c2y);
+          ctx.quadraticCurveTo(Math.cos(a + da * 2) * W * 0.34, Math.sin(a + da * 2) * H * 0.34,
+            Math.cos(a + da * 2 - da) * W * 0.55, Math.sin(a + da * 2 - da) * H * 0.55);
+        }
+        ctx.closePath();
+        break;
+      }
+      case 'flag':
+        ctx.moveTo(-W, -H); ctx.lineTo(W * 0.2, -H);
+        ctx.quadraticCurveTo(W * 0.1, 0, W * 0.55, H);
+        ctx.lineTo(-W, H); ctx.closePath();
         break;
       case 'heart': {
-        const s = Math.min(w, h) / 2;
+        const s = R;
         ctx.moveTo(0, s * 0.75);
         ctx.bezierCurveTo(-s * 1.4, -s * 0.1, -s * 0.6, -s * 1.1, 0, -s * 0.35);
         ctx.bezierCurveTo(s * 0.6, -s * 1.1, s * 1.4, -s * 0.1, 0, s * 0.75);
@@ -434,16 +535,18 @@ export class Renderer {
         break;
       }
       case 'arrow': {
-        ctx.moveTo(-w / 2, -h * 0.15);
-        ctx.lineTo(w * 0.18, -h * 0.15);
-        ctx.lineTo(w * 0.18, -h * 0.38);
-        ctx.lineTo(w / 2, 0);
-        ctx.lineTo(w * 0.18, h * 0.38);
-        ctx.lineTo(w * 0.18, h * 0.15);
-        ctx.lineTo(-w / 2, h * 0.15);
+        ctx.moveTo(-W, -H * 0.3);
+        ctx.lineTo(W * 0.18, -H * 0.3);
+        ctx.lineTo(W * 0.18, -H * 0.76);
+        ctx.lineTo(W, 0);
+        ctx.lineTo(W * 0.18, H * 0.76);
+        ctx.lineTo(W * 0.18, H * 0.3);
+        ctx.lineTo(-W, H * 0.3);
         ctx.closePath();
         break;
       }
+      case 'customPath':
+        break;
     }
   }
 
@@ -457,14 +560,26 @@ export class Renderer {
         break;
       }
       case 'shape': {
-        this.shapePath(ctx, layer, t, w, h);
         const fill = this.fillStyle(ctx, layer, t, w, h);
-        if (style.shape !== 'line') { ctx.fillStyle = fill; ctx.fill(); }
+        let path: Path2D | null = null;
+        if (style.shape === 'customPath' && style.pathData) {
+          try {
+            const base = new Path2D(style.pathData);
+            path = new Path2D();
+            path.addPath(base, new DOMMatrix([w, 0, 0, h, -w / 2, -h / 2]));
+          } catch { path = null; }
+        }
+        if (path) {
+          ctx.fillStyle = fill; ctx.fill(path, 'evenodd');
+        } else {
+          this.shapePath(ctx, layer, t, w, h);
+          ctx.fillStyle = fill; ctx.fill('evenodd');
+        }
         if (stroke > 0) {
           ctx.lineWidth = stroke;
           ctx.lineJoin = 'round'; ctx.lineCap = 'round';
           ctx.strokeStyle = normalizeColor(style.strokeColor, '#000000');
-          ctx.stroke();
+          if (path) ctx.stroke(path); else ctx.stroke();
         }
         break;
       }
@@ -596,12 +711,33 @@ export class Renderer {
     ctx.restore();
 
     const sctx = scratch.getContext('2d')!;
+    /* A camera layer transforms the entire composition (pan / zoom / rotate). */
+    let camera: { x: number; y: number; sx: number; sy: number; rot: number } | null = null;
+    for (const l of this.project.layers) {
+      if (l.type !== 'camera' || !this.isVisible(l)) continue;
+      if (time < l.start - 0.0001 || time > l.start + l.duration) continue;
+      const ct = clamp(time - l.start, 0, l.duration);
+      camera = {
+        x: prop(l, 'x', ct, 0) * scale, y: prop(l, 'y', ct, 0) * scale,
+        sx: Math.max(0.05, prop(l, 'scaleX', ct, 100) / 100),
+        sy: Math.max(0.05, prop(l, 'scaleY', ct, 100) / 100),
+        rot: prop(l, 'rotation', ct, 0) * Math.PI / 180,
+      };
+      break;
+    }
+    const camTransform = (c: CanvasRenderingContext2D) => {
+      if (!camera) return;
+      c.translate(canvas.width / 2 + camera.x, canvas.height / 2 + camera.y);
+      c.scale(camera.sx, camera.sy);
+      c.rotate(camera.rot);
+      c.translate(-canvas.width / 2, -canvas.height / 2);
+    };
     // bottom-to-top (index 0 is topmost)
     for (let i = this.project.layers.length - 1; i >= 0; i--) {
       const layer = this.project.layers[i];
       if (!this.isVisible(layer)) continue;
       if (time < layer.start - 0.0001 || time > layer.start + layer.duration) continue;
-      if (layer.type === 'group' || layer.type === 'audio') continue;
+      if (layer.type === 'group' || layer.type === 'audio' || layer.type === 'camera') continue;
 
       const t = clamp(time - layer.start, 0, layer.duration);
       const fx = buildFx(layer.effects, t, time);
@@ -651,6 +787,7 @@ export class Renderer {
       // composite onto the main canvas
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
+      camTransform(ctx);
       ctx.globalCompositeOperation = layer.blend || 'source-over';
       ctx.globalAlpha = alpha;
       ctx.filter = fx.dropShadows.length ? fx.dropShadows.join(' ') : 'none';
@@ -664,6 +801,7 @@ export class Renderer {
           ctx.drawImage(scratch, 0, 0);
         }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+        camTransform(ctx);
         ctx.globalAlpha = alpha;
       }
       ctx.drawImage(scratch, 0, 0);
@@ -676,7 +814,7 @@ export class Renderer {
   hitTest(px: number, py: number, time: number): string | null {
     const measure = this.ctx;
     for (const layer of this.project.layers) {
-      if (!this.isVisible(layer) || layer.type === 'group' || layer.type === 'audio') continue;
+      if (!this.isVisible(layer) || layer.type === 'group' || layer.type === 'audio' || layer.type === 'camera') continue;
       if (time < layer.start || time > layer.start + layer.duration) continue;
       const t = clamp(time - layer.start, 0, layer.duration);
       const fx = buildFx(layer.effects, t, time);

@@ -8,6 +8,8 @@ export interface VideoExportOptions {
   scale: number;             // 0.5 / 0.75 / 1
   bitrate: number;           // bits per second
   includeAudio: boolean;
+  /** Preferred audio sampling rate for the Web Audio mix (Hz). */
+  sampleRate?: number;
 }
 
 export interface ExportProgress {
@@ -63,7 +65,7 @@ export async function recordVideo(
 
   if (opts.includeAudio) {
     try {
-      audioCtx = new AudioContext();
+      audioCtx = new AudioContext(opts.sampleRate ? { sampleRate: opts.sampleRate } : undefined);
       audioDest = audioCtx.createMediaStreamDestination();
       await audioCtx.resume();
       const audioLayers = project.layers.filter(l =>
