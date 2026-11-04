@@ -61,6 +61,12 @@ class EditorStore {
   private saveTimer: number | undefined;
   private clipboard: Layer | null = null;
   private toastTimer: number | undefined;
+  /* Continuous edits (slider drags, XY pads, selection handles) fire dozens of
+   * mutations per second. Coalesce their React notifications into one per frame
+   * and take a single undo snapshot per gesture instead of one per event. */
+  private lastMutationAt = 0;
+  private emitScheduled = false;
+  private emitRaf = 0;
 
   constructor() {
     const id = lastProjectId();
@@ -80,8 +86,26 @@ class EditorStore {
   subscribeTime = (cb: Listener): (() => void) => { this.timeListeners.add(cb); return () => this.timeListeners.delete(cb); };
   getTimeVersion = (): number => this.timeVersion;
 
-  emit(): void { this.version++; this.listeners.forEach(l => l()); }
+  emit(): void {
+    if (this.emitScheduled) {
+      cancelAnimationFrame(this.emitRaf);
+      this.emitScheduled = false;
+      this.emitRaf = 0;
+    }
+    this.version++;
+    this.listeners.forEach(l => l());
+  }
   emitTime(): void { this.timeVersion++; this.timeListeners.forEach(l => l()); }
+
+  private scheduleEmit(): void {
+    if (this.emitScheduled) return;
+    this.emitScheduled = true;
+    this.emitRaf = requestAnimationFrame(() => {
+      this.emitScheduled = false;
+      this.emitRaf = 0;
+      this.emit();
+    });
+  }
 
   /* -------------------------------- history -------------------------------- */
   private pushUndo(): void {
@@ -99,16 +123,24 @@ class EditorStore {
   endBatch(): void {
     if (!this.batching) return;
     this.batching = false;
+    this.lastMutationAt = 0;
     this.project.updatedAt = Date.now();
     this.emit();
     this.scheduleSave();
   }
 
+  /** Called on pointerdown/focus so the first change of every new gesture
+   *  gets its own undo snapshot instead of merging with the previous one. */
+  markInteractionStart(): void { this.lastMutationAt = 0; }
+
   mutate(fn: (p: Project) => void, record = true): void {
-    if (record && !this.batching) this.pushUndo();
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const continuous = now - this.lastMutationAt < 260;
+    this.lastMutationAt = now;
+    if (record && !this.batching && !continuous) this.pushUndo();
     fn(this.project);
     this.project.updatedAt = Date.now();
-    this.emit();
+    this.scheduleEmit();
     if (!this.batching) this.scheduleSave();
   }
 
@@ -120,6 +152,7 @@ class EditorStore {
     if (!this.selectedLayerId || !this.project.layers.some(l => l.id === this.selectedLayerId)) {
       this.selectedLayerId = this.project.layers[0]?.id ?? null;
     }
+    this.lastMutationAt = 0;
     this.emit(); this.scheduleSave();
   }
 
@@ -128,6 +161,7 @@ class EditorStore {
     if (!next) { this.notify('Nothing to redo', 'warn'); return; }
     this.undoStack.push(clone(this.project));
     this.project = next;
+    this.lastMutationAt = 0;
     this.emit(); this.scheduleSave();
   }
 

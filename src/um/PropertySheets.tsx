@@ -96,6 +96,7 @@ function LeftRail() {
         e.notify(`Keyframe on ${ui.activePropKey}`, 'ok');
       }}><Diamond size={19} strokeWidth={1.7} /></IBtn>
       <IBtn title="Blending & Opacity" onClick={() => ui.openProperty('blend')}><span className="um-glyph dashed-square">▧</span></IBtn>
+      <IBtn title="Edit Shape" onClick={() => ui.openProperty('editShape')}><Grid2X2 size={19} strokeWidth={1.7} /></IBtn>
       <IBtn title="Layer options" onClick={() => ui.setSheet('overflow')}><MoreHorizontal size={20} /></IBtn>
     </div>
   );
@@ -108,13 +109,21 @@ function useProp() {
   const get = (key: string) => layer ? e.getLayerProp(layer, key) : 0;
   const set = (key: string, v: number) => {
     if (!layer) return;
-    ui.setActivePropKey(key);
+    if (ui.activePropKey !== key) ui.setActivePropKey(key);
     e.setProp(layer.id, key, v);
   };
   return { layer, get, set };
 }
 
 /* ------------------------------ move & transform -------------------------- */
+function Readout({ values, unit = '' }: { values: number[]; unit?: string }) {
+  return (
+    <div className="um-readout">
+      {values.map((v, i) => <b key={i}>{v.toFixed(2)}{unit}</b>)}
+    </div>
+  );
+}
+
 function XyPad({ x, y, onChange }: { x: number; y: number; onChange: (x: number, y: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef(false);
@@ -130,8 +139,10 @@ function XyPad({ x, y, onChange }: { x: number; y: number; onChange: (x: number,
       onPointerDown={ev => { drag.current = true; ev.currentTarget.setPointerCapture(ev.pointerId); handle(ev); }}
       onPointerMove={ev => { if (drag.current) handle(ev); }}
       onPointerUp={() => { drag.current = false; }}>
+      <i className="um-crop" />
       <span className="um-xypad-h" /><span className="um-xypad-v" />
-      <i style={{ left: `${Math.min(100, Math.max(0, 50 + x / 20))}%`, top: `${Math.min(100, Math.max(0, 50 + y / 20))}%` }} />
+      <span className="um-swipe-hint">Swipe here to move layer</span>
+      <i className="um-xypad-dot" style={{ left: `${Math.min(100, Math.max(0, 50 + x / 20))}%`, top: `${Math.min(100, Math.max(0, 50 + y / 20))}%` }} />
     </div>
   );
 }
@@ -173,7 +184,7 @@ function EasingGraph({ layer, propKey }: { layer: Layer | null; propKey: string 
     if (!kfs.length) { e.addKeyframe(layer.id, propKey); kfs = e.getAnim(layer, propKey).keyframes; }
     const local = e.localTime;
     const kf = [...kfs].sort((x, y) => x.time - y.time).filter(k => k.time <= local).pop() ?? kfs[0];
-    if (kf) { e.updateKeyframe(layer.id, propKey, kf.id, { easing: eas }); e.notify('Cubic bezier easing applied', 'ok'); }
+    if (kf) e.updateKeyframe(layer.id, propKey, kf.id, { easing: eas });
   };
   const point = (ev: React.PointerEvent<SVGSVGElement>) => {
     const r = ref.current!.getBoundingClientRect();
@@ -193,7 +204,8 @@ function EasingGraph({ layer, propKey }: { layer: Layer | null; propKey: string 
   return (
     <div className="um-easing">
       <svg ref={ref} viewBox="0 0 1 1" preserveAspectRatio="none" className="um-bezier"
-        onPointerMove={onMove} onPointerUp={() => { dragging.current = null; }}
+        onPointerMove={onMove}
+        onPointerUp={() => { if (dragging.current) { dragging.current = null; e.notify('Cubic bezier easing applied', 'ok'); } }}
         onPointerLeave={() => { dragging.current = null; }}>
         {Array.from({ length: 11 }, (_, i) => <line key={`v${i}`} x1={i / 10} y1="0" x2={i / 10} y2="1" className="um-grid-line" />)}
         {Array.from({ length: 11 }, (_, i) => <line key={`h${i}`} x1="0" y1={i / 10} x2="1" y2={i / 10} className="um-grid-line" />)}
@@ -226,6 +238,7 @@ function MoveBody({ sub }: { sub: number }) {
   const ui = useUI();
   if (sub === 0) return (
     <div className="um-prop-body">
+      <Readout values={[get('x'), get('y'), get('z')]} />
       <div className="um-num-row">
         <NumField label="X" value={get('x')} onChange={v => set('x', v)} unit="px" />
         <NumField label="Y" value={get('y')} onChange={v => set('y', v)} unit="px" />
@@ -236,6 +249,7 @@ function MoveBody({ sub }: { sub: number }) {
   );
   if (sub === 1) return (
     <div className="um-prop-body">
+      <Readout values={[get('shapeWidth'), get('shapeHeight')]} unit="px" />
       <div className="um-num-row">
         <NumField label="W" value={get('scaleX')} min={0} max={500} onChange={v => set('scaleX', v)} unit="%" />
         <NumField label="H" value={get('scaleY')} min={0} max={500} onChange={v => set('scaleY', v)} unit="%" />
@@ -247,6 +261,7 @@ function MoveBody({ sub }: { sub: number }) {
   );
   if (sub === 2) return (
     <div className="um-prop-body">
+      <Readout values={[get('skewX'), get('rotation')]} unit="°" />
       <RulerSlider label="Skew X" value={get('skewX')} min={-80} max={80} onChange={v => set('skewX', v)} unit="°" accent />
       <RulerSlider label="Rotation" value={get('rotation')} min={-360} max={360} onChange={v => set('rotation', v)} unit="°" />
       <span className="um-prop-caption">SKEW</span>
@@ -356,14 +371,27 @@ function BorderBody({ sub }: { sub: number }) {
   );
   const fx = layer.effects.find(f => f.type === 'dropShadow');
   const ensure = () => {
-    if (!fx) { e.addEffect('dropShadow'); e.notify('Drop shadow added', 'ok'); }
-    return layer.effects.find(f => f.type === 'dropShadow');
+    const fresh = e.selectedLayer?.effects.find(f => f.type === 'dropShadow');
+    if (fresh) return fresh;
+    e.addEffect('dropShadow');
+    return e.selectedLayer?.effects.find(f => f.type === 'dropShadow');
   };
   const param = (key: string, v: number) => {
     const f = ensure();
     if (f) e.setEffectParam(f.id, key, v);
   };
   const value = (key: string, fallback: number) => fx ? e.getEffectValue(fx.id, key) : fallback;
+  if (sub === 2) return (
+    <div className="um-prop-body">
+      <div className="um-prop-heading">Rounded corners</div>
+      <RulerSlider label="Corner radius" value={get('cornerRadius')} min={0} max={500} onChange={v => set('cornerRadius', v)} unit="px" accent />
+      <RulerSlider label="Border width" value={get('strokeWidth')} min={0} max={200} onChange={v => set('strokeWidth', v)} unit="px" />
+      <div className="um-color-row">
+        <ColorInput value={layer.style.strokeColor} onChange={v => e.setStyle(layer.id, { strokeColor: v })} label="Border" />
+      </div>
+      <span className="um-prop-caption">ROUNDED CORNERS</span>
+    </div>
+  );
   return (
     <div className="um-prop-body">
       <div className="um-prop-heading">Shadow {fx ? <button type="button" className="um-mini-btn" onClick={() => e.removeEffect(fx.id)}>Remove</button> : <button type="button" className="um-mini-btn" onClick={() => param('blur', 24)}>Add</button>}</div>
@@ -456,12 +484,7 @@ function EffectsBody({ sub }: { sub: number }) {
       </div>
       <div className="um-effect-list">
         {EFFECT_DEFS.filter(d => group === 'All' || d.group === group).map(d => (
-          <button type="button" key={d.type} onClick={() => {
-            e.addEffect(d.type);
-            const added = e.selectedLayer?.effects[0];
-            if (added) e.selectEffect(added.id);
-            e.notify(`${d.label} added`, 'ok');
-          }}>
+          <button type="button" key={d.type} onClick={() => e.addEffect(d.type)}>
             <strong>{d.label}</strong><small>{d.description}</small><em>+</em>
           </button>
         ))}
@@ -513,7 +536,7 @@ function CameraBody({ sub }: { sub: number }) {
     </div>
   );
   const get = (k: string) => e.getLayerProp(camera, k);
-  const set = (k: string, v: number) => { ui.setActivePropKey(k); e.setProp(camera.id, k, v); };
+  const set = (k: string, v: number) => { if (ui.activePropKey !== k) ui.setActivePropKey(k); e.setProp(camera.id, k, v); };
   if (sub === 0) return (
     <div className="um-prop-body">
       <div className="um-prop-heading">Camera {cameras.length > 1 ? `1 of ${cameras.length}` : ''}</div>
@@ -541,9 +564,9 @@ interface RailItem { icon: React.ReactNode; title: string; }
 const RAILS: Record<PropertyId, RailItem[]> = {
   move: [
     { icon: <Move size={19} strokeWidth={1.6} />, title: 'Position' },
-    { icon: <RotateCw size={19} strokeWidth={1.6} />, title: 'Rotation dial' },
     { icon: <Expand size={19} strokeWidth={1.6} />, title: 'Size & scale' },
     { icon: <span className="um-glyph">╱</span>, title: 'Skew' },
+    { icon: <RotateCw size={19} strokeWidth={1.6} />, title: 'Rotation dial' },
     { icon: <Waves size={19} strokeWidth={1.6} />, title: 'Cubic bezier easing' },
   ],
   blend: [
@@ -598,7 +621,7 @@ function PropertyDetail() {
         {key === 'move' && <MoveBody sub={Math.min(sub, 4)} />}
         {key === 'blend' && <BlendBody sub={Math.min(sub, 1)} />}
         {key === 'color' && <ColorBody sub={Math.min(sub, 1)} />}
-        {key === 'border' && <BorderBody sub={Math.min(sub, 1)} />}
+        {key === 'border' && <BorderBody sub={Math.min(sub, 2)} />}
         {key === 'editShape' && <EditShapeBody sub={Math.min(sub, 2)} />}
         {key === 'presets' && <PresetsBody />}
         {key === 'effects' && <EffectsBody sub={Math.min(sub, 1)} />}

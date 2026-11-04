@@ -434,11 +434,12 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-swatches button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); }
 .um-swatches button.on { box-shadow: 0 0 0 2px var(--um-teal); }
 .um-mini-btn { background: #2d2d32; border-radius: 6px; padding: 4px 7px; font-size: 10px; color: #dcdce4; }
-.um-xypad { position: relative; height: 100px; flex: none; border-radius: 8px; overflow: hidden; background: radial-gradient(circle at center, #242428, #141416); border: 1px solid #33333a; touch-action: none; }
+.um-xypad { position: relative; height: 100px; flex: 1; min-height: 104px; border-radius: 8px; overflow: hidden; background: radial-gradient(circle at center, #242428, #141416); border: 1px solid #33333a; touch-action: none; }
 .um-xypad-h, .um-xypad-v { position: absolute; background: #3b3b44; }
 .um-xypad-h { left: 0; right: 0; top: 50%; height: 1px; }
 .um-xypad-v { top: 0; bottom: 0; left: 50%; width: 1px; }
-.um-xypad i { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; transform: translate(-50%,-50%); }
+.um-xypad-dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; transform: translate(-50%,-50%); z-index: 2; }
+.um-swipe-hint { position: absolute; inset: 0; display: grid; place-items: center; color: #8b8b96; font-size: 11px; pointer-events: none; }
 .um-dial-wrap { flex: 1; display: grid; place-items: center; min-height: 130px; }
 .um-dial { width: 146px; height: 146px; border-radius: 50%; border: 1px solid #4a4a54; position: relative; display: grid; place-items: center; background: radial-gradient(circle, #222226, #131315); touch-action: none; }
 .um-dial-value { font-size: 21px; font-weight: 800; color: var(--um-teal); background: #2a2a2e; padding: 8px 18px; border-radius: 6px; }
@@ -549,3 +550,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
 .um-tile-new { position: absolute; top: 4px; right: 6px; font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: .4px; color: #1a1300; background: #ffc93c; border-radius: 3px; padding: 1px 3px; }
 .um-prop-tile { position: relative; }
+
+.um-readout { display: flex; align-items: center; justify-content: space-around; gap: 6px; flex: none; height: 28px; }
+.um-readout b { color: var(--um-teal); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.um-xypad .um-crop { z-index: 1; }
