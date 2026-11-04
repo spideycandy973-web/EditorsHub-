@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.1.0 — performance rebuild and pixel alignment (2026-11-04)
+
+- Demand-driven canvas compositor: no idle rAF loop, capped/adaptive playback frame rate, reduced
+  playback backing store, no overlapping frames, throttled media sync, visibility-aware.
+- Imperative timeline: playhead/timecode/clip strip update via transform + text node; the timecode
+  now advances during playback and scrubbing.
+- Removed StrictMode double work, unused legacy `index.css`, boot-time full-size JPEG generation and
+  redundant autosave clones; reduced built-in swatch size.
+- Launcher, settings, create sheet, editor, Add/Shape sheets, property tiles, transport and FAB
+  re-aligned to the supplied reference screenshots; real draggable selection handles; descriptive
+  layer names; reference-style back/export glyphs and bottom navigation.
+- 27/27 headless checks, zero console errors/warnings; 61 fps unthrottled, 38 fps at 4× CPU
+  throttling with ten layers.
+- `versionCode 8`, `versionName 3.1.0`, PWA cache `editorshub-v8`, CI/release bumped to `v3.1.0`.
+
 All notable changes to this repository are documented here.
 
 ## 3.0.0 — 2026-11-04 (dark studio rebuild from the supplied screenshots)

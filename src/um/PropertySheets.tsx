@@ -1,9 +1,5 @@
 import React, { useRef, useState } from 'react';
-import {
-  ArrowLeft, Blend, ChevronRight, Circle, Diamond, Droplets, Expand, Eye,
-  Grid2X2, Layers, MoreHorizontal, Move, Palette, RotateCw, Ruler, Scissors,
-  Sparkles, Square, Star, Type, Waves, ZoomIn,
-} from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, Blend, ChevronRight, Circle, Diamond, Droplets, Expand, Eye, Grid2X2, Layers, MoreHorizontal, Move, Palette, RotateCcw, RotateCw, Ruler, Sparkles, Square, Star, Type, Volume2, VolumeX, Waves, ZoomIn } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import {
   BLEND_LABELS, EASINGS, EFFECT_DEFS, SHAPE_PICKER,
@@ -21,39 +17,63 @@ export const PROPERTY_TITLES: Record<PropertyId, string> = {
   effects: 'Effects', camera: 'Camera Options',
 };
 
-const TILES: { id: PropertyId; icon: React.ReactNode }[] = [
-  { id: 'move', icon: <Move size={22} strokeWidth={1.5} /> },
-  { id: 'camera', icon: <ZoomIn size={22} strokeWidth={1.5} /> },
-  { id: 'presets', icon: <Star size={22} strokeWidth={1.5} /> },
-  { id: 'effects', icon: <Sparkles size={22} strokeWidth={1.5} /> },
-  { id: 'blend', icon: <Blend size={22} strokeWidth={1.5} /> },
-  { id: 'color', icon: <Palette size={22} strokeWidth={1.5} /> },
-  { id: 'border', icon: <Square size={22} strokeWidth={1.5} /> },
-  { id: 'editShape', icon: <Ruler size={22} strokeWidth={1.5} /> },
-];
+const TILE_ICONS: Record<PropertyId, React.ReactNode> = {
+  move: <Move size={24} strokeWidth={1.5} />,
+  camera: <ZoomIn size={24} strokeWidth={1.5} />,
+  presets: <Star size={24} strokeWidth={1.5} />,
+  effects: <Sparkles size={24} strokeWidth={1.5} />,
+  blend: <Blend size={24} strokeWidth={1.5} />,
+  color: <Palette size={24} strokeWidth={1.5} />,
+  border: <Square size={24} strokeWidth={1.5} />,
+  editShape: <Ruler size={24} strokeWidth={1.5} />,
+};
+
+/** Reference layout: three wide tiles, then four narrow ones. A camera layer
+ *  instead shows its own four-tile row (Move / Camera / Presets / Effects). */
+function tilesFor(camera: boolean): PropertyId[] {
+  return camera
+    ? ['move', 'camera', 'presets', 'effects']
+    : ['color', 'border', 'blend', 'move', 'editShape', 'presets', 'effects'];
+}
 
 /* ----------------------------- root properties ---------------------------- */
 function PropertiesRoot() {
   const e = useEditor();
   const ui = useUI();
   const layer = e.selectedLayer;
+  const [muted, setMuted] = React.useState(false);
+  const resetTransform = () => {
+    if (!layer) return;
+    e.beginBatch();
+    for (const [k, v] of [['x', 0], ['y', 0], ['rotation', 0], ['skewX', 0], ['scaleX', 100], ['scaleY', 100]] as const) {
+      e.setProp(layer.id, k, v, false);
+    }
+    e.endBatch();
+  };
+  const align = (x: number) => { if (layer) e.setProp(layer.id, 'x', x); };
+  const toggleMute = () => {
+    const next = !muted;
+    for (const el of e.media.allElements()) el.muted = next;
+    setMuted(next);
+  };
   return (
     <div className="um-prop-root">
       <div className="um-quick-tools">
-        <IBtn title="Undo" onClick={() => e.undo()}><span className="um-glyph">↶</span></IBtn>
-        <IBtn title="Split at playhead" onClick={() => layer && e.splitLayer(layer.id)}><Scissors size={18} /></IBtn>
-        <IBtn title="Add keyframe" onClick={() => layer && e.addKeyframe(layer.id, ui.activePropKey)}><Diamond size={18} /></IBtn>
-        <IBtn title="Toggle visibility" onClick={() => layer && e.toggleVisible(layer.id)}><Eye size={18} /></IBtn>
-        <IBtn title="Toggle lock" onClick={() => layer && e.toggleLock(layer.id)}><Layers size={18} /></IBtn>
-        <IBtn title="Timeline zoom in" onClick={() => e.setTimelineZoom(e.timelineZoom + 12)}><ZoomIn size={18} /></IBtn>
-        <IBtn title="Reset preview zoom" onClick={() => e.setPreviewZoom(1)}><Expand size={18} /></IBtn>
+        <IBtn title="Reset transform" onClick={resetTransform}><RotateCcw size={18} /></IBtn>
+        <IBtn title="Align left" onClick={() => align(-e.project.width / 4)}><AlignLeft size={18} /></IBtn>
+        <IBtn title="Align centre" onClick={() => align(0)}><AlignCenter size={18} /></IBtn>
+        <IBtn title="Align right" onClick={() => align(e.project.width / 4)}><AlignRight size={18} /></IBtn>
+        <IBtn title={muted ? 'Unmute media' : 'Mute media'} active={muted} onClick={toggleMute}>
+          {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+        </IBtn>
       </div>
       {!layer && <p className="um-hint center">Select a layer to edit its properties.</p>}
       {layer && (
-        <div className="um-prop-tiles">
-          {TILES.map(t => (
-            <button type="button" key={t.id} className="um-prop-tile" onClick={() => ui.openProperty(t.id)}>
-              {t.icon}<span>{PROPERTY_TITLES[t.id]}</span>
+        <div className={`um-prop-tiles ${layer?.type === 'camera' ? 'camera' : ''}`}>
+          {tilesFor(layer?.type === 'camera').map(id => (
+            <button type="button" key={id} className="um-prop-tile" onClick={() => ui.openProperty(id)}>
+              {TILE_ICONS[id]}<span>{PROPERTY_TITLES[id]}</span>
+              {id === 'presets' && <em className="um-tile-new">NEW</em>}
             </button>
           ))}
         </div>

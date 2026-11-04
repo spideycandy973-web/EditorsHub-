@@ -810,6 +810,33 @@ export class Renderer {
     void W; void H;
   }
 
+  /** Bounding box of one layer in composition coordinates (centre + size).
+   *  Used by the on-canvas selection handles so they match the real render. */
+  layerBounds(layer: Layer, time: number): { x: number; y: number; w: number; h: number; angle: number } | null {
+    if (!this.isVisible(layer)) return null;
+    const measure = this.ctx;
+    const t = clamp(time - layer.start, 0, layer.duration);
+    const fx = buildFx(layer.effects, t, time);
+    let lines: string[] = [];
+    let textW = 0;
+    if (layer.type === 'text') {
+      const fs = Math.max(1, prop(layer, 'fontSize', t, 96));
+      measure.save();
+      measure.font = this.fontString(layer.style, fs);
+      lines = this.wrap(measure, layer.style.text, this.project.width * 0.92);
+      textW = Math.max(1, ...lines.map(l => measure.measureText(l).width));
+      measure.restore();
+    }
+    const size = this.contentSize(layer, t, lines, textW);
+    const m = this.worldMatrix(layer, time, t, size.w, size.h, fx);
+    return {
+      x: m.e, y: m.f,
+      w: Math.max(8, size.w * Math.hypot(m.a, m.b)),
+      h: Math.max(8, size.h * Math.hypot(m.c, m.d)),
+      angle: Math.atan2(m.b, m.a) * 180 / Math.PI,
+    };
+  }
+
   /** Topmost layer whose content box contains a point in composition coordinates. */
   hitTest(px: number, py: number, time: number): string | null {
     const measure = this.ctx;

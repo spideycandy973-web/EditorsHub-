@@ -1,4 +1,28 @@
-# EditorsHub v3.0.0 UI screenshots
+# EditorsHub UI screenshots
+
+Captured headlessly at 430 × 932 (the same phone viewport used by the reference screenshots).
+The older v2.x and v3.0.0 images are kept for history; **v3.1.0 is the current UI**.
+
+## v3.1.0 — smooth, pixel-aligned studio
+
+- `home-v3.1.0.png` — black launcher: bare gear, filled avatar, two-word wordmark, single-line
+  Upload XML card, Import Project Package card, filled-house / square-play pill nav.
+- `settings-v3.1.0.png` — Settings card with info icons, duration, audio resampling, branding
+  divider and Website / Telegram / TikTok / About rows.
+- `create-v3.1.0.png` — Project / Element sheet with crop-marked ratio chips, resolution, frame
+  rate, background and lavender Create Project.
+- `editor-v3.1.0.png` — centred black 9:16 canvas, seven thin transport icons, centred time pill,
+  fixed playhead and teal FAB; no permanent right rail.
+- `add-v3.1.0.png` — Add grid with chevrons, NEW badge and the Camera / Null / Empty Group row.
+- `shapes-v3.1.0.png` — three-page 18-shape picker with corrected silhouettes.
+- `properties-v3.1.0.png` — selected layer with real selection handles, clip bar, five quick tools
+  and the 3-then-4 property tiles.
+- `move-v3.1.0.png` — Move & Transform position view with X/Y fields, XY pad and rails.
+- `rotation-v3.1.0.png` — rotation dial view.
+- `easing-v3.1.0.png` — cubic-bezier easing graph with draggable control points.
+- `effects-v3.1.0.png` — effects browser with 20 real effects.
+
+## v3.0.0 — dark studio rebuild
 
 Captured headlessly at 430 × 900 (the same phone viewport used by the reference screenshots).
 The v2.x screenshots below are kept for history; **v3.0.0 is the current UI**.

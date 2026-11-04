@@ -331,27 +331,27 @@ export function createBuiltinAssets(): Asset[] {
   ];
   return specs.map(s => {
     const c = document.createElement('canvas');
-    c.width = 720; c.height = 1280;
+    c.width = 240; c.height = 426;
     const ctx = c.getContext('2d')!;
-    const g = ctx.createLinearGradient(0, 0, 720, 1280);
+    const g = ctx.createLinearGradient(0, 0, 240, 426);
     g.addColorStop(0, s.a); g.addColorStop(0.55, s.b); g.addColorStop(1, s.c);
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 720, 1280);
+    ctx.fillRect(0, 0, 240, 426);
     if (s.kind === 3) {
       ctx.strokeStyle = 'rgba(255,255,255,.14)';
       ctx.lineWidth = 2;
-      for (let x = 0; x <= 720; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 1280); ctx.stroke(); }
-      for (let y = 0; y <= 1280; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(720, y); ctx.stroke(); }
+      for (let x = 0; x <= 240; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 426); ctx.stroke(); }
+      for (let y = 0; y <= 426; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(240, y); ctx.stroke(); }
     }
-    const rg = ctx.createRadialGradient(360, 500, 20, 360, 640, 620);
+    const rg = ctx.createRadialGradient(120, 165, 8, 120, 212, 205);
     rg.addColorStop(0, 'rgba(255,255,255,.32)');
     rg.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = rg;
-    ctx.fillRect(0, 0, 720, 1280);
-    const url = c.toDataURL('image/jpeg', 0.85);
+    ctx.fillRect(0, 0, 240, 426);
+    const url = c.toDataURL('image/jpeg', 0.72);
     return {
       id: `builtin_${s.name}`, name: s.name, type: 'image' as const,
-      mime: 'image/jpeg', width: 720, height: 1280, duration: 0,
+      mime: 'image/jpeg', width: 240, height: 426, duration: 0,
       url, thumbnail: url, builtin: true,
     };
   });

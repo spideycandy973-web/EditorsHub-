@@ -1,3 +1,47 @@
+# EditorsHub v3.1.0 — smooth, pixel-aligned studio
+
+A performance and visual-correction pass over the v3.0.0 rebuild. Package remains `com.editorshub`,
+application label `EditorsHub`; no proprietary assets are copied.
+
+## What's new in 3.1.0
+
+- **Lag removed at the source.** The compositor no longer runs a requestAnimationFrame loop while
+  idle; it renders only when the project, playhead, size or media actually change. Playback renders
+  at a reduced backing-store resolution and a capped preview frame rate, never overlaps two frames,
+  and throttles media sync. With ten layers under 4× CPU throttling the headless browser went from
+  17 fps / 44 long tasks to 38 fps / 5 long tasks; unthrottled it holds 61 fps with zero long tasks.
+- **Timeline is imperative.** Playhead, timecode and the clip strip now slide with one CSS transform
+  and one text node per frame instead of re-rendering the React tree. Scrubbing and playback stay
+  responsive and the timecode actually advances (previously it was frozen because time changes were
+  never subscribed to by the UI).
+- **Startup and mutation cost.** Removed React StrictMode double-render, the unused 599-line legacy
+  stylesheet, four 720×1280 JPEG encodes at boot, and redundant `structuredClone` calls on autosave.
+- **Pixel alignment to the reference screens.** Bare gear + filled avatar, single-line Upload XML
+  card, real icon set, filled-house / square-play bottom navigation; Settings with info icons,
+  branding divider and Website/Telegram/TikTok/About rows; crop-marked ratio chips; centred 9:16
+  canvas with no permanent right rail; reference back/export glyphs; seven-icon transport without a
+  play disc; fixed playhead with a long tail; teal FAB that turns into a close chevron while a sheet
+  is open; Add and Shape sheets without a close X; 18-shape picker silhouettes corrected.
+- **Real selection handles.** On the properties screen a selected layer now shows eight draggable
+  handles: dragging the box moves the layer and dragging a corner scales it, both recorded in the
+  undo history. Property tiles follow the reference 3-then-4 layout (and the 4-tile camera layout),
+  with a NEW badge on Presets and five real quick tools. Layers get descriptive names such as
+  “Circle 1”.
+- Verified with `npm run typecheck`, `npm run build`, a 27/27 headless Chromium suite (zero console
+  errors/warnings), 61 fps unthrottled playback and 38 fps under 4× CPU throttling with ten layers.
+- `versionCode 8`, `versionName 3.1.0`, PWA cache `editorshub-v8`. Eleven fresh screenshots in
+  `docs/screenshots/*-v3.1.0.png`.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, package `com.editorshub`) is the installable web editor build;
+it is attached to `apk-latest`, `v3.1.0` and `editorshub-latest` and committed at the repo root.
+`EditorsHub-debug.apk` is the native Compose build; release APK/AAB are unsigned by design —
+configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run `android-release.yml` with
+keystore secrets. `EditorsHub-source-v3.1.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v3.0.0 — dark studio rebuild
 
 An original, production-structured Android motion editor: Kotlin + Jetpack Compose + Material 3,

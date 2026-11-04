@@ -86,7 +86,7 @@ class EditorStore {
   /* -------------------------------- history -------------------------------- */
   private pushUndo(): void {
     this.undoStack.push(clone(this.project));
-    if (this.undoStack.length > 80) this.undoStack.shift();
+    if (this.undoStack.length > 40) this.undoStack.shift();
     this.redoStack = [];
   }
 
@@ -137,11 +137,11 @@ class EditorStore {
   private scheduleSave(): void {
     window.clearTimeout(this.saveTimer);
     this.saveTimer = window.setTimeout(() => {
-      try { saveProject(clone(this.project)); } catch { /* storage full */ }
+      try { saveProject(this.project); } catch { /* storage full */ }
     }, 600);
   }
 
-  saveNow(): void { saveProject(clone(this.project)); }
+  saveNow(): void { saveProject(this.project); }
 
   /* --------------------------------- UI state ------------------------------ */
   setPanel(p: PanelId): void { this.panel = p; this.sheetOpen = true; this.emit(); }
@@ -160,7 +160,7 @@ class EditorStore {
     this.toast = { id: Date.now(), text, kind };
     this.emit();
     window.clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => { this.toast = null; this.emit(); }, 3200);
+    this.toastTimer = window.setTimeout(() => { this.toast = null; this.emit(); }, 1800);
   }
   selectLayer(id: string | null): void {
     this.selectedLayerId = id;
@@ -265,7 +265,6 @@ class EditorStore {
     this.selectedEffectId = null;
     this.panel = type === 'shape' || type === 'text' || type === 'solid' ? 'edit' : this.panel;
     this.emit();
-    this.notify(`${layer.name} added`, 'ok');
     return layer.id;
   }
 
@@ -610,9 +609,8 @@ class EditorStore {
     this.selectedLayerId = this.project.layers[0]?.id ?? null;
     this.time = 0; this.playing = false;
     this.media.pauseAll();
-    saveProject(clone(this.project));
+    saveProject(this.project);
     this.emit(); this.emitTime();
-    this.notify('New project created', 'ok');
   }
 
   openProject(id: string): void {
@@ -636,7 +634,7 @@ class EditorStore {
     this.selectedEffectId = null;
     this.time = 0; this.playing = false;
     this.media.pauseAll();
-    saveProject(clone(project));
+    saveProject(project);
     this.emit(); this.emitTime();
   }
 
@@ -667,7 +665,7 @@ class EditorStore {
     p.createdAt = Date.now();
     p.updatedAt = Date.now();
     this.project = p;
-    saveProject(clone(p));
+    saveProject(p);
     this.emit();
     this.notify(`Saved as “${p.name}”`, 'ok');
   }
