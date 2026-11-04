@@ -1,3 +1,4 @@
 Rebuild the Capacitor Android APK for EditorsHub v3.1.0 (package com.editorshub).
-Includes the demand-driven compositor and the pixel-aligned launcher/editor UI.
+Demand-driven compositor and pixel-aligned launcher/editor UI.
+Retry release publishing after a transient GitHub API error.
 Attach EditorsHub-Motion.apk to v3.1.0 after the native release is published.
