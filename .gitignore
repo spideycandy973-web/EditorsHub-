@@ -33,5 +33,12 @@ EditorsHub/.cxx/
 # CI scratch logs
 ci-logs/
 
-# Offline reference-recording frame analysis (generated, large)
-analysis/
+# Offline reference-recording frame analysis: keep the small storyboard frames
+# in Git, but never the source MP4 or the raw comparison dump.
+analysis/video.mp4
+analysis/reference.mp4
+analysis/*.raw
+analysis/*.mp4
+
+# Files downloaded from Google Drive into the workspace (large binaries)
+google_drive/
