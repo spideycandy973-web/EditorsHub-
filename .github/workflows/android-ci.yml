@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/9b71f21a-editorshub
+      - arena/a5fead45-editorshub
     paths:
       - 'EditorsHub/**'
       - 'ci/smoke.sh'
@@ -61,11 +61,11 @@ jobs:
           git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
           pushed=0
           for attempt in 1 2 3; do
-            if git push origin HEAD:arena/9b71f21a-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:arena/a5fead45-editorshub; then pushed=1; break; fi
             echo "push attempt $attempt failed; retrying"
             sleep 10
-            git fetch origin arena/9b71f21a-editorshub
-            git pull origin arena/9b71f21a-editorshub --no-rebase || true
+            git fetch origin arena/a5fead45-editorshub
+            git pull origin arena/a5fead45-editorshub --no-rebase || true
           done
           [ "$pushed" = "1" ] || true
 
@@ -82,9 +82,9 @@ jobs:
         if: success()
         # Source only: exclude committed build outputs so the ZIP stays small.
         run: |
-          git archive --format=zip --prefix=EditorsHub-v3.2.0/ HEAD -- \
+          git archive --format=zip --prefix=EditorsHub-v3.3.0/ HEAD -- \
             . ':(exclude)artifacts' ':(exclude)artifacts/**' \
-            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v3.2.0.zip
+            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v3.3.0.zip
           ls -lh artifacts/
 
       - name: Upload artifact bundle
@@ -109,24 +109,24 @@ jobs:
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v3.2.0.zip
+            artifacts/EditorsHub-source-v3.3.0.zip
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish versioned release v3.2.0
+      - name: Publish versioned release v3.3.0
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.2.0
-          name: EditorsHub v3.2.0 — responsive, fully wired editor
+          tag_name: v3.3.0
+          name: EditorsHub v3.3.0 — reference chrome + video audit tooling
           body_path: RELEASE_NOTES.md
           files: |
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v3.2.0.zip
+            artifacts/EditorsHub-source-v3.3.0.zip
           draft: false
           prerelease: false
         env:
@@ -140,15 +140,15 @@ jobs:
           git add -f artifacts/
           git commit -m "build: add Android APK + AAB [skip ci]" || echo "artifacts already committed"
           # The Capacitor APK workflow may have pushed to this branch in parallel.
-          git fetch origin arena/9b71f21a-editorshub
-          git pull origin arena/9b71f21a-editorshub --no-rebase || true
+          git fetch origin arena/a5fead45-editorshub
+          git pull origin arena/a5fead45-editorshub --no-rebase || true
           pushed=0
           for attempt in 1 2 3; do
-            if git push origin HEAD:arena/9b71f21a-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:arena/a5fead45-editorshub; then pushed=1; break; fi
             echo "push attempt $attempt failed; retrying"
             sleep 10
-            git fetch origin arena/9b71f21a-editorshub
-            git pull origin arena/9b71f21a-editorshub --no-rebase || true
+            git fetch origin arena/a5fead45-editorshub
+            git pull origin arena/a5fead45-editorshub --no-rebase || true
           done
           [ "$pushed" = "1" ]
 
@@ -199,16 +199,16 @@ jobs:
           else
             echo "no diagnostics file was produced" > ci-logs/smoke-diagnostics.txt
           fi
-          git fetch origin arena/9b71f21a-editorshub
-          git reset --hard origin/arena/9b71f21a-editorshub
+          git fetch origin arena/a5fead45-editorshub
+          git reset --hard origin/arena/a5fead45-editorshub
           git add -f ci-logs/
           git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
           pushed=0
           for attempt in 1 2 3; do
-            if git push origin HEAD:arena/9b71f21a-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:arena/a5fead45-editorshub; then pushed=1; break; fi
             echo "push attempt $attempt failed; retrying"
             sleep 10
-            git fetch origin arena/9b71f21a-editorshub
-            git pull origin arena/9b71f21a-editorshub --no-rebase || true
+            git fetch origin arena/a5fead45-editorshub
+            git pull origin arena/a5fead45-editorshub --no-rebase || true
           done
           [ "$pushed" = "1" ] || true

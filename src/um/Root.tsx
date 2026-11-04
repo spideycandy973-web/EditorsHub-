@@ -3,6 +3,7 @@ import { editor, useEditor } from '../editor/store';
 import { Renderer } from '../editor/renderer';
 import { clamp } from '../editor/utils';
 import { useUI } from './context';
+import { GestureBar, StatusBar } from './Chrome';
 import { Home } from './Home';
 import { Editor } from './Editor';
 import { Overlays } from './Overlays';
@@ -211,10 +212,12 @@ export function Root() {
   return (
     <div className="um-root">
       <div className={`um-phone ${inEditor ? 'in-editor' : ''}`}>
+        {ui.prefs.showDeviceChrome && <StatusBar />}
         {inEditor
           ? <Editor canvasRef={canvasRef} stageRef={stageRef} rendererRef={rendererRef} />
           : <Home />}
         <Overlays />
+        {ui.prefs.showDeviceChrome && <GestureBar />}
         {e.toast && <div className={`um-toast ${e.toast.kind}`} key={e.toast.id}>{e.toast.text}</div>}
       </div>
     </div>

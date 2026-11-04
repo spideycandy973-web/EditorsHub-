@@ -1,7 +1,14 @@
 # EditorsHub UI screenshots
 
 Captured headlessly at 430 × 932 (the same phone viewport used by the reference screenshots).
-Older v2.x / v3.0.0 / v3.1.0 images are kept for history; **v3.2.0 is the current UI**.
+Older v2.x / v3.0.0 / v3.1.0 images are kept for history; **v3.3.0 is the current UI** (chrome and transitions below).
+
+## v3.3.0 — reference chrome + transitions
+
+- `home-v3.3.0.png` — launcher with the real-data device status strip, gesture pill and the
+  URL field now contained inside its card (input `box-sizing` fix).
+- `settings-v3.3.0.png` — Settings card including the working **Device chrome** switch.
+- `editor-v3.3.0.png` — editor with the same status strip/gesture pill and no layout regression.
 
 ## v3.2.0 — responsive, fully wired editor
 

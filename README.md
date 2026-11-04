@@ -7,6 +7,19 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
+**v3.3.0 — reference-recording chrome and frame-audit tooling.** The Android status strip and
+gesture pill visible in every 1220 × 2712 reference frame are now reproduced in the browser/PWA
+shell, driven only by real browser APIs (local clock, Battery Status API, Network Information API
+and online/offline events); no value is ever invented, and the chrome is suppressed on native
+Android so the OS never draws a duplicate. Screen and tab switches now animate, with a
+`prefers-reduced-motion` opt-out and a real **Device chrome** switch in Settings. A frame-audit
+pipeline (`tools/video-frames.mjs`) rebuilds one continuous 10:29 timeline from split recording
+parts, extracts one frame per second plus every scene change, and writes a browsable contact sheet.
+The 10:29.66 / 301,626,146-byte source recording is still above the workspace's 100 MiB per-file
+limit, so [docs/VIDEO_SPLIT_GUIDE.md](docs/VIDEO_SPLIT_GUIDE.md) gives the exact 3-part split
+commands and [docs/VIDEO_AUDIT.md](docs/VIDEO_AUDIT.md) records the audit status honestly: **no
+video frames have been watched yet**. This release is built from the 20 attached still references.
+
 **v3.2.0 — responsive, fully wired editor.** Every exposed control was audited end-to-end
 (143 interactive checks, all passing). The editor store now coalesces continuous edits into one
 React notification per frame and one undo snapshot per gesture; the timeline no longer captures
@@ -196,7 +209,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v3.2.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v3.3.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -206,4 +219,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the current v3.2.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the current v3.3.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
