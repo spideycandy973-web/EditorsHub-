@@ -1,3 +1,45 @@
+# EditorsHub v3.4.0 — full reference-recording pass
+
+Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.
+
+## What's new in 3.4.0
+
+- **The entire 10:29.66 screen recording was analysed, not approximated.** The 301,626,146-byte
+  Google Drive MP4 exceeds the agent workspace's 100 MiB per-file cap, so
+  `.github/workflows/reference-frames.yml` fetches it inside GitHub Actions, verifies its size
+  and commits only compact derived frames: **747 distinct UI states**, 38 labelled contact
+  sheets, 630 one-second timeline frames and 8 timeline sheets. Every sheet was reviewed.
+  [docs/VIDEO_AUDIT.md](docs/VIDEO_AUDIT.md) lists the screens, timings and sampled colours.
+- **Exact palette** from the decoded pixels: `#121214` / `#1c1c1e` / `#262628` / `#dfe3ff` /
+  `#01ffa7`.
+- **Cold-launch splash** — black field, animated white double-arc swirl and a spinner, with a
+  `prefers-reduced-motion` path.
+- **Full-screen About** with the wordmark, green link and a device/build-information card that
+  reports only live browser values (viewport, DPR, memory, CPU, storage estimate, user agent,
+  online/standalone state).
+- **Projects**: Sort by Date / Name / Duration, date-grouped rows with thumbnails, and a real
+  selection mode — Select All, Fix (checks missing media), Export (ZIP of XML packages),
+  Duplicate (clones stored projects), Delete with a confirmation dialog.
+- **Export & Share** with the six recorded formats, all genuinely encoded: video via
+  MediaRecorder, Project Package ZIP, full-resolution PNG, PNG sequence ZIP, XML, and animated
+  GIF. `src/editor/gif.ts` is a hand-written GIF89a/LZW encoder with a 256-colour palette and
+  NETSCAPE looping; its output was decoded with an independent GIF decoder and verified by a
+  headless end-to-end download. "Also export as a Template" saves a real XML template.
+- **Five-page shape picker** with 18 built-ins, 9 extras, 26 polygon/star variants and 18
+  original normalized vector silhouettes drawn by `Path2D`; **Effect Browser** category tiles.
+- `versionCode 11`, `versionName 3.4.0`, PWA cache `editorshub-v11`. `npm run typecheck`,
+  `npm run build` and `node tools/smoke.mjs --shots` are clean: **40/40** checks, zero console
+  errors/warnings.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, `com.editorshub`) is the installable build and is attached to
+`apk-latest`, `v3.4.0` and `editorshub-latest`. `EditorsHub-debug.apk` is the native Compose
+build; release APK/AAB are unsigned by design (see `EditorsHub/docs/RELEASE_SIGNING.md`).
+`EditorsHub-source-v3.4.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v3.3.0 — reference chrome + video frame-audit tooling
 
 Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.

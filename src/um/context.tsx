@@ -36,6 +36,9 @@ export interface UIState {
   setSelectedIds: (ids: string[]) => void;
   toolsOpen: boolean;
   toggleTools: () => void;
+  /** Full-screen About page (the reference recording shows a page, not a dialog). */
+  aboutOpen: boolean;
+  setAboutOpen: (v: boolean) => void;
   openProperty: (p: PropertyId) => void;
   openAdd: () => void;
   setAddPage: (page: Preferences['addPage']) => void;
@@ -49,13 +52,14 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [moveView, setMoveView] = useState<MoveView>('pos');
   const [activePropKey, setActivePropKey] = useState('x');
   const [homeTab, setHomeTab] = useState<'home' | 'projects'>('home');
-  const [homeSegment, setHomeSegment] = useState<'projects' | 'templates' | 'elements'>('elements');
+  const [homeSegment, setHomeSegment] = useState<'projects' | 'templates' | 'elements'>('projects');
   const [createTab, setCreateTab] = useState<'project' | 'element'>('project');
   const [prefs, setPrefsState] = useState<Preferences>(() => loadPrefs());
   const [xmlResult, setXmlResult] = useState<XmlImportResult | null>(null);
   const [importUrl, setImportUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const setPrefs = (p: Preferences) => { savePrefs(p); setPrefsState(p); };
   const setAddPage = (page: Preferences['addPage']) => setPrefs({ ...prefs, addPage: page });
@@ -68,6 +72,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     xmlResult, setXmlResult, importUrl, setImportUrl,
     selectedIds, setSelectedIds,
     toolsOpen, toggleTools: () => setToolsOpen(v => !v),
+    aboutOpen, setAboutOpen,
     openProperty: (p) => { setProperty(p); setSheet('property'); setSelectedIds([]); },
     openAdd: () => {
       const page = prefs.rememberAddPage ? prefs.addPage : 'add';
@@ -76,7 +81,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     },
     setAddPage,
   }), [sheet, property, moveView, activePropKey, homeTab, homeSegment, createTab, prefs,
-    xmlResult, importUrl, selectedIds, toolsOpen]);
+    xmlResult, importUrl, selectedIds, toolsOpen, aboutOpen]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

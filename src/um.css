@@ -3,16 +3,20 @@
  * All selectors are namespaced `um-` so the legacy engine panels stay intact.
  * ========================================================================== */
 :root {
+  /* Sampled directly from the 1220x2712 reference frames (docs/VIDEO_AUDIT.md).
+     Background #121214, card #1c1c1e, field #262628, lavender #dfe3ff,
+     accent #01ffa7. The recorded MP4 has a ~1-value green cast from its colour
+     profile; the still frames are neutral and are the authoritative values. */
   --um-bg: #070707;
-  --um-home: #0d0d0f;
-  --um-card: #1a1a1d;
+  --um-home: #121214;
+  --um-card: #1c1c1e;
   --um-card-2: #262628;
-  --um-input: #2a2a2d;
+  --um-input: #262628;
   --um-line: #303036;
   --um-text: #f3f3f6;
   --um-muted: #92929c;
-  --um-lav: #d8dcff;
-  --um-teal: #02ffa7;
+  --um-lav: #dfe3ff;
+  --um-teal: #01ffa7;
   --um-pink: #ff3b7f;
   --um-radius: 16px;
 }
@@ -69,7 +73,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
  * Reproduces the status strip and gesture pill visible in the 1220 x 2712
  * reference frames. Values come from real browser APIs (see Chrome.tsx). */
 .um-statusbar {
-  flex: none; height: 34px; z-index: 120; pointer-events: none; user-select: none;
+  flex: none; height: 34px; z-index: 170; pointer-events: none; user-select: none;
   display: flex; align-items: center; justify-content: space-between;
   padding: 4px 17px 0 21px; color: #fff; background: var(--um-home);
 }
@@ -89,7 +93,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   border-radius: 0 2px 2px 0; background: rgba(255,255,255,.6);
 }
 .um-gesturebar {
-  flex: none; height: 20px; z-index: 120; pointer-events: none;
+  flex: none; height: 20px; z-index: 170; pointer-events: none;
   display: grid; place-items: center; background: var(--um-home);
 }
 .um-phone.in-editor .um-gesturebar { background: #000; }
@@ -597,3 +601,136 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-readout { display: flex; align-items: center; justify-content: space-around; gap: 6px; flex: none; height: 28px; }
 .um-readout b { color: var(--um-teal); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .um-xypad .um-crop { z-index: 1; }
+
+/* ======================= video-derived screens (v3.4.0) ==================== */
+/* Cold-launch splash: black field, white double-arc swirl, small spinner. */
+.um-splash {
+  position: absolute; inset: 0; z-index: 160; background: #000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  animation: um-splash-in .18s ease-out both;
+}
+.um-splash.leaving { animation: um-splash-out .26s ease-in both; }
+@keyframes um-splash-in { from { opacity: 0; } }
+@keyframes um-splash-out { to { opacity: 0; transform: scale(1.02); } }
+.um-splash-logo { width: 104px; height: 104px; margin-bottom: 140px; color: #fff;
+  fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round;
+  transform-origin: 50% 50%; animation: um-swirl 2.1s cubic-bezier(.35,.05,.25,1) both; }
+.um-splash-arc { stroke-dasharray: 240; stroke-dashoffset: 240; animation: um-draw 1.15s ease-out forwards; }
+.um-splash-arc.inner { animation-delay: .16s; }
+.um-splash-dot { fill: #fff; stroke: none; opacity: 0; animation: um-dot .3s .9s forwards; }
+.um-splash-spinner { position: absolute; bottom: 96px; width: 22px; height: 22px;
+  border: 2px solid rgba(255,255,255,.22); border-top-color: #fff; border-radius: 50%;
+  animation: um-spin .75s linear infinite; }
+@keyframes um-swirl { from { transform: rotate(-50deg) scale(.9); opacity: 0; } 25% { opacity: 1; } to { transform: rotate(0) scale(1); opacity: 1; } }
+@keyframes um-draw { to { stroke-dashoffset: 0; } }
+@keyframes um-dot { to { opacity: 1; } }
+@keyframes um-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .um-splash-logo, .um-splash-arc, .um-splash-dot, .um-splash-spinner { animation-duration: .01ms !important; }
+}
+
+/* Full-screen About page (the recording shows a page, not a dialog). */
+.um-about-page {
+  position: absolute; inset: 0; z-index: 140; background: var(--um-home);
+  display: flex; flex-direction: column; animation: um-screen-in .22s ease-out both;
+}
+.um-about-top { flex: none; height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; position: relative; border-bottom: 1px solid rgba(255,255,255,.05); }
+.um-about-top > button { width: 38px; height: 38px; display: grid; place-items: center;
+  border-radius: 50%; color: #e9e9ee; }
+.um-about-top > button:hover { background: rgba(255,255,255,.08); }
+.um-about-top strong { font-size: 15px; font-weight: 700; }
+.um-about-menu { position: absolute; right: 10px; top: 50px; z-index: 3; min-width: 150px;
+  background: #262628; border-radius: 10px; padding: 5px; box-shadow: 0 12px 30px rgba(0,0,0,.6); }
+.um-about-menu button { display: block; width: 100%; text-align: left; padding: 9px 10px;
+  font-size: 12.5px; border-radius: 7px; color: #eee; }
+.um-about-menu button:hover { background: rgba(255,255,255,.08); }
+.um-about-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 34px 22px 30px; }
+.um-about-brand { text-align: center; color: var(--um-teal); margin-bottom: 30px; }
+.um-about-brand svg { display: block; margin: 0 auto 16px; }
+.um-about-brand h1 { color: #f5f5f8; font-size: 25px; font-weight: 900; letter-spacing: 3px; margin: 0 0 10px; }
+.um-about-brand a { color: var(--um-teal); font-size: 11px; font-weight: 700; text-decoration: none; }
+.um-device-card { background: var(--um-card); border-radius: 14px; padding: 15px 14px; }
+.um-device-card h2 { font-size: 13px; margin: 0 0 4px; }
+.um-device-card .um-hint { margin: 0 0 10px; font-size: 10.5px; }
+.um-device-card dl { margin: 0; }
+.um-device-card dl > div { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: 10.5px; }
+.um-device-card dt { flex: none; width: 92px; color: #97979f; }
+.um-device-card dd { margin: 0; color: #dcdce2; word-break: break-word; flex: 1; }
+.um-about-legal { color: var(--um-muted); font-size: 10.5px; line-height: 1.6; text-align: center; margin-top: 22px; }
+
+/* Projects / templates / elements listing with sort + selection mode. */
+.um-projects-body { position: relative; }
+.um-list-heading { display: flex; align-items: center; gap: 8px; margin: 12px 0 9px; }
+.um-list-heading h3 { flex: 1; font-size: 13px; font-weight: 700; margin: 0; }
+.um-sort { position: relative; display: inline-flex; align-items: center; color: #b9b9c2; }
+.um-sort select { appearance: none; background: transparent; border: none; color: #b9b9c2;
+  font-size: 11px; padding: 3px 17px 3px 4px; outline: none; cursor: pointer; }
+.um-sort select option { background: #262628; color: #fff; }
+.um-sort svg { position: absolute; right: 1px; pointer-events: none; }
+.um-select-toggle { width: 26px; height: 26px; display: grid; place-items: center; color: #b9b9c2; border-radius: 6px; }
+.um-select-toggle:hover { background: rgba(255,255,255,.07); }
+.um-select-top { flex: none; height: 50px; display: flex; align-items: center; gap: 10px;
+  padding: 0 4px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.um-select-top > button:first-child { width: 34px; height: 34px; display: grid; place-items: center; }
+.um-select-top strong { flex: 1; font-size: 14px; }
+.um-select-cancel { color: var(--um-lav); font-size: 12px; font-weight: 700; padding: 6px 8px; }
+.um-date-group { color: var(--um-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .3px;
+  margin: 14px 2px 6px; }
+.um-list-row.picked { background: rgba(1,255,167,.08); border-radius: 9px; }
+.um-pick { flex: none; width: 19px; height: 19px; border: 1.6px solid #87878f; border-radius: 50%;
+  display: grid; place-items: center; color: #06261a; margin-left: 4px; }
+.um-pick[aria-pressed="true"] { background: var(--um-teal); border-color: var(--um-teal); }
+.um-row-more { flex: none; color: #8d8d97; padding: 0 4px; }
+.um-select-actions { position: sticky; bottom: -10px; z-index: 6; display: flex; justify-content: space-around;
+  margin: 14px -20px -10px; padding: 9px 4px 12px; background: #111113;
+  border-top: 1px solid #303036; }
+.um-select-actions button { display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: #d6d6dd; font-size: 9.5px; min-width: 52px; }
+.um-select-actions button:disabled { opacity: .35; cursor: default; }
+.um-confirm { position: fixed; inset: 0; z-index: 210; display: grid; place-items: center;
+  background: rgba(0,0,0,.64); padding: 24px; }
+.um-confirm-card { width: min(320px, 90vw); background: #f1f1f4; color: #17171a; border-radius: 14px;
+  padding: 20px; text-align: left; box-shadow: 0 20px 60px rgba(0,0,0,.7); }
+.um-confirm-card > svg { color: #e0455d; }
+.um-confirm-card strong { display: block; font-size: 15px; margin: 10px 0 6px; }
+.um-confirm-card p { font-size: 12px; color: #55555d; margin: 0 0 18px; line-height: 1.5; }
+.um-confirm-card > div { display: flex; justify-content: flex-end; gap: 8px; }
+.um-confirm-card button { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #222; }
+.um-confirm-card button.danger { background: #e0455d; color: #fff; }
+
+/* Export & Share sheet — option radio list from the recording. */
+.um-export { padding-top: 2px; }
+.um-export-space { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px;
+  font-size: 10.5px; color: var(--um-muted); padding: 2px 2px 12px; }
+.um-export-space strong { color: #d9d9e0; font-weight: 600; text-align: right; }
+.um-export-list { display: flex; flex-direction: column; gap: 2px; }
+.um-export-option { display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 9px 8px; border-radius: 9px; }
+.um-export-option:hover { background: rgba(255,255,255,.045); }
+.um-export-option.on { background: rgba(1,255,167,.075); }
+.um-export-radio { flex: none; width: 16px; height: 16px; border: 1.6px solid #7d7d87; border-radius: 50%; }
+.um-export-option.on .um-export-radio { border: 5px solid var(--um-teal); }
+.um-export-glyph { flex: none; width: 25px; text-align: center; color: #cfcfd7; font-size: 13px; }
+.um-export-copy { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.um-export-copy strong { font-size: 12px; font-weight: 600; color: #ededf1; }
+.um-export-copy small { font-size: 10px; color: var(--um-muted); }
+.um-export-settings { margin: 10px 0 2px; padding: 8px 10px; background: rgba(0,0,0,.22); border-radius: 10px; }
+.um-export-settings .um-row { padding: 5px 0; }
+.um-export-codec { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 6px 0; }
+.um-export-codec span { flex: 1; color: var(--um-muted); }
+.um-export-codec b { font-weight: 600; color: #d2d2da; }
+.um-template-toggle { margin: 10px 0 6px; }
+
+/* Effect Browser category tiles (reference recording, ~06:15). */
+.um-browser-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+.um-browser-grid button { position: relative; height: 52px; border-radius: 8px; overflow: hidden; text-align: left;
+  display: flex; align-items: flex-end; padding: 6px 8px; }
+.um-browser-grid button > span { position: absolute; inset: 0; opacity: .85; }
+.um-browser-grid button::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,.72), rgba(0,0,0,.05)); }
+.um-browser-grid button.on { outline: 2px solid var(--um-teal); outline-offset: -2px; }
+.um-browser-grid strong { position: relative; z-index: 1; font-size: 10.5px; color: #fff; font-weight: 700; }
+.um-template-tile.saved { display: flex; flex-direction: column; position: relative; }
+.um-template-open { display: flex; flex-direction: column; text-align: left; flex: 1; }
+.um-template-tile.saved > button.um-ibtn { position: absolute; right: 2px; top: 2px; z-index: 2; }

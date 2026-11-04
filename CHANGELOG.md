@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.4.0 — full reference-recording pass (2026-11-04)
+
+- **The whole 10:29.66 recording was analysed.** `.github/workflows/reference-frames.yml`
+  downloads the 301,626,146-byte Drive MP4 in CI (the agent workspace caps a single file at
+  100 MiB), verifies its size, and runs `tools/build-storyboard.py`: 4 fps change detection →
+  **747 distinct UI states**, 38 labelled contact sheets, 630 one-second timeline frames and 8
+  timeline sheets. Every sheet was reviewed; `docs/VIDEO_AUDIT.md` records the screen-by-screen
+  findings and the exact sampled palette.
+- Palette corrected to the measured pixels: `#121214` background, `#1c1c1e` cards,
+  `#262628` fields, `#dfe3ff` lavender, `#01ffa7` teal.
+- Added the cold-launch **splash** (animated white double-arc swirl + spinner) with a
+  reduced-motion path, and a **full-screen About** page whose device/build card shows only live
+  `navigator`, screen, storage and display-mode values.
+- Projects now has a real **Sort by Date / Name / Duration** control, date groups, per-project
+  thumbnails, and a **selection mode** with Select All, Fix (checks real asset references),
+  Export (ZIP of XML packages), Duplicate (clones stored projects) and Delete with confirmation.
+- **Export & Share** rebuilt with the six recorded formats. New `src/editor/gif.ts` is a real
+  GIF89a/LZW encoder (256-colour quantisation, NETSCAPE2.0 loop); its output was decoded with
+  an independent GIF decoder and verified end-to-end in headless Chromium. "Also export as a
+  Template" saves a real re-importable XML template (`src/um/lib.ts`).
+- Shape picker expanded from 3 to **5 pages**: 18 built-ins, 9 extras, 26 polygon/star variants
+  and 18 original normalized vector silhouettes rendered by `Path2D`.
+- Effect Browser category tiles added above the existing real effect list.
+- `tools/smoke.mjs` extended to **40 checks** (splash completion, About, sort/selection, export
+  formats, GIF byte signature, five shape pages) — all passing, zero console errors.
+- CI/release branch moved to `arena/e30aca1f-editorshub`, tag to `v3.4.0`; the Capacitor
+  workflow now waits for the versioned release before attaching the APK.
+- `versionCode 11`, `versionName 3.4.0`, PWA cache `editorshub-v11`.
+
 ## 3.3.0 — reference chrome + video frame-audit tooling (2026-11-04)
 
 - Added a reproduction of the device chrome present in all 20 reference frames: status strip

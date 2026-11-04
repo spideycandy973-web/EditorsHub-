@@ -251,3 +251,33 @@ export function assetOfLayer(id: string | null): Asset | null {
   if (!id) return null;
   return editor.assets[id] ?? null;
 }
+
+/* ---------------------------- saved templates ----------------------------- */
+export interface SavedTemplate {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  duration: number;
+  xml: string;
+  createdAt: number;
+}
+const TEMPLATE_KEY = 'editorshub.ultra.templates.v1';
+export function listTemplates(): SavedTemplate[] {
+  try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]') as SavedTemplate[]; }
+  catch { return []; }
+}
+export function saveTemplate(name: string, xml: string,
+  width: number, height: number, duration: number): SavedTemplate {
+  const t: SavedTemplate = {
+    id: uid('tmpl'), name: name.trim() || 'Untitled template',
+    width, height, duration, xml, createdAt: Date.now(),
+  };
+  const all = [t, ...listTemplates()].slice(0, 50);
+  try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(all)); } catch { /* storage full */ }
+  return t;
+}
+export function deleteTemplate(id: string): void {
+  try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(listTemplates().filter(t => t.id !== id))); }
+  catch { /* storage full */ }
+}

@@ -1,5 +1,11 @@
 # Splitting the reference recording so every frame can be analysed
 
+> **Resolved in v3.4.0:** splitting is no longer required.
+> [`.github/workflows/reference-frames.yml`](../.github/workflows/reference-frames.yml) downloads
+> the full MP4 inside GitHub Actions and commits only compact frames, which bypasses the 100 MiB
+> agent-workspace limit. The complete 10:29.66 recording was analysed — see
+> [VIDEO_AUDIT.md](VIDEO_AUDIT.md). The manual split commands below are kept for reference.
+
 ## The blocker
 
 The recording you shared is a single file in Google Drive:

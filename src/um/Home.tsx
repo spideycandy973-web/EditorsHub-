@@ -1,17 +1,21 @@
 import React, { useRef, useState } from 'react';
 import {
-  Box, ChevronRight, FileUp, Globe2, House, Music2, Plus, QrCode, Search,
-  Send, Settings, Sparkles, SquarePlay, Trash2, UserRound,
+  Box, Check, ChevronDown, ChevronRight, Copy, Download, FileUp, Globe2, House,
+  MoreHorizontal, Music2, Plus, QrCode, Search, Send, Settings, Sparkles,
+  SquarePlay, Trash2, UserRound, Wrench, X,
 } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import { createDemoProject } from '../editor/defaults';
 import { useUI } from './context';
 import { Backdrop, Btn, IBtn, Seg, Sheet } from './widgets';
 import {
-  applyXmlResult, decodeQr, deleteElement, fetchPackage, listElements, parseXml,
-  type SavedElement,
+  applyXmlResult, decodeQr, deleteElement, deleteTemplate, fetchPackage, listElements,
+  listTemplates, parseXml, type SavedElement,
 } from './lib';
-import { parseMotionXml } from '../editor/xml';
+import { parseMotionXml, projectToXml } from '../editor/xml';
+import { loadProject, saveProject } from '../editor/storage';
+import { downloadBlob, safeFileName, uid } from '../editor/utils';
+import { zipSync, strToU8 } from 'fflate';
 
 function Nav() {
   const ui = useUI();
@@ -44,7 +48,7 @@ function Header() {
         <strong>EDITORS HUB</strong>
         <span>editorshub.app</span>
       </div>
-      <IBtn title="About EditorsHub" onClick={() => ui.setSheet('about')} className="um-avatar-solid">
+      <IBtn title="About EditorsHub" onClick={() => ui.setAboutOpen(true)} className="um-avatar-solid">
         <UserRound size={20} strokeWidth={1.8} />
       </IBtn>
     </header>
@@ -161,17 +165,32 @@ function HomeBody() {
   );
 }
 
+type ProjectSort = 'date' | 'name' | 'duration';
+
+function projectThumb(name: string) {
+  // Deterministic, original artwork derived from the project name.
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) | 0;
+  const a = `hsl(${Math.abs(h) % 360} 62% 34%)`;
+  const b = `hsl(${Math.abs(h >> 3) % 360} 68% 16%)`;
+  return `linear-gradient(145deg,${a},${b})`;
+}
+
 function ProjectsBody() {
   const e = useEditor();
   const ui = useUI();
   const [query, setQuery] = useState('');
-  const projects = e.listProjects().slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  const [sort, setSort] = useState<ProjectSort>('date');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [, force] = useState(0);
+  const projects = e.listProjects().slice();
   const elements = listElements();
   const q = query.trim().toLowerCase();
 
   const templates = [
     { name: 'Kinetic Intro', sub: 'Title animation · 9:16', w: 1080, h: 1920, a: '#8b5cf6', b: '#22d3ee', glyph: '✦' },
-    { name: 'Neon Lower Third', sub: 'Broadcast · 16:9', w: 1920, h: 1080, a: '#02ffa7', b: '#0ea5e9', glyph: '▰' },
+    { name: 'Neon Lower Third', sub: 'Broadcast · 16:9', w: 1920, h: 1080, a: '#01ffa7', b: '#0ea5e9', glyph: '▰' },
     { name: 'Photo Slideshow', sub: 'Editable layers · 4:5', w: 1080, h: 1350, a: '#fb7185', b: '#f59e0b', glyph: '▣' },
     { name: 'Glow Loop', sub: 'Effects · 1:1', w: 1080, h: 1080, a: '#22d3ee', b: '#6366f1', glyph: '✺' },
   ];
@@ -194,54 +213,182 @@ function ProjectsBody() {
     })();
   };
 
-  const filteredProjects = projects.filter(p => !q || p.name.toLowerCase().includes(q));
+  const filteredProjects = projects
+    .filter(p => !q || p.name.toLowerCase().includes(q))
+    .sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name)
+      : sort === 'duration' ? b.duration - a.duration : b.updatedAt - a.updatedAt);
   const filteredTemplates = templates.filter(t => !q || t.name.toLowerCase().includes(q));
   const filteredElements = elements.filter(el => !q || el.name.toLowerCase().includes(q));
 
+  const toggle = (id: string) => setSelected(v => v.includes(id) ? v.filter(x => x !== id) : [...v, id]);
+  const open = (id: string) => { e.openProject(id); e.setScreen('editor'); ui.setSheet('none'); };
+
+  const dateLabel = (t: number) => new Date(t).toLocaleDateString('en-GB',
+    { day: 'numeric', month: 'long', year: 'numeric' });
+  const groups = sort === 'date'
+    ? filteredProjects.reduce<Record<string, typeof filteredProjects>>((acc, p) => {
+        (acc[dateLabel(p.updatedAt)] ||= []).push(p); return acc;
+      }, {})
+    : { '': filteredProjects };
+
+  const duplicateSelected = () => {
+    let n = 0;
+    for (const id of selected) {
+      const p = loadProject(id);
+      if (!p) continue;
+      const copy = { ...p, id: uid('proj'), name: `${p.name} (copy)`,
+        createdAt: Date.now(), updatedAt: Date.now() };
+      saveProject(copy); n++;
+    }
+    e.notify(`${n} project${n === 1 ? '' : 's'} duplicated`, 'ok');
+    setSelectMode(false); setSelected([]); force(v => v + 1);
+  };
+
+  const exportSelected = async () => {
+    try {
+      const files: Record<string, Uint8Array> = {};
+      for (const id of selected) {
+        const p = loadProject(id);
+        if (!p) continue;
+        const { xml, warnings } = await projectToXml(p, e.assets);
+        const dir = safeFileName(p.name) || 'project';
+        files[`${dir}/project.xml`] = strToU8(xml);
+        files[`${dir}/README.txt`] = strToU8(
+          `EditorsHub project package\n\nName: ${p.name}\nSize: ${p.width}x${p.height}\nDuration: ${p.duration}s\nLayers: ${p.layers.length}\n\nImport project.xml from the launcher.\n${warnings.length ? `\nWarnings:\n${warnings.join('\n')}\n` : ''}`);
+      }
+      if (!Object.keys(files).length) { e.notify('Nothing to export', 'warn'); return; }
+      const blob = new Blob([zipSync(files)], { type: 'application/zip' });
+      downloadBlob(blob, `EditorsHub-projects-${selected.length}.zip`);
+      e.notify(`Exported ${selected.length} project package(s)`, 'ok');
+      setSelectMode(false); setSelected([]);
+    } catch (err) { e.notify((err as Error).message || 'Export failed', 'warn'); }
+  };
+
+  const fixSelected = () => {
+    let missing = 0;
+    for (const id of selected) {
+      const p = loadProject(id);
+      if (!p) continue;
+      missing += p.layers.filter(l => l.sourceId && !e.assets[l.sourceId]).length;
+    }
+    e.notify(missing
+      ? `${missing} missing media reference(s) found. Re-import the media to repair them.`
+      : 'No missing media references found.', missing ? 'warn' : 'ok');
+  };
+
+  const deleteSelected = () => {
+    for (const id of selected) e.deleteProject(id);
+    e.notify(`${selected.length} project${selected.length === 1 ? '' : 's'} deleted`, 'ok');
+    setConfirmDelete(false); setSelectMode(false); setSelected([]); force(v => v + 1);
+  };
+
+  const segment = ui.homeSegment;
+  const heading = segment === 'projects' ? 'Your projects' : segment === 'templates' ? 'Your templates' : 'Your elements';
+
   return (
     <div className="um-projects-body">
-      <Seg value={ui.homeSegment} onChange={ui.setHomeSegment} options={[
-        { id: 'projects', label: 'Projects' },
-        { id: 'templates', label: 'Your Templates' },
-        { id: 'elements', label: 'Elements' },
-      ]} />
+      {selectMode ? (
+        <div className="um-select-top">
+          <button type="button" title="Exit selection" onClick={() => { setSelectMode(false); setSelected([]); }}><X size={18} /></button>
+          <strong>{selected.length} selected</strong>
+          <button type="button" className="um-select-cancel" onClick={() => { setSelectMode(false); setSelected([]); }}>Cancel</button>
+        </div>
+      ) : (
+        <Seg value={ui.homeSegment} onChange={ui.setHomeSegment} options={[
+          { id: 'projects', label: 'Projects' },
+          { id: 'templates', label: 'Your Templates' },
+          { id: 'elements', label: 'Elements' },
+        ]} />
+      )}
+
+      <div className="um-list-heading">
+        <h3>{heading}</h3>
+        {segment !== 'elements' && (
+          <label className="um-sort" title="Sort projects">
+            <select value={sort} onChange={ev => setSort(ev.target.value as ProjectSort)} aria-label="Sort by">
+              <option value="date">Sort by Date</option>
+              <option value="name">Sort by Name</option>
+              <option value="duration">Sort by Duration</option>
+            </select>
+            <ChevronDown size={14} />
+          </label>
+        )}
+        {segment === 'projects' && !selectMode && (
+          <button type="button" className="um-select-toggle" title="Select projects"
+            onClick={() => setSelectMode(true)}><MoreHorizontal size={18} /></button>
+        )}
+      </div>
+
       <label className="um-search">
         <Search size={16} strokeWidth={1.7} />
         <input value={query} onChange={ev => setQuery(ev.target.value)}
-          placeholder={ui.homeSegment === 'elements' ? 'Search elements' : ui.homeSegment === 'templates' ? 'Search templates' : 'Search projects'}
+          placeholder={segment === 'elements' ? 'Search elements' : segment === 'templates' ? 'Search templates' : 'Search projects'}
           aria-label="Search" />
         {query && <button type="button" title="Clear search" onClick={() => setQuery('')}>×</button>}
       </label>
 
-      {ui.homeSegment === 'projects' && (
+      {segment === 'projects' && (
         <div className="um-list">
-          {filteredProjects.map(p => (
-            <div className="um-list-row" key={p.id}>
-              <button type="button" className="um-list-main" onClick={() => { e.openProject(p.id); e.setScreen('editor'); ui.setSheet('none'); }}>
-                <span className="um-recent-thumb">{p.name.charAt(0).toUpperCase()}</span>
-                <span><strong>{p.name}</strong><small>{p.width}×{p.height} · {p.duration.toFixed(1)}s · {p.layerCount} layers</small></span>
-              </button>
-              <IBtn title={`Delete ${p.name}`} onClick={() => e.deleteProject(p.id)}><Trash2 size={16} /></IBtn>
+          {Object.entries(groups).map(([label, items]) => (
+            <div key={label}>
+              {label && <div className="um-date-group">{label}</div>}
+              {items.map(p => (
+                <div className={`um-list-row ${selected.includes(p.id) ? 'picked' : ''}`} key={p.id}>
+                  {selectMode && (
+                    <button type="button" className="um-pick" title={`Select ${p.name}`}
+                      aria-pressed={selected.includes(p.id)} onClick={() => toggle(p.id)}>
+                      {selected.includes(p.id) ? <Check size={14} /> : null}
+                    </button>
+                  )}
+                  <button type="button" className="um-list-main"
+                    onClick={() => selectMode ? toggle(p.id) : open(p.id)}>
+                    <span className="um-recent-thumb" style={{ background: projectThumb(p.name) }}>
+                      {p.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span>
+                      <strong>{p.name}</strong>
+                      <small>{Math.floor(p.duration / 60).toString().padStart(2, '0')}:{(p.duration % 60).toFixed(0).padStart(2, '0')} · {p.width}×{p.height} · {p.layerCount} layers</small>
+                    </span>
+                  </button>
+                  {!selectMode && <span className="um-row-more" title="Project options"><MoreHorizontal size={17} /></span>}
+                </div>
+              ))}
             </div>
           ))}
           {filteredProjects.length === 0 && <p className="um-empty-note">No projects{q ? ' match that search' : ' yet'}. Tap + to create one.</p>}
         </div>
       )}
 
-      {ui.homeSegment === 'templates' && (
+      {segment === 'templates' && (
         <div className="um-template-grid">
+          {listTemplates().filter(t => !q || t.name.toLowerCase().includes(q)).map(t => (
+            <div key={t.id} className="um-template-tile saved">
+              <button type="button" className="um-template-open" onClick={() => {
+                void (async () => {
+                  try {
+                    const r = await parseMotionXml(t.xml);
+                    applyXmlResult(r, 'project'); ui.setSheet('none');
+                    e.notify(`Template “${t.name}” opened`, 'ok');
+                  } catch (err) { e.notify((err as Error).message, 'warn'); }
+                })();
+              }}>
+                <span className="um-template-art" style={{ background: projectThumb(t.name) }}>✦</span>
+                <strong>{t.name}</strong><small>{t.width}×{t.height} · {t.duration.toFixed(1)}s</small>
+              </button>
+              <IBtn title={`Delete ${t.name}`} onClick={() => { deleteTemplate(t.id); force(v => v + 1); }}><Trash2 size={15} /></IBtn>
+            </div>
+          ))}
           {filteredTemplates.map(t => (
-            <button type="button" key={t.name} className="um-template-tile"
-              onClick={() => openTemplate(t.name, t.w, t.h)}>
+            <button type="button" key={t.name} className="um-template-tile" onClick={() => openTemplate(t.name, t.w, t.h)}>
               <span className="um-template-art" style={{ background: `linear-gradient(145deg,${t.a},${t.b})` }}>{t.glyph}</span>
               <strong>{t.name}</strong><small>{t.sub}</small>
             </button>
           ))}
-          {filteredTemplates.length === 0 && <p className="um-empty-note">No templates match that search.</p>}
+          {filteredTemplates.length === 0 && listTemplates().length === 0 && <p className="um-empty-note">No templates match that search.</p>}
         </div>
       )}
 
-      {ui.homeSegment === 'elements' && (
+      {segment === 'elements' && (
         <>
           {filteredElements.length === 0 ? (
             <div className="um-empty">
@@ -263,12 +410,34 @@ function ProjectsBody() {
                     <span className="um-recent-thumb"><Sparkles size={17} /></span>
                     <span><strong>{el.name}</strong><small>{el.width}×{el.height} · saved {new Date(el.createdAt).toLocaleDateString()}</small></span>
                   </button>
-                  <IBtn title={`Delete ${el.name}`} onClick={() => deleteElement(el.id)}><Trash2 size={16} /></IBtn>
+                  <IBtn title={`Delete ${el.name}`} onClick={() => { deleteElement(el.id); force(v => v + 1); }}><Trash2 size={16} /></IBtn>
                 </div>
               ))}
             </div>
           )}
         </>
+      )}
+
+      {selectMode && (
+        <div className="um-select-actions">
+          <button type="button" onClick={() => setSelected(filteredProjects.map(p => p.id))}><Check size={17} /><span>Select All</span></button>
+          <button type="button" onClick={fixSelected}><Wrench size={17} /><span>Fix</span></button>
+          <button type="button" disabled={!selected.length} onClick={() => void exportSelected()}><Download size={17} /><span>Export</span></button>
+          <button type="button" disabled={!selected.length} onClick={duplicateSelected}><Copy size={17} /><span>Duplicate</span></button>
+          <button type="button" disabled={!selected.length} onClick={() => setConfirmDelete(true)}><Trash2 size={17} /><span>Delete</span></button>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="um-confirm">
+          <div className="um-confirm-card">
+            <Trash2 size={20} />
+            <strong>Delete {selected.length} project{selected.length === 1 ? '' : 's'}?</strong>
+            <p>{filteredProjects.filter(p => selected.includes(p.id)).map(p => p.name).slice(0, 3).join(', ')}{selected.length > 3 ? '…' : ''}</p>
+            <div><button type="button" onClick={() => setConfirmDelete(false)}>Cancel</button>
+              <button type="button" className="danger" onClick={deleteSelected}>Delete</button></div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -335,7 +504,7 @@ function SettingsBody() {
         <span className="um-link-icon light"><Music2 size={19} /></span><b>TikTok</b><ChevronRight size={17} />
       </button>
       <div className="um-settings-divider" />
-      <button type="button" className="um-link-row about" onClick={() => ui.setSheet('about')}>
+      <button type="button" className="um-link-row about" onClick={() => { ui.setSheet('none'); ui.setAboutOpen(true); }}>
         <b>About</b><ChevronRight size={17} />
       </button>
     </div>

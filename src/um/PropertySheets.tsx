@@ -478,7 +478,16 @@ function EffectsBody({ sub }: { sub: number }) {
   const groups = ['All', ...Array.from(new Set(EFFECT_DEFS.map(d => d.group)))];
   if (sub === 0) return (
     <div className="um-prop-body um-prop-scroll">
-      <div className="um-prop-heading">Add an effect</div>
+      <div className="um-prop-heading">Effect Browser</div>
+      <div className="um-browser-grid">
+        {groups.filter(g => g !== 'All').map((g, i) => (
+          <button type="button" key={g} className={group === g ? 'on' : ''}
+            onClick={() => setGroup(group === g ? 'All' : g)}>
+            <span style={{ background: `linear-gradient(145deg, hsl(${(i * 47) % 360} 60% 42%), hsl(${(i * 47 + 70) % 360} 55% 18%))` }} />
+            <strong>{g}</strong>
+          </button>
+        ))}
+      </div>
       <div className="um-group-row">
         {groups.map(g => <button type="button" key={g} className={group === g ? 'on' : ''} onClick={() => setGroup(g)}>{g}</button>)}
       </div>
