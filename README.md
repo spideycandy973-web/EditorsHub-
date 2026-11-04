@@ -7,19 +7,27 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
-**v2.4.0 UI** — Alight Motion's editor geometry, closely matched: a light **Projects** launcher
-(template carousel, welcome card with outlined pill buttons, project cards, XML upload, teal **+**
-bottom nav) and a midnight-navy **editor** whose seven transport icons span the full width, whose
-**centre-anchored playhead** stays fixed while the layers scroll underneath, and whose ruler shows
-only a plain `mm:ss:ff` timecode and short ticks. With a property panel open the top bar becomes
-**back / panel name / overflow**, the bottom tab bar is replaced by the panel, and the sheet has
-AM's `▼ property` dropdown plus a left keyframe rail and a labelled right rail ending in the big
-**X**. The Add menu has AM's six categories (Shape / Media / Audio / Object / Element / Freehand
-Drawing), an All/Browse filter rail, a two-column thumbnail grid and a labelled right rail
-(All / Vector Drawing / Text / X). **Freehand drawing is real** — strokes become a PNG image layer.
-Layer bars are flat AM colours with dark labels, a hamburger and a grey `‹` selected-layer arrow;
-the Add Layer button is a circular teal outline. EditorsHub keeps its own name, logo and original
-code — no Alight Motion assets are copied.
+**v3.0.0 UI — dark studio rebuild.** The launcher and editor were rebuilt from the ground up to
+match the supplied black/lavender reference screenshots: near-black `#0B0B0D` launcher with a
+centred bold wordmark, gear/avatar circles, a lavender **Upload XML file** button, an **Import
+Project Package** card with a URL field / lavender Import button / teal **Scan QR image** action,
+and a floating pill nav (Home · teal **+** · Projects). The Projects screen has
+Projects / Your Templates / Elements segments, a searchable Elements library and an honest empty
+state. The Settings sheet exposes Low Quality Preview, Show Off Timeline, Remember Add page,
+Default Layer Duration, Audio Resampling and working navigation rows. A bottom **Create** sheet
+offers Project / Element tabs, six ratio chips plus custom size, resolution, frame rate and
+background before a lavender **Create Project** button.
+
+The editor is a black 9:16 stage with a back/title/gear/export bar, seven thin transport icons, a
+centred `00:00:00` pill above a dotted ruler with a fixed white playhead, striped clip bars with a
+`‹` circle and keyframe diamond, a right zoom toolbar and a solid teal **+** FAB. The **Add** grid
+has Media / Text / Shape / Audio / Freehand Drawing / Vector Drawing / Element Project / Template /
+Camera / Null / Empty Group; the **Shape** picker has 18 real canvas shapes across three pages.
+Selected layers open a contextual top bar (duplicate / trash / overflow) and bottom property sheets
+with left and right rails for Move & Transform (X/Y, W/H, skew, rotation dial, cubic-bezier
+easing), Blending & Opacity, Color & Fill, Border & Shadow, Edit Shape, Presets, Effects and Camera
+Options. Every exposed control performs a real edit. EditorsHub keeps its own name, logo and
+original code — no proprietary assets are copied.
 
 ---
 
@@ -169,7 +177,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v2.4.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v3.0.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -179,4 +187,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the v2.4.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the v3.0.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).

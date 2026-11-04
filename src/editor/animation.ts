@@ -6,6 +6,20 @@ import { clamp, lerp, round, uid } from './utils';
 
 export function ease(t: number, type: Easing): number {
   t = clamp(t, 0, 1);
+  if (type.startsWith('cubic(')) {
+    const nums = type.slice(6, -1).split(',').map(Number);
+    if (nums.length === 4 && nums.every(Number.isFinite)) {
+      const [x1, y1, x2, y2] = nums.map(n => clamp(n, 0, 4));
+      const bez = (a: number, b: number, u: number) =>
+        3 * a * u * (1 - u) * (1 - u) + 3 * b * u * u * (1 - u) + u * u * u;
+      let lo = 0, hi = 1, u = t;
+      for (let i = 0; i < 24; i++) {
+        u = (lo + hi) / 2;
+        if (bez(x1, x2, u) < t) lo = u; else hi = u;
+      }
+      return bez(y1, y2, u);
+    }
+  }
   switch (type) {
     case 'linear': return t;
     case 'hold': return 0;
@@ -101,7 +115,8 @@ export function clearKeyframes(a: Anim, time: number): Anim {
 }
 
 export function isValidEasing(v: string): Easing {
-  return (EASINGS as string[]).includes(v) ? v as Easing : 'linear';
+  return (EASINGS as string[]).includes(v) || /^cubic\(-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+\)$/.test(v)
+    ? v as Easing : 'linear';
 }
 
 /** Snap a time to the project frame grid. */

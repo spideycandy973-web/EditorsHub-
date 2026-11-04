@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   AudioLines, Circle, FileInput, FileVideo2, Film, Heart, Hexagon, ImagePlus, Layers,
   Minus, Music2, Plus, Shapes, Square, Star, Trash2, Triangle, Type, Upload, X,
-  AArrowUp, LayoutGrid, WandSparkles, Brush, Undo2, Check,
+  AArrowUp, LayoutGrid, WandSparkles, Brush, Undo2, Check, Diamond, Pentagon, Sparkles,
+  Asterisk, CircleDashed, Moon, PieChart, MessageSquare, Flower2, Flag, BadgeCheck, PenTool,
 } from 'lucide-react';
 import { useEditor } from '../../editor/store';
 import { assetFromDataUrl, createSampleVideo, importMany } from '../../editor/media';
@@ -14,6 +15,13 @@ const SHAPE_ICONS: Record<ShapeKind, React.ReactNode> = {
   rectangle: <Square size={19} />, ellipse: <Circle size={19} />, triangle: <Triangle size={19} />,
   star: <Star size={19} />, polygon: <Hexagon size={19} />, line: <Minus size={19} />,
   heart: <Heart size={19} />, arrow: <Minus size={19} />,
+  rounded: <Square size={19} />, diamond: <Diamond size={19} />, pentagon: <Pentagon size={19} />,
+  hexagon: <Hexagon size={19} />, sparkle: <Sparkles size={19} />, burst: <Asterisk size={19} />,
+  cross: <Plus size={19} />, ring: <CircleDashed size={19} />, arc: <CircleDashed size={19} />,
+  crescent: <Moon size={19} />, halfCircle: <Circle size={19} />, pie: <PieChart size={19} />,
+  callout: <MessageSquare size={19} />, flower: <Flower2 size={19} />, trapezoid: <Triangle size={19} />,
+  beam: <Minus size={19} />, flag: <Flag size={19} />, seal: <BadgeCheck size={19} />,
+  customPath: <PenTool size={19} />,
 };
 
 type Cat = 'shape' | 'media' | 'audio' | 'object' | 'element' | 'drawing' | 'text';

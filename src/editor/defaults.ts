@@ -23,6 +23,7 @@ export const defaultStyle = (): LayerStyle => ({
   fit: 'cover',
   audio: false,
   loop: true,
+  pathData: '',
 });
 
 export function createEffect(type: EffectType): Effect {
@@ -110,6 +111,12 @@ export function createLayer(type: LayerType, opts: CreateLayerOptions = {}): Lay
     case 'group':
       layer.name = opts.name ?? 'Group';
       break;
+    case 'camera':
+      layer.name = opts.name ?? 'Camera 1';
+      layer.duration = opts.duration ?? 10;
+      props.scaleX.value = 100; props.scaleY.value = 100;
+      props.x.value = 0; props.y.value = 0; props.rotation.value = 0;
+      break;
   }
   return layer;
 }
@@ -117,11 +124,11 @@ export function createLayer(type: LayerType, opts: CreateLayerOptions = {}): Lay
 export function defaultName(type: LayerType): string {
   return ({
     solid: 'Solid', shape: 'Shape', text: 'Text', image: 'Image',
-    video: 'Video', audio: 'Audio', group: 'Group',
+    video: 'Video', audio: 'Audio', group: 'Group', camera: 'Camera',
   } as Record<LayerType, string>)[type];
 }
 
-export function createProject(name = 'Untitled Project', width = 1080, height = 1350): Project {
+export function createProject(name = 'Untitled Project', width = 1080, height = 1920): Project {
   const now = Date.now();
   return {
     id: uid('proj'),
@@ -130,7 +137,7 @@ export function createProject(name = 'Untitled Project', width = 1080, height = 
     height,
     fps: 30,
     duration: 10,
-    background: '#e9e9ec',
+    background: '#000000',
     layers: [],
     createdAt: now,
     updatedAt: now,

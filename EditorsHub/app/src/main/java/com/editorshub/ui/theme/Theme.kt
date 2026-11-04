@@ -2,17 +2,14 @@ package com.editorshub.ui.theme
 
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -41,11 +38,21 @@ private val DarkColors = darkColorScheme(
     error = EditorPalette.Red
 )
 
-private val LightColors = lightColorScheme(
-    primary = EditorPalette.PurpleDeep,
-    secondary = Color(0xFF0E7490),
-    background = Color(0xFFF6F7FC),
-    surface = Color.White
+// The reference design is a near-black studio UI in both system themes.
+private val LightColors = darkColorScheme(
+    primary = EditorPalette.Purple,
+    onPrimary = EditorPalette.Black,
+    secondary = EditorPalette.Cyan,
+    onSecondary = EditorPalette.Black,
+    tertiary = EditorPalette.Pink,
+    background = EditorPalette.Black,
+    onBackground = EditorPalette.TextPrimary,
+    surface = EditorPalette.Surface,
+    onSurface = EditorPalette.TextPrimary,
+    surfaceVariant = EditorPalette.SurfaceVariant,
+    onSurfaceVariant = EditorPalette.TextSecondary,
+    outline = EditorPalette.Outline,
+    error = EditorPalette.Red
 )
 
 private val AppTypography = Typography(
@@ -64,7 +71,7 @@ private val AppTypography = Typography(
 
 @Composable
 fun EditorsHubTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     uiScale: Float = 1f,
     content: @Composable () -> Unit

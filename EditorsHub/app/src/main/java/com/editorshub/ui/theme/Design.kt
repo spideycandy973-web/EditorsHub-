@@ -32,31 +32,31 @@ object EditorDimens {
 
 object EditorPalette {
     // Surfaces: deep navy → slate navy, like the Alight Motion editor.
-    val Black = Color(0xFF10141F)
-    val Charcoal = Color(0xFF1B2130)
-    val Surface = Color(0xFF1B2130)
-    val SurfaceRaised = Color(0xFF222A3B)
-    val SurfaceVariant = Color(0xFF2C3549)
-    val Outline = Color(0xFF3A4560)
-    val OutlineSoft = Color(0xFF2B3448)
-    val TextPrimary = Color(0xFFF0F3F8)
-    val TextSecondary = Color(0xFFB4BDD0)
-    val TextMuted = Color(0xFF7E8AA3)
+    val Black = Color(0xFF0B0B0D)
+    val Charcoal = Color(0xFF121214)
+    val Surface = Color(0xFF1C1C1E)
+    val SurfaceRaised = Color(0xFF262628)
+    val SurfaceVariant = Color(0xFF2A2A2D)
+    val Outline = Color(0xFF3A3A40)
+    val OutlineSoft = Color(0xFF303036)
+    val TextPrimary = Color(0xFFF3F3F6)
+    val TextSecondary = Color(0xFFC8C8D2)
+    val TextMuted = Color(0xFF92929C)
 
     // Legacy names kept so every existing screen picks up the new skin.
-    val Purple = Color(0xFF10E0A0)       // primary mint/teal accent
-    val PurpleDeep = Color(0xFF00B98A)   // darker teal
-    val Cyan = Color(0xFF4C8DFF)         // media blue
-    val Pink = Color(0xFFF5A623)         // text amber
+    val Purple = Color(0xFF02FFA7)       // primary mint/teal accent
+    val PurpleDeep = Color(0xFF00C987)   // darker teal
+    val Cyan = Color(0xFFD8DCFF)         // media blue
+    val Pink = Color(0xFFD9A15B)         // text amber
     val Amber = Color(0xFFFBBF24)
-    val Green = Color(0xFF10E0A0)
+    val Green = Color(0xFF02FFA7)
     val Red = Color(0xFFFF6B6B)
-    val Blue = Color(0xFF4C8DFF)
+    val Blue = Color(0xFFD8DCFF)
     val Coral = Color(0xFFFF6B6B)
-    val Violet = Color(0xFFA97BFF)
+    val Violet = Color(0xFFD8DCFF)
 
-    val AccentBrush = Brush.linearGradient(listOf(Color(0xFF10E0A0), Color(0xFF00B98A)))
-    val HeroBrush = Brush.linearGradient(listOf(Color(0xFF17243A), Color(0xFF14283A), Color(0xFF182036)))
+    val AccentBrush = Brush.linearGradient(listOf(Color(0xFF02FFA7), Color(0xFF00C987)))
+    val HeroBrush = Brush.linearGradient(listOf(Color(0xFF1C1C1E), Color(0xFF121214), Color(0xFF262628)))
     val GlowBrush = Brush.radialGradient(listOf(Color(0x3310E0A0), Color.Transparent))
 }
 

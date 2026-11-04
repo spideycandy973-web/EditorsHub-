@@ -1,1 +1,1 @@
-Rebuild the Capacitor Android APK for EditorsHub v2.4.0 (package com.editorshub).
+Rebuild the Capacitor Android APK for EditorsHub v3.0.0 (package com.editorshub, black/lavender studio UI).

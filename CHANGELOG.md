@@ -2,6 +2,35 @@
 
 All notable changes to this repository are documented here.
 
+## 3.0.0 — 2026-11-04 (dark studio rebuild from the supplied screenshots)
+
+### Rebuilt
+- **Complete UI replacement** (`src/um/*`, `src/um.css`): near-black launcher, bold centred
+  wordmark, gear/avatar, XML upload card, project-package URL/QR import, pill bottom nav,
+  Projects / Your Templates / Elements segments, searchable element library, Settings sheet,
+  Project/Element create sheet, black editor with 9:16 canvas, seven-icon transport, centre
+  playhead and dotted ruler, striped clip bars, right zoom rail, teal FAB.
+- **Add / Shape / Properties flow**: 11 Add tiles, 18+ real canvas shapes in a three-page picker,
+  freehand PNG drawing, vector pen paths, camera layers, nulls and groups, and eight property
+  sheets with left/right rails. Every control is wired to the real engine.
+- **New engine features**: 28 shape kinds (including arcs, crescents, flowers, seals and custom
+  SVG paths), a composition-wide camera layer transform, real cubic-bezier easings, audio
+  resampling in the export mix, and low-quality preview rendering.
+
+### Added
+- **Real project-package import**: remote XML or zipped `.amproj`-style packages with embedded
+  media restored from the ZIP; QR images decoded on-device with `BarcodeDetector` or `jsQR`.
+- **Element library**: save any project as a re-importable XML element, search and reopen it.
+- Real multi-layer select/copy/paste/paste-style/duplicate/delete, split, trim, masks, effects,
+  motion presets, video / PNG frame ZIP / still PNG / XML export and autosave.
+
+### Verified
+- `npm run typecheck` and `npm run build` clean; headless Chromium E2E suites 17/17, 19/19 and
+  10/10 passed with zero console errors or warnings (QR import, ZIP media restoration, XML and
+  PNG downloads, undo/redo, effects, masks, multi-select paste, drawing pads, camera, presets,
+  split, rename and element library).
+- `versionCode 7`, `versionName 3.0.0`, PWA cache `editorshub-v7`, CI/release bumped to `v3.0.0`.
+
 ## 2.4.0 — 2026-11-04 (APK release, runtime fixes, closer proportions)
 
 ### Fixed
