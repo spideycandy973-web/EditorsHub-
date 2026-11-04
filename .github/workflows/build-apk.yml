@@ -81,18 +81,15 @@ jobs:
           if-no-files-found: error
 
       - name: Publish APK to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-latest
-          name: EditorsHub — Android APK
-          body: |
-            Installable debug-signed Android APK for EditorsHub.
-            Built from the Capacitor Android wrapper by GitHub Actions.
-          files: EditorsHub-Motion.apk
-          draft: false
-          prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view apk-latest >/dev/null 2>&1; then
+            gh release create apk-latest \
+              --title 'EditorsHub — Android APK' \
+              --notes 'Installable debug-signed Android APK for EditorsHub. Built from the Capacitor Android wrapper by GitHub Actions.'
+          fi
+          gh release upload apk-latest EditorsHub-Motion.apk --clobber
 
       - name: Attach APK to versioned and rolling releases
         if: success()
