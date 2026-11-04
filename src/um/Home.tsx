@@ -279,7 +279,7 @@ export function Home() {
   return (
     <div className="um-screen um-home">
       <Header />
-      {ui.homeTab === 'home' ? <HomeBody /> : <ProjectsBody />}
+      {ui.homeTab === 'home' ? <HomeBody key="home-tab" /> : <ProjectsBody key="projects-tab" />}
       <Nav />
       {ui.sheet === 'settings' && <><Backdrop onClick={() => ui.setSheet('none')} /><Sheet variant="floating" title="Settings" className="um-settings-card"><SettingsBody /></Sheet></>}
     </div>
@@ -305,6 +305,11 @@ function SettingsBody() {
         <button type="button" role="switch" aria-checked={prefs.rememberAddPage} title="Remember Add page"
           className={`um-toggle ${prefs.rememberAddPage ? 'on' : ''}`}
           onClick={() => setPrefs({ ...prefs, rememberAddPage: !prefs.rememberAddPage })}><span /></button>
+      </div>
+      <div className="um-row"><span>Device chrome <i className="um-info">ⓘ</i></span>
+        <button type="button" role="switch" aria-checked={prefs.showDeviceChrome} title="Device chrome (status + gesture bar)"
+          className={`um-toggle ${prefs.showDeviceChrome ? 'on' : ''}`}
+          onClick={() => setPrefs({ ...prefs, showDeviceChrome: !prefs.showDeviceChrome })}><span /></button>
       </div>
       <div className="um-row">
         <span>Default Layer Duration</span>

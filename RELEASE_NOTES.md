@@ -1,3 +1,43 @@
+# EditorsHub v3.3.0 — reference chrome + video frame-audit tooling
+
+Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.
+
+## What's new in 3.3.0
+
+- **Device chrome matched to the reference frames.** Every 1220 × 2712 still shows the Android
+  status strip (time, network, signal, Wi-Fi, battery) and the bottom gesture pill. The browser/PWA
+  shell now reproduces both. `src/um/Chrome.tsx` shows only real data: the local clock, battery
+  level/charging state from the Battery Status API, and signal/Wi-Fi state from Network Information
+  and online/offline events. Unsupported values are omitted, never invented. On native Android the
+  web chrome is hidden so the OS chrome is not drawn twice.
+- **Real control, not decoration.** Settings gained a working **Device chrome** switch that
+  persists with the other preferences. `prefers-reduced-motion` disables all new animations.
+- **Screen and tab transitions.** Home ↔ editor and Home ↔ Projects now animate; tab panes are
+  keyed so the transition replays on every switch.
+- **Frame-audit pipeline.** `tools/video-frames.mjs` accepts the split recording parts, rebuilds
+  the continuous 10:29.66 timeline, extracts one review frame per second plus every scene change,
+  and writes a browsable `analysis/contact-sheet.html` with `manifest.json`, `scenes.json` and
+  `frames.json`. Generated frames are excluded from Git.
+- **Honest audit status.** The source recording is `Screenrecorder-2026-11-04-20-36-00-405.mp4`,
+  301,626,146 bytes, 629,660 ms, 1220 × 2712. It exceeds the agent workspace's 100 MiB per-file
+  transfer limit; Drive's unauthenticated download redirects to sign-in. See
+  [docs/VIDEO_AUDIT.md](docs/VIDEO_AUDIT.md) for every route attempted and
+  [docs/VIDEO_SPLIT_GUIDE.md](docs/VIDEO_SPLIT_GUIDE.md) for exact 3-part split commands.
+  **No video frames have been watched**; the full pixel-by-pixel video pass begins when the parts
+  arrive. This release is built from the 20 attached still references only.
+- `versionCode 10`, `versionName 3.3.0`, PWA cache `editorshub-v10`. `npm run typecheck` and
+  `npm run build` are clean.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, package `com.editorshub`) is the installable web editor build;
+it is attached to `apk-latest`, `v3.3.0` and `editorshub-latest` and committed at the repo root.
+`EditorsHub-debug.apk` is the native Compose build; release APK/AAB are unsigned by design —
+configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run `android-release.yml` with
+keystore secrets. `EditorsHub-source-v3.3.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v3.2.0 — responsive, fully wired editor
 
 A correctness and responsiveness pass over v3.1.0. Package remains `com.editorshub`, application

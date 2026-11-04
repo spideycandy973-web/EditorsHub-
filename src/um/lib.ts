@@ -19,6 +19,7 @@ export interface Preferences {
   defaultLayerDuration: number;
   audioResampling: 'low' | 'high' | 'ultra';
   addPage: 'add' | 'shape' | 'templates';
+  showDeviceChrome: boolean;
 }
 
 const PREF_KEY = 'editorshub.ultra.preferences.v1';
@@ -29,6 +30,7 @@ export const DEFAULT_PREFS: Preferences = {
   defaultLayerDuration: 2,
   audioResampling: 'ultra',
   addPage: 'add',
+  showDeviceChrome: true,
 };
 
 export function loadPrefs(): Preferences {

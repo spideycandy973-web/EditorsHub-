@@ -32,3 +32,6 @@ EditorsHub/.cxx/
 
 # CI scratch logs
 ci-logs/
+
+# Offline reference-recording frame analysis (generated, large)
+analysis/

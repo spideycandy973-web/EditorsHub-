@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/9b71f21a-editorshub
+      - arena/a5fead45-editorshub
     # Narrow trigger so a web/Capacitor rebuild does not race the native CI push.
     paths:
       - '.github/workflows/build-apk.yml'
@@ -96,7 +96,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload v3.2.0 EditorsHub-Motion.apk --clobber || true
+          gh release upload v3.3.0 EditorsHub-Motion.apk --clobber || true
           gh release upload editorshub-latest EditorsHub-Motion.apk --clobber || true
 
       - name: Add APK to repository
@@ -106,14 +106,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f EditorsHub-Motion.apk
           git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
-          git pull origin arena/9b71f21a-editorshub --no-rebase || true
+          git pull origin arena/a5fead45-editorshub --no-rebase || true
           pushed=0
           for attempt in 1 2 3; do
-            if git push origin HEAD:arena/9b71f21a-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:arena/a5fead45-editorshub; then pushed=1; break; fi
             echo "push attempt $attempt failed; retrying"
             sleep 10
-            git fetch origin arena/9b71f21a-editorshub
-            git pull origin arena/9b71f21a-editorshub --no-rebase || true
+            git fetch origin arena/a5fead45-editorshub
+            git pull origin arena/a5fead45-editorshub --no-rebase || true
           done
           [ "$pushed" = "1" ]
 

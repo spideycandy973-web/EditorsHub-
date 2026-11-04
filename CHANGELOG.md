@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.3.0 — reference chrome + video frame-audit tooling (2026-11-04)
+
+- Added a reproduction of the device chrome present in all 20 reference frames: status strip
+  (clock, signal bars, Wi-Fi, battery capsule) and bottom gesture pill. `src/um/Chrome.tsx` reads
+  real values from `Date`, the Battery Status API and the Network Information API; unsupported
+  fields are omitted instead of faked. Native Android builds suppress it so the OS chrome is not
+  duplicated.
+- Added a real `Device chrome` switch in Settings (`Preferences.showDeviceChrome`, persisted).
+- Added screen and tab transition animations with `prefers-reduced-motion` support; tab bodies are
+  keyed so the animation replays on every Home/Projects switch.
+- Added `tools/video-frames.mjs`: joins split MP4 parts into one timeline, extracts 1 fps review
+  frames and scene changes, and writes `analysis/manifest.json`, `scenes.json`, `frames.json` and
+  `contact-sheet.html`. Generated frames are gitignored.
+- Added `docs/VIDEO_SPLIT_GUIDE.md` (exact lossless and re-encode split commands) and
+  `docs/VIDEO_AUDIT.md` (verified recording metadata, every failed download route, definition of
+  done). The 301,626,146-byte Drive file exceeds the 100 MiB per-file transfer limit, so frame
+  analysis is explicitly marked pending rather than claimed as complete.
+- CI/release branch moved to `arena/a5fead45-editorshub` and tag to `v3.3.0`.
+- `versionCode 10`, `versionName 3.3.0`, PWA cache `editorshub-v10`.
+
 ## 3.2.0 — responsive, fully wired editor (2026-11-04)
 
 - Fixed dead timeline controls (eye, clip-back, keyframe, trim) caused by the timeline's pointer

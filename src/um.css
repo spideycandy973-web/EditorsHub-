@@ -28,6 +28,9 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Form controls must include their padding in an explicit 100% width,
+ * otherwise the launcher URL field overflows its card. */
+input, select, textarea { box-sizing: border-box; }
 button { cursor: pointer; border: none; background: none; }
 input, textarea { user-select: text; }
 input[type="number"] { -moz-appearance: textfield; }
@@ -54,7 +57,47 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 @media (min-width: 560px) and (min-height: 700px) {
   .um-phone { border-radius: 26px; box-shadow: 0 24px 90px rgba(0,0,0,.8), 0 0 0 1px #242428; }
 }
-.um-screen { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.um-screen {
+  position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;
+  animation: um-screen-in .23s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes um-screen-in { from { opacity: .45; transform: translateY(7px) scale(.994); } }
+@keyframes um-tab-in { from { opacity: 0; transform: translateX(12px); } }
+.um-home-body, .um-projects-body { animation: um-tab-in .19s cubic-bezier(.2,.8,.2,1) both; }
+
+/* -------------------------- device chrome (browser) ------------------------ *
+ * Reproduces the status strip and gesture pill visible in the 1220 x 2712
+ * reference frames. Values come from real browser APIs (see Chrome.tsx). */
+.um-statusbar {
+  flex: none; height: 34px; z-index: 120; pointer-events: none; user-select: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 17px 0 21px; color: #fff; background: var(--um-home);
+}
+.um-phone.in-editor .um-statusbar { background: #000; }
+.um-sb-time { font-size: 12px; font-weight: 700; letter-spacing: .2px; font-variant-numeric: tabular-nums; }
+.um-sb-right { display: flex; align-items: center; gap: 5px; height: 14px; }
+.um-sb-bars { display: flex; align-items: flex-end; gap: 1.5px; height: 12px; }
+.um-sb-bars i { display: block; width: 2.5px; border-radius: 1px 1px 0 0; background: #fff; }
+.um-sb-wifi { width: 13px; height: 10px; fill: #fff; display: block; }
+.um-sb-battery {
+  position: relative; display: inline-grid; place-items: center; min-width: 19px; height: 12px;
+  padding: 0 2px; border-radius: 3px; background: #fff; color: #050505;
+  font-size: 8px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.um-sb-battery::after {
+  content: ''; position: absolute; right: -3px; top: 3px; width: 2px; height: 6px;
+  border-radius: 0 2px 2px 0; background: rgba(255,255,255,.6);
+}
+.um-gesturebar {
+  flex: none; height: 20px; z-index: 120; pointer-events: none;
+  display: grid; place-items: center; background: var(--um-home);
+}
+.um-phone.in-editor .um-gesturebar { background: #000; }
+.um-gesturebar i { width: 150px; height: 3.5px; border-radius: 4px; background: rgba(255,255,255,.78); }
+
+@media (prefers-reduced-motion: reduce) {
+  .um-screen, .um-home-body, .um-projects-body, .um-sheet { animation-duration: .01ms !important; }
+}
 
 /* ----------------------------- generic controls --------------------------- */
 .um-iconbtn {
@@ -136,7 +179,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-package-title strong { display: block; font-size: 16.5px; }
 .um-package-title small { display: block; font-size: 11.5px; color: var(--um-muted); margin-top: 2px; }
 .um-input {
-  width: 100%; height: 44px; border-radius: 22px; border: none;
+  width: 100%; height: 44px; border-radius: 13px; border: none;
   background: var(--um-input); padding: 0 16px; font-size: 13.5px; color: #f4f4f8;
   outline: none;
 }
@@ -144,7 +187,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-input:focus { box-shadow: 0 0 0 1px #4a4a55; }
 .um-package-card .um-lavender { margin-top: 12px; }
 .um-qr {
-  width: 100%; height: 42px; margin-top: 10px; border-radius: 21px;
+  width: 100%; height: 42px; margin-top: 10px; border-radius: 13px;
   background: var(--um-input); color: var(--um-teal); font-size: 13px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }

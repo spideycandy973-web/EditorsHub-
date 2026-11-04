@@ -1,3 +1,5 @@
-Rebuild the Capacitor Android APK for EditorsHub v3.2.0 (package com.editorshub).
-Attach EditorsHub-Motion.apk to v3.2.0 now that the native release exists.
+Rebuild the Capacitor Android APK for EditorsHub v3.3.0 (package com.editorshub).
+Attach EditorsHub-Motion.apk to v3.3.0 now that the native release exists.
 Responsive store, fully wired controls and the aligned editing UI.
+Second trigger: the first APK run finished before the v3.3.0 release was
+published, so the versioned release needs the installable Capacitor APK attached.
