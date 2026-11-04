@@ -1,8 +1,6 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { editor } from './editor/store';
-import './index.css';
 import './um.css';
 
 // Exposed for debugging/automation; the editor is fully usable without it.
@@ -11,11 +9,7 @@ import './um.css';
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element missing');
 
-createRoot(root).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+createRoot(root).render(<App />);
 
 /* Register a tiny offline service worker when served over http(s). */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

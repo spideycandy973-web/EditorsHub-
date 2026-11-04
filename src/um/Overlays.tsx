@@ -68,9 +68,6 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
     e.saveNow();
     e.setScreen('editor');
     ui.setSheet('none');
-    e.notify(tab === 'element'
-      ? 'Element canvas ready — save it from Project Settings when you are done'
-      : `Project “${name || 'New Project'}” created`, 'ok');
     onDone();
   };
 
@@ -85,11 +82,11 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
         {RATIOS.map(r => (
           <button type="button" key={r.id} className={`um-ratio ${!custom && ratio === r.id ? 'on' : ''}`}
             onClick={() => { setRatio(r.id); setCustom(false); }}>
-            <span>{r.label}</span>
+            <i className="um-crop" /><span>{r.label}</span>
           </button>
         ))}
         <button type="button" className={`um-ratio ${custom ? 'on' : ''}`} title="Custom size"
-          onClick={() => setCustom(true)}><span>✎</span></button>
+          onClick={() => setCustom(true)}><i className="um-crop" /><span>✎</span></button>
       </div>
       {custom && (
         <div className="um-custom-size">
@@ -458,7 +455,8 @@ export function Overlays() {
   return (
     <>
       <Backdrop onClick={close} />
-      <Sheet variant={c.variant} title={c.title || undefined} onClose={close} className={`um-overlay-sheet um-overlay-${sheet}`}>
+      <Sheet variant={c.variant} title={c.title || undefined}
+        onClose={sheet === 'create' ? undefined : close} className={`um-overlay-sheet um-overlay-${sheet}`}>
         {c.body}
       </Sheet>
     </>

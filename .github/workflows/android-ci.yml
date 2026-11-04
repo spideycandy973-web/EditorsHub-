@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/0bec11e2-editorshub
+      - arena/78bc8dd9-editorshub
     paths:
       - 'EditorsHub/**'
       - 'ci/smoke.sh'
@@ -59,7 +59,7 @@ jobs:
           cp android-build.log ci-logs/android-build.log 2>/dev/null || true
           git add -f ci-logs/ || true
           git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/0bec11e2-editorshub || true
+          git push origin HEAD:arena/78bc8dd9-editorshub || true
 
       - name: Collect artifacts
         if: success()
@@ -74,9 +74,9 @@ jobs:
         if: success()
         # Source only: exclude committed build outputs so the ZIP stays small.
         run: |
-          git archive --format=zip --prefix=EditorsHub-v3.0.0/ HEAD -- \
+          git archive --format=zip --prefix=EditorsHub-v3.1.0/ HEAD -- \
             . ':(exclude)artifacts' ':(exclude)artifacts/**' \
-            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v3.0.0.zip
+            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v3.1.0.zip
           ls -lh artifacts/
 
       - name: Upload artifact bundle
@@ -101,24 +101,24 @@ jobs:
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v3.0.0.zip
+            artifacts/EditorsHub-source-v3.1.0.zip
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish versioned release v3.0.0
+      - name: Publish versioned release v3.1.0
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.0.0
-          name: EditorsHub v3.0.0 — dark studio rebuild
+          tag_name: v3.1.0
+          name: EditorsHub v3.1.0 — smooth, pixel-aligned studio
           body_path: RELEASE_NOTES.md
           files: |
             artifacts/EditorsHub-debug.apk
             artifacts/EditorsHub-release-unsigned.apk
             artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v3.0.0.zip
+            artifacts/EditorsHub-source-v3.1.0.zip
           draft: false
           prerelease: false
         env:
@@ -132,9 +132,9 @@ jobs:
           git add -f artifacts/
           git commit -m "build: add Android APK + AAB [skip ci]" || echo "artifacts already committed"
           # The Capacitor APK workflow may have pushed to this branch in parallel.
-          git fetch origin arena/0bec11e2-editorshub
-          git pull origin arena/0bec11e2-editorshub --no-rebase || true
-          git push origin HEAD:arena/0bec11e2-editorshub
+          git fetch origin arena/78bc8dd9-editorshub
+          git pull origin arena/78bc8dd9-editorshub --no-rebase || true
+          git push origin HEAD:arena/78bc8dd9-editorshub
 
   # Verifies the debug APK actually launches on a real Android system image.
   # Verifies the v2.0.0 launch-crash fix still holds after every UI change.
@@ -183,8 +183,8 @@ jobs:
           else
             echo "no diagnostics file was produced" > ci-logs/smoke-diagnostics.txt
           fi
-          git fetch origin arena/0bec11e2-editorshub
-          git reset --hard origin/arena/0bec11e2-editorshub
+          git fetch origin arena/78bc8dd9-editorshub
+          git reset --hard origin/arena/78bc8dd9-editorshub
           git add -f ci-logs/
           git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
-          git push origin HEAD:arena/0bec11e2-editorshub || true
+          git push origin HEAD:arena/78bc8dd9-editorshub || true

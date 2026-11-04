@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import {
-  ArrowLeft, Brush, Camera, ChevronRight, Circle, Copy, Diamond, FileCode2,
-  FolderOpen, Layers, Music2, PenTool, Plus, Scissors, Shapes, Sparkles, Square,
-  Trash2, Type, WandSparkles, X,
+  ArrowLeft, Camera, ChevronRight, Copy, Diamond, FileCode2, Images,
+  FolderOpen, Layers, LayoutTemplate, Music2, PencilLine, PenTool, Plus,
+  Scissors, Shapes, Sparkles, Triangle, Trash2, Type, X,
 } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import { SHAPE_PICKER, type Layer, type ShapeKind } from '../editor/types';
@@ -18,14 +18,14 @@ let layerClipboard: Layer[] | null = null;
 let clipboardVersion = 0;
 
 const ADD_TILES = [
-  { id: 'media', label: 'Media', icon: <WandSparkles size={21} strokeWidth={1.5} />, arrow: true },
+  { id: 'media', label: 'Media', icon: <Images size={21} strokeWidth={1.5} />, arrow: true },
   { id: 'text', label: 'Text', icon: <Type size={21} strokeWidth={1.5} /> },
   { id: 'shape', label: 'Shape', icon: <Shapes size={21} strokeWidth={1.5} />, arrow: true },
   { id: 'audio', label: 'Audio', icon: <Music2 size={21} strokeWidth={1.5} />, arrow: true },
-  { id: 'freehand', label: 'Freehand Drawing', icon: <Brush size={21} strokeWidth={1.5} /> },
+  { id: 'freehand', label: 'Freehand Drawing', icon: <PencilLine size={21} strokeWidth={1.5} /> },
   { id: 'vector', label: 'Vector Drawing', icon: <PenTool size={21} strokeWidth={1.5} /> },
-  { id: 'element', label: 'Element / Project', icon: <Circle size={21} strokeWidth={1.5} />, arrow: true },
-  { id: 'template', label: 'Template', icon: <Square size={21} strokeWidth={1.5} />, arrow: true, badge: 'NEW' },
+  { id: 'element', label: 'Element / Project', icon: <Triangle size={21} strokeWidth={1.5} />, arrow: true },
+  { id: 'template', label: 'Template', icon: <LayoutTemplate size={21} strokeWidth={1.5} />, arrow: true, badge: 'NEW' },
 ] as const;
 
 function AddSheet() {
@@ -57,7 +57,7 @@ function AddSheet() {
   };
 
   return (
-    <Sheet variant="floating" title="Add" onClose={() => { ui.setSheet('none'); ui.setAddPage('add'); }} className="um-add-sheet">
+    <Sheet variant="floating" title="Add" className="um-add-sheet">
       <div className="um-add-grid">
         {ADD_TILES.map(t => (
           <button type="button" key={t.id} className="um-add-tile" onClick={() => action(t.id)}>
@@ -73,7 +73,7 @@ function AddSheet() {
           e.addLayer('camera', { name: `Camera ${e.project.layers.filter(l => l.type === 'camera').length + 1}`, duration: e.project.duration });
           openProps();
         }}>
-          <Camera size={17} strokeWidth={1.6} /> Camera {cameraExists && <i className="um-teal-dot" />}
+          <Camera size={17} strokeWidth={1.6} /> Camera <i className="um-teal-dot" />
         </button>
         <button type="button" className="um-add-pill" onClick={() => { e.addLayer('group', { name: 'Null', duration: dur }); openProps(); }}>
           <Plus size={17} strokeWidth={1.6} /> Null
@@ -102,9 +102,15 @@ function ShapeSheet() {
   const [page, setPage] = useState(0);
   const dur = ui.prefs.defaultLayerDuration;
 
-  const pick = (shape: ShapeKind) => {
+  const labelOf = (shape: ShapeKind) =>
+    (SHAPE_PICKER.find(x => x.kind === shape)?.label ?? 'Shape')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  const nextName = (base: string) =>
+    `${base} ${e.project.layers.filter(l => l.name.startsWith(base)).length + 1}`;
+
+  const pick = (shape: ShapeKind, label?: string) => {
     if (shape === 'customPath') { ui.setSheet('vector'); return; }
-    const id = e.addLayer('shape', { shape, duration: dur, color: '#d9a15b' });
+    const id = e.addLayer('shape', { shape, name: nextName(label ?? labelOf(shape)), duration: dur, color: '#d9a15b' });
     e.setStyle(id, { fillType: 'solid', color: '#d9a15b', strokeColor: '#ffffff' });
     e.setProp(id, 'cornerRadius', shape === 'rounded' || shape === 'rectangle' ? 110 : 60);
     e.setProp(id, 'strokeWidth', shape === 'line' || shape === 'beam' ? 8 : 5);
@@ -122,18 +128,18 @@ function ShapeSheet() {
 
   return (
     <Sheet variant="floating" title="Shape" onBack={() => { ui.setSheet('add'); ui.setAddPage('add'); }}
-      onClose={() => { ui.setSheet('none'); ui.setAddPage('shape'); }} className="um-shape-sheet">
+      className="um-shape-sheet">
       <div className="um-shape-grid">
         {pageItems.map((item, i) => (
           <button type="button" key={`${item.label}-${i}`} title={item.label} className="um-shape-cell"
             onClick={() => {
               if (item.n !== undefined) {
-                const id = e.addLayer('shape', { shape: item.shape, duration: dur, color: '#d9a15b' });
+                const id = e.addLayer('shape', { shape: item.shape, name: nextName(item.label), duration: dur, color: '#d9a15b' });
                 e.setStyle(id, { fillType: 'solid', color: '#d9a15b', strokeColor: '#ffffff' });
                 e.setProp(id, 'strokeWidth', 5);
                 e.setProp(id, item.shape === 'star' ? 'starPoints' : 'polygonSides', item.n);
                 ui.setSheet('properties');
-              } else pick(item.shape);
+              } else pick(item.shape, item.label.replace(/\b\w/g, c => c.toUpperCase()));
             }}>
             <ShapeGlyph kind={item.shape} size={34} />
           </button>

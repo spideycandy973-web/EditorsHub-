@@ -1,2 +1,3 @@
-Rebuild the Capacitor Android APK for EditorsHub v3.0.0 (package com.editorshub, black/lavender studio UI).
-Release asset refresh: attach EditorsHub-Motion.apk to v3.0.0 after the native release is published.
+Rebuild the Capacitor Android APK for EditorsHub v3.1.0 (package com.editorshub).
+Includes the demand-driven compositor and the pixel-aligned launcher/editor UI.
+Attach EditorsHub-Motion.apk to v3.1.0 after the native release is published.

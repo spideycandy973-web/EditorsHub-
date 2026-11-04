@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import {
-  ChevronRight, FileArchive, FolderOpen, Globe2, Home as HomeIcon, Plus,
-  QrCode, Search, Settings2, Sparkles, Trash2, Upload, UserRound,
+  Box, ChevronRight, FileUp, Globe2, House, Music2, Plus, QrCode, Search,
+  Send, Settings, Sparkles, SquarePlay, Trash2, UserRound,
 } from 'lucide-react';
-import { editor, useEditor } from '../editor/store';
+import { useEditor } from '../editor/store';
 import { createDemoProject } from '../editor/defaults';
 import { useUI } from './context';
 import { Backdrop, Btn, IBtn, Seg, Sheet } from './widgets';
@@ -19,7 +19,7 @@ function Nav() {
     <nav className="um-nav">
       <button type="button" className={ui.homeTab === 'home' ? 'on' : ''}
         onClick={() => { ui.setHomeTab('home'); ui.setSheet('none'); }}>
-        <HomeIcon size={19} strokeWidth={1.8} /><span>Home</span>
+        <House size={19} strokeWidth={1.9} fill="currentColor" /><span>Home</span>
       </button>
       <button type="button" className="um-nav-plus" title="Create project or element"
         onClick={() => { ui.setCreateTab('project'); ui.setSheet('create'); }}>
@@ -27,7 +27,7 @@ function Nav() {
       </button>
       <button type="button" className={ui.homeTab === 'projects' ? 'on' : ''}
         onClick={() => { ui.setHomeTab('projects'); ui.setSheet('none'); }}>
-        <FolderOpen size={19} strokeWidth={1.8} /><span>Projects</span>
+        <SquarePlay size={19} strokeWidth={1.8} /><span>Projects</span>
       </button>
     </nav>
   );
@@ -37,15 +37,15 @@ function Header() {
   const ui = useUI();
   return (
     <header className="um-home-header">
-      <IBtn title="Settings" onClick={() => ui.setSheet('settings')} className="um-round">
-        <Settings2 size={20} strokeWidth={1.7} />
+      <IBtn title="Settings" onClick={() => ui.setSheet('settings')} className="um-gear">
+        <Settings size={23} strokeWidth={1.8} />
       </IBtn>
       <div className="um-wordmark">
         <strong>EDITORS HUB</strong>
-        <span>motion studio · editorshub.app</span>
+        <span>editorshub.app</span>
       </div>
-      <IBtn title="About EditorsHub" onClick={() => ui.setSheet('about')} className="um-round um-avatar">
-        <UserRound size={20} strokeWidth={1.7} />
+      <IBtn title="About EditorsHub" onClick={() => ui.setSheet('about')} className="um-avatar-solid">
+        <UserRound size={20} strokeWidth={1.8} />
       </IBtn>
     </header>
   );
@@ -105,18 +105,18 @@ function ImportCard() {
   return (
     <>
       <div className="um-card um-upload-card">
-        <span className="um-card-icon um-icon-xml"><FileArchive size={24} strokeWidth={1.5} /></span>
-        <div className="um-card-copy"><strong>Upload XML file</strong><small>Open a project or element preset</small></div>
+        <span className="um-card-icon um-icon-plain um-icon-xml"><FileUp size={31} strokeWidth={1.7} /></span>
+        <div className="um-card-copy"><strong>Upload XML file</strong></div>
         <button type="button" className="um-lavender small" disabled={busy}
           onClick={() => fileRef.current?.click()}>Upload</button>
       </div>
 
       <div className="um-card um-package-card">
         <div className="um-package-title">
-          <span className="um-card-icon"><Globe2 size={22} strokeWidth={1.5} /></span>
+          <span className="um-card-icon um-icon-plain"><Box size={26} strokeWidth={1.6} /></span>
           <div><strong>Import Project Package</strong><small>Paste a link or scan the QR code.</small></div>
         </div>
-        <input className="um-input" placeholder="https://alight…" aria-label="Project package link"
+        <input className="um-input" placeholder="https://alight..." aria-label="Project package link"
           value={ui.importUrl} onChange={ev => ui.setImportUrl(ev.target.value)} />
         <button type="button" className="um-lavender" disabled={busy} onClick={() => void handleImport()}>
           {busy ? 'Importing…' : 'Import'}
@@ -281,7 +281,7 @@ export function Home() {
       <Header />
       {ui.homeTab === 'home' ? <HomeBody /> : <ProjectsBody />}
       <Nav />
-      {ui.sheet === 'settings' && <><Backdrop onClick={() => ui.setSheet('none')} /><Sheet variant="floating" title="Settings" onClose={() => ui.setSheet('none')} className="um-settings-card"><SettingsBody /></Sheet></>}
+      {ui.sheet === 'settings' && <><Backdrop onClick={() => ui.setSheet('none')} /><Sheet variant="floating" title="Settings" className="um-settings-card"><SettingsBody /></Sheet></>}
     </div>
   );
 }
@@ -296,12 +296,12 @@ function SettingsBody() {
           className={`um-toggle ${prefs.lowQualityPreview ? 'on' : ''}`}
           onClick={() => setPrefs({ ...prefs, lowQualityPreview: !prefs.lowQualityPreview })}><span /></button>
       </div>
-      <div className="um-row"><span>Show Off Timeline ⓘ</span>
+      <div className="um-row"><span>Show Off Timeline <i className="um-info">ⓘ</i></span>
         <button type="button" role="switch" aria-checked={prefs.showOffTimeline} title="Show Off Timeline"
           className={`um-toggle ${prefs.showOffTimeline ? 'on' : ''}`}
           onClick={() => setPrefs({ ...prefs, showOffTimeline: !prefs.showOffTimeline })}><span /></button>
       </div>
-      <div className="um-row"><span>Remember Add page ⓘ</span>
+      <div className="um-row"><span>Remember Add page <i className="um-info">ⓘ</i></span>
         <button type="button" role="switch" aria-checked={prefs.rememberAddPage} title="Remember Add page"
           className={`um-toggle ${prefs.rememberAddPage ? 'on' : ''}`}
           onClick={() => setPrefs({ ...prefs, rememberAddPage: !prefs.rememberAddPage })}><span /></button>
@@ -318,19 +318,16 @@ function SettingsBody() {
       <div className="um-settings-label">Audio Resampling</div>
       <Seg value={prefs.audioResampling} onChange={v => setPrefs({ ...prefs, audioResampling: v })}
         options={[{ id: 'low', label: 'Low' }, { id: 'high', label: 'High' }, { id: 'ultra', label: 'Ultra' }]} />
-      <div className="um-settings-brand">✦ EDITORS HUB ✦</div>
+      <div className="um-settings-brand"><span />✦ EDITORS HUB ✦<span /></div>
+      <div className="um-settings-divider" />
       <button type="button" className="um-link-row" onClick={() => window.open('https://github.com/spideycandy973-web/EditorsHub-', '_blank', 'noopener')}>
-        <span className="um-link-icon light"><Globe2 size={17} /></span><b>Website</b><ChevronRight size={17} />
+        <span className="um-link-icon light"><Globe2 size={19} /></span><b>Website</b><ChevronRight size={17} />
       </button>
-      <button type="button" className="um-link-row" onClick={() => window.open('https://github.com/spideycandy973-web/EditorsHub-/releases', '_blank', 'noopener')}>
-        <span className="um-link-icon blue"><Upload size={17} /></span><b>Downloads & updates</b><ChevronRight size={17} />
+      <button type="button" className="um-link-row" onClick={() => window.open('https://t.me/', '_blank', 'noopener')}>
+        <span className="um-link-icon light"><Send size={19} /></span><b>Telegram</b><ChevronRight size={17} />
       </button>
-      <button type="button" className="um-link-row" onClick={() => {
-        const url = 'https://github.com/spideycandy973-web/EditorsHub-';
-        void navigator.clipboard?.writeText(url).then(() => editor.notify('Project link copied', 'ok'))
-          .catch(() => editor.notify(url, 'info'));
-      }}>
-        <span className="um-link-icon dark"><QrCode size={17} /></span><b>Share this app</b><ChevronRight size={17} />
+      <button type="button" className="um-link-row" onClick={() => window.open('https://www.tiktok.com/', '_blank', 'noopener')}>
+        <span className="um-link-icon light"><Music2 size={19} /></span><b>TikTok</b><ChevronRight size={17} />
       </button>
       <div className="um-settings-divider" />
       <button type="button" className="um-link-row about" onClick={() => ui.setSheet('about')}>

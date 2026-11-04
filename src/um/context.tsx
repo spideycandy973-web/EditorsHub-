@@ -34,6 +34,8 @@ export interface UIState {
   setImportUrl: (v: string) => void;
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
+  toolsOpen: boolean;
+  toggleTools: () => void;
   openProperty: (p: PropertyId) => void;
   openAdd: () => void;
   setAddPage: (page: Preferences['addPage']) => void;
@@ -53,6 +55,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [xmlResult, setXmlResult] = useState<XmlImportResult | null>(null);
   const [importUrl, setImportUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const setPrefs = (p: Preferences) => { savePrefs(p); setPrefsState(p); };
   const setAddPage = (page: Preferences['addPage']) => setPrefs({ ...prefs, addPage: page });
@@ -64,6 +67,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     createTab, setCreateTab, prefs, setPrefs,
     xmlResult, setXmlResult, importUrl, setImportUrl,
     selectedIds, setSelectedIds,
+    toolsOpen, toggleTools: () => setToolsOpen(v => !v),
     openProperty: (p) => { setProperty(p); setSheet('property'); setSelectedIds([]); },
     openAdd: () => {
       const page = prefs.rememberAddPage ? prefs.addPage : 'add';
@@ -72,7 +76,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     },
     setAddPage,
   }), [sheet, property, moveView, activePropKey, homeTab, homeSegment, createTab, prefs,
-    xmlResult, importUrl, selectedIds]);
+    xmlResult, importUrl, selectedIds, toolsOpen]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

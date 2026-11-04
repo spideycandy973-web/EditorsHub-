@@ -6,7 +6,7 @@ const D: Record<ShapeKind, string> = {
   ellipse: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
   rounded: 'M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z',
   cross: 'M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7V3Z',
-  arc: 'M12 3a9 9 0 1 0 8.5 6h-3.3A5.8 5.8 0 1 1 12 6.2V3Zm7.8 .5v5.3h-5.3l2.7-2.7a9 9 0 0 0-2.6-.7V3h5.2Z',
+  arc: 'M12 3a9 9 0 1 0 8.5 6h-3.3A5.8 5.8 0 1 1 12 6.2V3Z',
   triangle: 'M12 3 21 20H3L12 3Zm0 0v17M3 20h18',
   callout: 'M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8.5l-2.2 4-.8-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z',
   pie: 'M12 12V3a9 9 0 1 1-9 9h9Z',
@@ -35,10 +35,21 @@ const D: Record<ShapeKind, string> = {
 export function ShapeGlyph({ kind, size = 30, color = '#b9b9be' }: {
   kind: ShapeKind; size?: number; color?: string;
 }) {
+  if (kind === 'seal') {
+    // Perforated stamp: a filled square with a dashed dark edge.
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 4h16v16H4Z" fill={color} />
+        <rect x="3.2" y="3.2" width="17.6" height="17.6" fill="none"
+          stroke="#1c1c1e" strokeWidth="1.7" strokeDasharray="1.3 1.3" />
+      </svg>
+    );
+  }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
       fill={color} fillRule="evenodd" stroke={color} strokeWidth="0.45" strokeLinejoin="round">
-      <path d={D[kind] ?? D.rectangle} />
+      <path d={D[kind] ?? D.rectangle}
+        transform={kind === 'arrow' ? 'rotate(-45 12 12)' : undefined} />
     </svg>
   );
 }

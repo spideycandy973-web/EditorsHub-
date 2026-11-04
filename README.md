@@ -7,6 +7,17 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
+**v3.1.0 — smooth, pixel-aligned studio.** The v3.0.0 UI was rebuilt from the supplied
+black/lavender reference screenshots, then corrected against them again: the launcher now uses the
+bare gear / filled avatar / two-word wordmark, a single-line Upload XML card and the filled-house /
+square-play bottom nav; settings follows the five-row + three-link card; the create sheet has crop-
+marked ratio chips; and the editor centres the 9:16 canvas, hides the tools rail until requested,
+shows real selection handles on the selected layer, and uses the seven-icon transport without a
+play-button disc. Performance was rebuilt too: the compositor is demand-driven (no idle animation
+frame loop), playback is capped at a sustainable preview rate and rendered at a reduced backing
+store, the timeline playhead scrolls imperatively instead of re-rendering React, startup no longer
+encodes four full-size JPEGs, and the unused legacy stylesheet and StrictMode double work are gone.
+
 **v3.0.0 UI — dark studio rebuild.** The launcher and editor were rebuilt from the ground up to
 match the supplied black/lavender reference screenshots: near-black `#0B0B0D` launcher with a
 centred bold wordmark, gear/avatar circles, a lavender **Upload XML file** button, an **Import
@@ -177,7 +188,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v3.0.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v3.1.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -187,4 +198,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the v3.0.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the current v3.1.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
