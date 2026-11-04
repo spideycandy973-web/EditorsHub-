@@ -18,6 +18,17 @@ export function Root() {
 
   useEffect(() => { void editor.hydrateStoredAssets(); }, []);
 
+  /* Every fresh pointer/focus interaction starts a new undo snapshot. */
+  useEffect(() => {
+    const start = () => editor.markInteractionStart();
+    window.addEventListener('pointerdown', start, true);
+    window.addEventListener('focusin', start, true);
+    return () => {
+      window.removeEventListener('pointerdown', start, true);
+      window.removeEventListener('focusin', start, true);
+    };
+  }, []);
+
   /* The real compositor. It is demand driven: no requestAnimationFrame loop
    * runs while the editor is idle, playback is capped at a sustainable preview
    * frame rate, and frames are never rendered twice at the same time. */
@@ -83,7 +94,8 @@ export function Root() {
       }
       if (sizeDirty) fit();
 
-      let due = dirty;
+      const minGap = 1000 / (editor.playing ? previewFps() : 24);
+      let due = dirty && now - lastRender >= minGap;
       if (editor.playing) {
         const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.1) : 0;
         lastTime = now;
@@ -94,7 +106,7 @@ export function Root() {
         }
         editor.setTime(t, false); // time-only notification; no React re-render
         dirty = true;
-        due = now - lastRender >= 1000 / previewFps();
+        due = now - lastRender >= minGap;
       } else {
         lastTime = 0;
       }
@@ -154,8 +166,14 @@ export function Root() {
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
       const el = ev.target as HTMLElement | null;
-      if (el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)) return;
       const mod = ev.ctrlKey || ev.metaKey;
+      // Text entry keeps native undo; sliders, number fields and canvases use
+      // the editor shortcuts even while focused.
+      const type = el instanceof HTMLInputElement ? el.type : '';
+      const isText = el && (el.tagName === 'TEXTAREA' || el.isContentEditable ||
+        (el.tagName === 'INPUT' && !['range', 'number', 'color', 'checkbox', 'radio'].includes(type)));
+      if (isText && !mod) return;
+      if (isText && mod && ev.key.toLowerCase() === 'z') return;
       if (mod && ev.key.toLowerCase() === 'z') { ev.preventDefault(); ev.shiftKey ? editor.redo() : editor.undo(); return; }
       if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); editor.redo(); return; }
       if (mod) return;

@@ -1,6 +1,32 @@
 # EditorsHub UI screenshots
 
 Captured headlessly at 430 × 932 (the same phone viewport used by the reference screenshots).
+Older v2.x / v3.0.0 / v3.1.0 images are kept for history; **v3.2.0 is the current UI**.
+
+## v3.2.0 — responsive, fully wired editor
+
+- `home-v3.2.0.png` — black launcher with bare gear, filled avatar, single-line Upload XML card,
+  Import Project Package card and filled-house / square-play pill nav.
+- `settings-v3.2.0.png` — Settings card with info icons, audio resampling, branding divider and
+  Website / Telegram / TikTok / About rows.
+- `create-v3.2.0.png` — Project / Element sheet with crop-marked ratio chips, resolution, frame
+  rate, background and lavender Create Project.
+- `editor-v3.2.0.png` — centred black 9:16 canvas, seven thin transport icons, centred time pill,
+  fixed playhead and teal FAB.
+- `add-v3.2.0.png` — Add grid with chevrons, NEW badge and Camera / Null / Empty Group row.
+- `shapes-v3.2.0.png` — three-page 18-shape picker.
+- `properties-v3.2.0.png` — selected layer with real selection handles, clip bar, five quick tools
+  and the 3-then-4 property tiles.
+- `move-v3.2.0.png` — Move & Transform position view with teal readouts, X/Y fields, a
+  swipe-to-move pad with corner marks and both rails.
+- `rotation-v3.2.0.png` — rotation dial view.
+- `easing-v3.2.0.png` — cubic-bezier easing graph with draggable control points.
+- `blend-v3.2.0.png` — Blending & Opacity with opacity ruler and blend-mode select.
+- `border-v3.2.0.png` — Border & Shadow with width, corner radius and colour controls.
+- `effects-v3.2.0.png` — effects browser with 20 real effects.
+
+
+Captured headlessly at 430 × 932 (the same phone viewport used by the reference screenshots).
 The older v2.x and v3.0.0 images are kept for history; **v3.1.0 is the current UI**.
 
 ## v3.1.0 — smooth, pixel-aligned studio
@@ -21,11 +47,6 @@ The older v2.x and v3.0.0 images are kept for history; **v3.1.0 is the current U
 - `rotation-v3.1.0.png` — rotation dial view.
 - `easing-v3.1.0.png` — cubic-bezier easing graph with draggable control points.
 - `effects-v3.1.0.png` — effects browser with 20 real effects.
-
-## v3.0.0 — dark studio rebuild
-
-Captured headlessly at 430 × 900 (the same phone viewport used by the reference screenshots).
-The v2.x screenshots below are kept for history; **v3.0.0 is the current UI**.
 
 ## v3.0.0 — dark studio rebuild
 

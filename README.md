@@ -7,6 +7,14 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
+**v3.2.0 — responsive, fully wired editor.** Every exposed control was audited end-to-end
+(143 interactive checks, all passing). The editor store now coalesces continuous edits into one
+React notification per frame and one undo snapshot per gesture; the timeline no longer captures
+pointer events away from its own buttons, so the eye, clip-back, keyframe, trim and transport
+controls all respond again; property rail labels now match the panels they open; the Border &
+Shadow rail has a real third view; a shadow slider can no longer create duplicate effects; and the
+Move & Transform screens gained the reference teal readouts, swipe area and corner marks.
+
 **v3.1.0 — smooth, pixel-aligned studio.** The v3.0.0 UI was rebuilt from the supplied
 black/lavender reference screenshots, then corrected against them again: the launcher now uses the
 bare gear / filled avatar / two-word wordmark, a single-line Upload XML card and the filled-house /
@@ -188,7 +196,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v3.1.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v3.2.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -198,4 +206,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the current v3.1.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the current v3.2.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).

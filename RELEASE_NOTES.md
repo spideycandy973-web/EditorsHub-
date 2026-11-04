@@ -1,3 +1,46 @@
+# EditorsHub v3.2.0 — responsive, fully wired editor
+
+A correctness and responsiveness pass over v3.1.0. Package remains `com.editorshub`, application
+label `EditorsHub`; no proprietary assets are copied.
+
+## What's new in 3.2.0
+
+- **Every control audited and wired.** 143 headless interaction checks across the launcher,
+  settings, create sheet, Add/Shape sheets, transport, timeline, tools rail, all eight property
+  panes, export, project settings, overflow menu, drawing pads, elements and templates — all pass
+  with zero console errors/warnings.
+- **Fixed genuinely dead controls.** The timeline's root `pointerdown` handler used to call
+  `setPointerCapture`, which swallowed clicks on the layer eye, clip-back chevron, keyframe diamond
+  and trim handles. Those controls now work; the keyframe diamond is always visible so the first
+  keyframe can be added from the clip.
+- **Rail labels now match their panels.** Move & Transform's five rail buttons open Position, Size
+  & scale, Skew, Rotation dial and Easing in that order (previously three were mislabelled).
+  Border & Shadow's third button now opens a real Rounded corners panel instead of duplicating
+  Shadow.
+- **No duplicate effects or toast spam.** Adding/dragging a drop shadow creates exactly one
+  effect; the easing graph notifies once on release rather than on every pointer move; the effects
+  browser no longer selects the wrong effect after adding one.
+- **Continuous edits no longer re-render the whole app.** Store mutations coalesce their React
+  notifications into one per animation frame, take one undo snapshot per gesture, and avoid
+  `setActivePropKey` churn. 30 synchronous slider events now produce **1** React notification
+  (was 30), and undo still reverts the whole gesture. Non-playback compositing is capped at 24 fps.
+- **Editing UI aligned closer to the reference screens.** Teal numeric readouts, a large
+  "Swipe here to move layer" pad with corner marks, a five-button left rail, a magnifier/bolt
+  glyph, a reference-style property-detail top bar, and 13 fresh screenshots.
+- Measured under 4× CPU throttling: slider drag 60 rAF frames with **zero long tasks**; 10-layer
+  playback 60 rAF frames with **zero long tasks**. `npm run typecheck` and `npm run build` clean.
+- `versionCode 9`, `versionName 3.2.0`, PWA cache `editorshub-v9`.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, package `com.editorshub`) is the installable web editor build;
+it is attached to `apk-latest`, `v3.2.0` and `editorshub-latest` and committed at the repo root.
+`EditorsHub-debug.apk` is the native Compose build; release APK/AAB are unsigned by design —
+configure a keystore (see `EditorsHub/docs/RELEASE_SIGNING.md`) or run `android-release.yml` with
+keystore secrets. `EditorsHub-source-v3.2.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v3.1.0 — smooth, pixel-aligned studio
 
 A performance and visual-correction pass over the v3.0.0 rebuild. Package remains `com.editorshub`,

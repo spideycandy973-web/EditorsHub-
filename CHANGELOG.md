@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.2.0 — responsive, fully wired editor (2026-11-04)
+
+- Fixed dead timeline controls (eye, clip-back, keyframe, trim) caused by the timeline's pointer
+  capture swallowing child clicks; keyframe diamond is always available.
+- Corrected Move & Transform rail labels to match their panels; added a real Border & Shadow
+  "Rounded corners" panel; eliminated duplicate drop-shadow effects and easing toast spam.
+- Coalesced store mutations: one React notification per animation frame, one undo snapshot per
+  gesture (pointerdown/focusin marks a new interaction), no `activePropKey` churn; 30 synchronous
+  slider events now produce 1 notification and undo reverts the whole gesture.
+- Capped non-playback compositing at 24 fps; zero long tasks under 4× CPU throttling for slider
+  drags and 10-layer playback.
+- Editing UI: teal readouts, swipe-to-move pad with corner marks, five-button left rail,
+  magnifier/bolt glyph, reference-style property-detail top bar, 13 fresh screenshots.
+- 143/143 interactive control checks, 12/12 correctness checks, zero console errors/warnings.
+- `versionCode 9`, `versionName 3.2.0`, PWA cache `editorshub-v9`, CI/release bumped to `v3.2.0`.
+
 ## 3.1.0 — performance rebuild and pixel alignment (2026-11-04)
 
 - Demand-driven canvas compositor: no idle rAF loop, capped/adaptive playback frame rate, reduced

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, type RefObject } from 'react';
 import {
-  ArrowLeft, ArrowLeftToLine, ArrowRightToLine, ChevronDown, ChevronLeft, Copy, Diamond,
+  ArrowLeft, ArrowLeftToLine, ArrowRightToLine, ChevronDown, ChevronLeft, Copy,
   ExternalLink, Grid2X2, ImagePlus, Layers3, Minus, MoreHorizontal, Pause, Play, Plus,
-  Redo2, ScanLine, Settings2, Trash2, Undo2, VideoOff, Volume2, ZoomIn,
+  Redo2, ScanLine, Settings2, Trash2, Undo2, VideoOff, Volume2,
 } from 'lucide-react';
 import { useEditor, usePlayhead } from '../editor/store';
 import type { Renderer } from '../editor/renderer';
@@ -34,6 +34,17 @@ function BackDoor() {
   );
 }
 
+function MagnifierBolt() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="10" cy="10" r="6.5" />
+      <path d="M15 15l5 5" />
+      <path d="M11 5.5 8.7 10h2.4l-1 3.4 3.4-4.6h-2.4z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 function PageCurve() {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -57,11 +68,6 @@ function TopBar() {
         <IBtn title="Back to layer properties" onClick={() => ui.setSheet('properties')}><ArrowLeft size={20} strokeWidth={1.8} /></IBtn>
         <strong className="um-top-title">{PROPERTY_TITLES[ui.property]}</strong>
         <div className="um-top-spacer" />
-        <IBtn title="Add keyframe" onClick={() => {
-          if (!layer) { e.notify('Select a layer first', 'warn'); return; }
-          e.addKeyframe(layer.id, ui.activePropKey);
-          e.notify('Keyframe added', 'ok');
-        }}><Diamond size={18} strokeWidth={1.7} /></IBtn>
       </header>
     );
   }
@@ -258,7 +264,7 @@ function Stage({ canvasRef, stageRef, rendererRef }: {
         <button type="button" className={`um-magnifier ${ui.toolsOpen ? 'on' : ''}`}
           title={ui.toolsOpen ? 'Hide preview tools' : 'Show preview tools'}
           onClick={() => ui.toggleTools()} onDoubleClick={() => { e.setPreviewZoom(1); fileRef.current?.click(); }}>
-          {ui.toolsOpen ? <ChevronDown size={20} strokeWidth={1.9} /> : <ZoomIn size={19} strokeWidth={1.7} />}
+          {ui.toolsOpen ? <ChevronDown size={20} strokeWidth={1.9} /> : <MagnifierBolt />}
         </button>
       )}
       <div className="um-canvas-holder" style={{ transform: `scale(${e.previewZoom})` }}>
@@ -388,9 +394,13 @@ function Timeline() {
       : l.type === 'text' ? '#f5b642'
         : '#26d5dd';
 
+  const isControl = (ev: React.PointerEvent) =>
+    !!(ev.target as HTMLElement).closest('button, input, select, .um-layer-fixed-column');
+
   return (
     <div className="um-timeline" ref={trackRef}
-      onPointerDown={ev => begin('scrub', ev)} onPointerMove={move} onPointerUp={endDrag} onPointerCancel={endDrag}>
+      onPointerDown={ev => { if (!isControl(ev)) begin('scrub', ev); }}
+      onPointerMove={move} onPointerUp={endDrag} onPointerCancel={endDrag}>
       <div className="um-timeline-scroll" ref={scrollRef}>
         <div className="um-ruler">
           {hasLayers && ticks.map(({ t, major }) => (
@@ -404,7 +414,6 @@ function Timeline() {
           {e.project.layers.slice(0, 4).map(l => {
             const left = clipHalf + l.start * zoom;
             const w = Math.max(24, l.duration * zoom);
-            const hasKf = Object.values(l.props).some(a => a.keyframes.length > 0);
             const selected = e.selectedLayerId === l.id || ui.selectedIds.includes(l.id);
             return (
               <div className={`um-layer-row ${selected ? 'selected' : ''}`} key={l.id}>
@@ -419,10 +428,8 @@ function Timeline() {
                     <button type="button" className="um-clip-trim right" title="Trim end"
                       onPointerDown={ev => begin('trimRight', ev, l)} onPointerMove={move} onPointerUp={endDrag} />
                   </div>
-                  {hasKf && (
-                    <button type="button" className="um-clip-kf" title="Add keyframe" style={{ left: clipHalf }}
-                      onClick={() => { e.selectLayer(l.id); e.addKeyframe(l.id, ui.activePropKey); }}>◆</button>
-                  )}
+                  <button type="button" className="um-clip-kf" title="Add keyframe" style={{ left: clipHalf }}
+                    onClick={() => { e.selectLayer(l.id); e.addKeyframe(l.id, ui.activePropKey); }}>◆</button>
                   <button type="button" className="um-clip-back" title="Layer properties"
                     style={{ left: Math.max(6, left - 26) }}
                     onClick={() => { e.selectLayer(l.id); ui.setSheet('properties'); }}>
