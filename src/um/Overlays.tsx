@@ -10,13 +10,15 @@ import {
   exportFrameSequence, framesFileName, pickVideoMime, recordVideo, renderStill,
   videoFileName, type ExportProgress,
 } from '../editor/export';
-import { SAMPLE_XML } from '../editor/xml';
+import { projectToXml, SAMPLE_XML } from '../editor/xml';
 import { downloadBlob, safeFileName } from '../editor/utils';
+import { zipSync, strToU8 } from 'fflate';
+import { exportAnimatedGif } from '../editor/gif';
 import { useUI } from './context';
 import { Backdrop, Btn, ColorInput, IBtn, NumField, Row, Seg, Select, Sheet, Slider, PALETTE } from './widgets';
 import {
   applyXmlResult, deleteElement, downloadXml, fetchPackage, listElements, parseXml,
-  saveCurrentAsElement, SAMPLE_RATE, xmlOfProject,
+  saveCurrentAsElement, SAMPLE_RATE, xmlOfProject, saveTemplate, listTemplates,
 } from './lib';
 import { parseMotionXml } from '../editor/xml';
 
@@ -198,91 +200,176 @@ function ProjectSettingsBody() {
 }
 
 /* ---------------------------------- export -------------------------------- */
+type ExportMode = 'video' | 'package' | 'still' | 'sequence' | 'gif' | 'xml';
+
+const EXPORT_OPTIONS: { id: ExportMode; title: string; sub: string; glyph: string }[] = [
+  { id: 'video', title: 'Video', sub: 'MP4 / WebM video files', glyph: '▶' },
+  { id: 'package', title: 'Project Package', sub: 'Save all project files', glyph: '▣' },
+  { id: 'still', title: 'Current Frame as PNG', sub: 'Save as image', glyph: '▧' },
+  { id: 'sequence', title: 'Image Sequence', sub: 'PNG images in a ZIP', glyph: '▤' },
+  { id: 'gif', title: 'GIF', sub: 'Animated GIF', glyph: '◉' },
+  { id: 'xml', title: 'XML', sub: 'Portable project file', glyph: '〈/〉' },
+];
+
 function ExportBody() {
   const e = useEditor();
   const ui = useUI();
-  const [mode, setMode] = useState<'video' | 'frames' | 'still' | 'xml'>('video');
+  const [mode, setMode] = useState<ExportMode>('video');
   const [scale, setScale] = useState('0.75');
   const [bitrate, setBitrate] = useState('8000000');
   const [audio, setAudio] = useState(true);
+  const [gifWidth, setGifWidth] = useState('240');
+  const [gifFps, setGifFps] = useState('10');
+  const [asTemplate, setAsTemplate] = useState(false);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<ExportProgress | null>(null);
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
+  const [space, setSpace] = useState('Checking…');
   const mime = pickVideoMime();
+
+  useEffect(() => {
+    let alive = true;
+    const est = (navigator as Navigator & {
+      storage?: { estimate?: () => Promise<{ quota?: number; usage?: number }> };
+    }).storage?.estimate;
+    if (!est) { setSpace('Not reported by this browser'); return; }
+    est.call(navigator.storage).then(r => {
+      if (!alive) return;
+      const free = (r.quota ?? 0) - (r.usage ?? 0);
+      setSpace(free > 0 ? `${(free / 1073741824).toFixed(2)} GB` : 'Not reported');
+    }).catch(() => { if (alive) setSpace('Not reported'); });
+    return () => { alive = false; };
+  }, []);
 
   const start = async () => {
     if (running) return;
     setRunning(true); setError(''); setDone(''); setProgress({ phase: 'Starting…', ratio: 0 });
     try {
-      let blob: Blob; let name: string;
+      let blob: Blob; let name: string; let note = '';
+      const base = safeFileName(e.project.name);
       if (mode === 'video') {
         const r = await recordVideo(e.project, e.assets, {
           scale: Number(scale), bitrate: Number(bitrate), includeAudio: audio,
           sampleRate: SAMPLE_RATE[ui.prefs.audioResampling],
         }, setProgress);
         blob = r.blob; name = videoFileName(e.project, r.ext);
-      } else if (mode === 'frames') {
+      } else if (mode === 'sequence') {
         const r = await exportFrameSequence(e.project, e.assets,
           { scale: Math.min(Number(scale), 1), format: 'png', maxFrames: 900 }, setProgress);
-        blob = r.blob; name = framesFileName(e.project);
-        setDone(`${r.frames} frames rendered`);
+        blob = r.blob; name = framesFileName(e.project); note = `${r.frames} frames rendered`;
       } else if (mode === 'still') {
         setProgress({ phase: 'Rendering frame…', ratio: 0.4 });
         blob = await renderStill(e.project, e.assets, e.time, 1, 'png');
-        name = `${safeFileName(e.project.name)}_frame.png`;
+        name = `${base}_frame.png`;
+      } else if (mode === 'gif') {
+        const r = await exportAnimatedGif(e.project, e.assets, {
+          width: Number(gifWidth), fps: Number(gifFps), maxFrames: 120,
+        }, setProgress);
+        blob = r.blob; name = `${base}.gif`;
+        note = `${r.frames} frames at ${r.fps} fps, ${Number(gifWidth)} px wide`;
+      } else if (mode === 'package') {
+        setProgress({ phase: 'Writing project package…', ratio: 0.5 });
+        const { xml, warnings } = await projectToXml(e.project, e.assets);
+        const files: Record<string, Uint8Array> = {
+          'project.xml': strToU8(xml),
+          'README.txt': strToU8(
+            `EditorsHub project package\n\nName: ${e.project.name}\nSize: ${e.project.width}x${e.project.height}\nDuration: ${e.project.duration}s\nFPS: ${e.project.fps}\nLayers: ${e.project.layers.length}\n\nOpen project.xml from the EditorsHub launcher.\n${warnings.length ? `\nWarnings:\n${warnings.join('\n')}\n` : ''}`),
+          'assets.txt': strToU8(Object.values(e.assets).map(a => `${a.id}  ${a.name}  ${a.mime}`).join('\n') + '\n'),
+        };
+        blob = new Blob([zipSync(files, { level: 0 }) as BlobPart], { type: 'application/zip' });
+        name = `${base}_package.zip`;
       } else {
         setProgress({ phase: 'Writing XML…', ratio: 0.5 });
         const xml = await xmlOfProject();
         blob = new Blob([xml], { type: 'application/xml' });
-        name = `${safeFileName(e.project.name)}.xml`;
+        name = `${base}.xml`;
+      }
+      if (asTemplate) {
+        const { xml } = await projectToXml(e.project, e.assets);
+        saveTemplate(`${e.project.name} (export)`, xml, e.project.width, e.project.height, e.project.duration);
+        note += (note ? ' · ' : '') + 'saved as a template';
       }
       setProgress({ phase: 'Complete', ratio: 1 });
       downloadBlob(blob, name);
-      setDone(prev => prev || `${name} · ${(blob.size / 1024).toFixed(0)} KB`);
+      setDone(`${name} · ${(blob.size / 1024).toFixed(0)} KB${note ? ` · ${note}` : ''}`);
       e.notify('Export finished — download started', 'ok');
     } catch (err) { setError((err as Error).message || 'Export failed'); }
     finally { setRunning(false); }
   };
 
+  const estimateNote = mode === 'video'
+    ? `${Math.round(e.project.width * Number(scale))} × ${Math.round(e.project.height * Number(scale))}, ${(Number(bitrate) / 1000000).toFixed(0)} Mbps`
+    : mode === 'gif' ? `${gifWidth} px wide, ${gifFps} fps, up to 120 frames`
+    : mode === 'sequence' ? 'up to 900 PNG frames' : mode === 'still' ? 'full resolution PNG'
+    : 'portable project file';
+
   return (
-    <div className="um-scroll">
-      <Seg value={mode} onChange={setMode} options={[
-        { id: 'video', label: 'Video' }, { id: 'frames', label: 'Frames' },
-        { id: 'still', label: 'Still' }, { id: 'xml', label: 'XML' },
-      ]} />
-      {mode !== 'xml' && mode !== 'still' && (
-        <Row label="Resolution" sub={`${Math.round(e.project.width * Number(scale))} × ${Math.round(e.project.height * Number(scale))}`}>
-          <Select value={scale} onChange={setScale} options={[
-            { value: '0.5', label: '50%' }, { value: '0.75', label: '75%' }, { value: '1', label: '100%' },
-          ]} />
-        </Row>
-      )}
+    <div className="um-scroll um-export">
+      <div className="um-export-space">
+        <span>Available Space</span><strong>{space}</strong>
+        <span>File size</span><strong>Measured after export</strong>
+      </div>
+
+      <div className="um-export-list">
+        {EXPORT_OPTIONS.map(o => (
+          <button type="button" key={o.id} className={`um-export-option ${mode === o.id ? 'on' : ''}`}
+            onClick={() => setMode(o.id)} aria-pressed={mode === o.id}>
+            <span className="um-export-radio" />
+            <span className="um-export-glyph">{o.glyph}</span>
+            <span className="um-export-copy"><strong>{o.title}</strong><small>{o.sub}</small></span>
+          </button>
+        ))}
+      </div>
+
       {mode === 'video' && (
-        <>
-          <Row label="Bitrate"><Select value={bitrate} onChange={setBitrate} options={[
-            { value: '2000000', label: '2 Mbps' }, { value: '5000000', label: '5 Mbps' },
-            { value: '8000000', label: '8 Mbps' }, { value: '12000000', label: '12 Mbps' },
-            { value: '20000000', label: '20 Mbps' },
+        <div className="um-export-settings">
+          <Row label="Export Resolution"><Select value={scale} onChange={setScale} options={[
+            { value: '0.5', label: '540p (SD)' }, { value: '0.75', label: '810p (HD)' }, { value: '1', label: '1080p (FHD)' },
+          ]} /></Row>
+          <div className="um-export-codec"><span>Codec</span><b>{mime.mime.includes('avc') ? 'H.264/AVC' : 'Browser-selected'}</b><b>{mime.ext.toUpperCase()}</b></div>
+          <div className="um-export-codec"><span>Frame Rate</span><b>{e.project.fps} fps</b><b>Full</b></div>
+          <Row label="Quality"><Select value={bitrate} onChange={setBitrate} options={[
+            { value: '2000000', label: 'Low' }, { value: '5000000', label: 'Medium' },
+            { value: '8000000', label: 'High' }, { value: '20000000', label: 'Maximum' },
           ]} /></Row>
           <label className="um-checkline"><input type="checkbox" checked={audio} onChange={ev => setAudio(ev.target.checked)} /> Include audio ({SAMPLE_RATE[ui.prefs.audioResampling]} Hz mix)</label>
-          <p className="um-hint">Real-time canvas recording via MediaRecorder. Codec: {mime.mime || 'browser default'} → .{mime.ext}. Takes {e.project.duration.toFixed(1)}s of playback.</p>
-        </>
+        </div>
       )}
-      {mode === 'frames' && <p className="um-hint">Deterministic frame-by-frame render into a PNG ZIP (up to 900 frames).</p>}
-      {mode === 'still' && <p className="um-hint">Renders the frame at the current playhead as a full-resolution PNG.</p>}
-      {mode === 'xml' && <p className="um-hint">A portable project file: layers, transforms, keyframes, effects and embedded media. Re-importable anywhere.</p>}
+      {mode === 'gif' && (
+        <div className="um-export-settings">
+          <Row label="GIF width"><Select value={gifWidth} onChange={setGifWidth} options={[
+            { value: '160', label: '160 px' }, { value: '240', label: '240 px' }, { value: '320', label: '320 px' },
+          ]} /></Row>
+          <Row label="Frame rate"><Select value={gifFps} onChange={setGifFps} options={[
+            { value: '8', label: '8 fps' }, { value: '10', label: '10 fps' }, { value: '15', label: '15 fps' },
+          ]} /></Row>
+        </div>
+      )}
+      {mode === 'sequence' && (
+        <div className="um-export-settings">
+          <Row label="Resolution"><Select value={scale} onChange={setScale} options={[
+            { value: '0.5', label: '50%' }, { value: '0.75', label: '75%' }, { value: '1', label: '100%' },
+          ]} /></Row>
+        </div>
+      )}
+      <p className="um-hint">{estimateNote}. Every format above is rendered and encoded for real — no placeholder downloads.</p>
+
+      <label className="um-checkline um-template-toggle">
+        <input type="checkbox" checked={asTemplate} onChange={ev => setAsTemplate(ev.target.checked)} />
+        Also export as a Template ({listTemplates().length} saved)
+      </label>
+
       {progress && <div className="um-progress"><div style={{ width: `${Math.round(progress.ratio * 100)}%` }} /><span>{progress.phase}</span></div>}
       {error && <p className="um-error">{error}</p>}
       {done && <p className="um-ok">{done}</p>}
       <button type="button" className="um-lavender create" disabled={running} onClick={() => void start()}>
-        {running ? 'Exporting…' : `Export ${mode === 'xml' ? 'XML' : mode === 'frames' ? 'frames' : mode === 'still' ? 'PNG' : 'video'}`}
+        {running ? 'Exporting…' : 'Export'}
       </button>
     </div>
   );
 }
 
-/* -------------------------------- XML report ------------------------------ */
 function XmlReportBody() {
   const e = useEditor();
   const ui = useUI();
@@ -438,7 +525,7 @@ export function Overlays() {
     create: { title: '', body: <CompositionForm onDone={close} />, variant: 'floating' },
     about: { title: 'About', body: <AboutBody />, variant: 'floating' },
     xml: { title: 'Import XML / Project Package', body: <XmlReportBody />, variant: 'floating' },
-    export: { title: 'Export', body: <ExportBody />, variant: 'floating' },
+    export: { title: 'Export & Share', body: <ExportBody />, variant: 'floating' },
     projectSettings: { title: 'Project Settings', body: <ProjectSettingsBody />, variant: 'floating' },
     help: { title: 'Editing guide', body: <HelpBody />, variant: 'floating' },
     templates: { title: 'Templates', body: (

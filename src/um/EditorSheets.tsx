@@ -96,6 +96,28 @@ const EXTRA_SHAPES: ShapeKind[] = [
   'halfCircle', 'polygon', 'customPath',
 ];
 
+/** Original vector silhouettes in the renderer's normalized 0..1 box. */
+const VECTOR_PRESETS: { label: string; d: string }[] = [
+  { label: 'Chevron', d: 'M0 .15 L.55 .15 L1 .5 L.55 .85 L0 .85 L.45 .5 Z' },
+  { label: 'Lightning', d: 'M.58 0 L.12 .55 L.42 .55 L.28 1 L.9 .42 L.56 .42 Z' },
+  { label: 'Droplet', d: 'M.5 0 C.78 .38 1 .6 1 .76 A.5 .24 0 0 1 0 .76 C0 .6 .22 .38 .5 0 Z' },
+  { label: 'Cloud', d: 'M.22 .78 A.22 .22 0 0 1 .24 .35 A.28 .28 0 0 1 .72 .3 A.24 .24 0 0 1 .8 .78 Z' },
+  { label: 'Shield', d: 'M.5 0 L1 .16 L.92 .7 L.5 1 L.08 .7 L0 .16 Z' },
+  { label: 'Bookmark', d: 'M.16 0 H.84 V1 L.5 .74 L.16 1 Z' },
+  { label: 'Parallelogram', d: 'M.25 0 H1 L.75 1 H0 Z' },
+  { label: 'Quarter disc', d: 'M0 0 H1 A1 1 0 0 0 0 1 Z' },
+  { label: 'Speech bubble', d: 'M.08 0 H.92 A.08 .08 0 0 1 1 .08 V.72 A.08 .08 0 0 1 .92 .8 H.36 L.16 1 V.8 H.08 A.08 .08 0 0 1 0 .72 V.08 A.08 .08 0 0 1 .08 0 Z' },
+  { label: 'Leaf', d: 'M0 1 C0 .35 .4 0 1 0 C1 .6 .6 1 0 1 Z' },
+  { label: 'Octagon', d: 'M.3 0 H.7 L1 .3 V.7 L.7 1 H.3 L0 .7 V.3 Z' },
+  { label: 'Concave diamond', d: 'M.5 0 L.58 .42 L1 .5 L.58 .58 L.5 1 L.42 .58 L0 .5 L.42 .42 Z' },
+  { label: 'Arrowhead', d: 'M0 .3 L.6 .3 L.6 0 L1 .5 L.6 1 L.6 .7 L0 .7 Z' },
+  { label: 'Crown', d: 'M0 .28 L.22 .55 L.5 0 L.78 .55 L1 .28 L1 1 L0 1 Z' },
+  { label: 'Hourglass', d: 'M0 0 H1 L.58 .5 L1 1 H0 L.42 .5 Z' },
+  { label: 'Sector', d: 'M.5 .5 L.5 0 A.5 .5 0 0 1 1 .5 Z' },
+  { label: 'Notched square', d: 'M0 0 H1 V1 H.62 L.5 .78 L.38 1 H0 Z' },
+  { label: 'Wave', d: 'M0 .28 C.25 0 .35 .62 .6 .34 C.8 .1 .9 .4 1 .28 V1 H0 Z' },
+];
+
 function ShapeSheet() {
   const e = useEditor();
   const ui = useUI();
@@ -119,12 +141,18 @@ function ShapeSheet() {
     ui.setAddPage('shape');
   };
 
-  const pageItems: { shape: ShapeKind; label: string; n?: number }[] = page === 0
+  const pageItems: { shape: ShapeKind; label: string; n?: number; path?: string }[] = page === 0
     ? SHAPE_PICKER.map(x => ({ shape: x.kind, label: x.label }))
     : page === 1
       ? EXTRA_SHAPES.filter(s => s !== 'customPath').map(s => ({ shape: s, label: s }))
-      : [3, 4, 5, 6, 7, 8].map(n => ({ shape: 'polygon' as ShapeKind, label: `${n}-sided polygon`, n }))
-        .concat([3, 4, 6, 8].map(n => ({ shape: 'star' as ShapeKind, label: `${n}-point star`, n })));
+      : page === 2
+        ? [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => ({ shape: 'polygon' as ShapeKind, label: `${n}-sided polygon`, n }))
+          .concat([3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => ({ shape: 'star' as ShapeKind, label: `${n}-point star`, n })))
+        : page === 3
+          ? [13, 14, 15, 16, 18, 20, 24].map(n => ({ shape: 'polygon' as ShapeKind, label: `${n}-sided polygon`, n }))
+            .concat([14, 16, 18, 20, 24].map(n => ({ shape: 'star' as ShapeKind, label: `${n}-point star`, n })))
+            .concat([{ shape: 'polygon' as ShapeKind, label: '32-sided polygon', n: 32 }])
+          : VECTOR_PRESETS.map(v => ({ shape: 'customPath' as ShapeKind, label: v.label, path: v.d }));
 
   return (
     <Sheet variant="floating" title="Shape" onBack={() => { ui.setSheet('add'); ui.setAddPage('add'); }}
@@ -133,7 +161,12 @@ function ShapeSheet() {
         {pageItems.map((item, i) => (
           <button type="button" key={`${item.label}-${i}`} title={item.label} className="um-shape-cell"
             onClick={() => {
-              if (item.n !== undefined) {
+              if (item.path) {
+                const id = e.addLayer('shape', { shape: 'customPath', name: nextName(item.label), duration: dur, color: '#d9a15b' });
+                e.setStyle(id, { fillType: 'solid', color: '#d9a15b', strokeColor: '#ffffff', pathData: item.path });
+                e.setProp(id, 'strokeWidth', 3);
+                ui.setSheet('properties'); ui.setSelectedIds([]); ui.setAddPage('shape');
+              } else if (item.n !== undefined) {
                 const id = e.addLayer('shape', { shape: item.shape, name: nextName(item.label), duration: dur, color: '#d9a15b' });
                 e.setStyle(id, { fillType: 'solid', color: '#d9a15b', strokeColor: '#ffffff' });
                 e.setProp(id, 'strokeWidth', 5);
@@ -141,12 +174,14 @@ function ShapeSheet() {
                 ui.setSheet('properties');
               } else pick(item.shape, item.label.replace(/\b\w/g, c => c.toUpperCase()));
             }}>
-            <ShapeGlyph kind={item.shape} size={34} />
+            {item.path
+              ? <svg width={34} height={34} viewBox="0 0 1 1" aria-hidden="true"><path d={item.path} fill="#b9b9be" /></svg>
+              : <ShapeGlyph kind={item.shape} size={34} />}
           </button>
         ))}
       </div>
       <div className="um-dots">
-        {[0, 1, 2].map(p => <button type="button" key={p} title={`Shape page ${p + 1}`}
+        {[0, 1, 2, 3, 4].map(p => <button type="button" key={p} title={`Shape page ${p + 1}`}
           className={page === p ? 'on' : ''} onClick={() => setPage(p)} />)}
       </div>
     </Sheet>

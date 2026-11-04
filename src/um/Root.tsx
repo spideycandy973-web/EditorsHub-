@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { editor, useEditor } from '../editor/store';
 import { Renderer } from '../editor/renderer';
 import { clamp } from '../editor/utils';
 import { useUI } from './context';
 import { GestureBar, StatusBar } from './Chrome';
+import { Splash } from './Splash';
+import { AboutPage } from './AboutPage';
 import { Home } from './Home';
 import { Editor } from './Editor';
 import { Overlays } from './Overlays';
@@ -16,6 +18,7 @@ export function Root() {
   const rendererRef = useRef<Renderer | null>(null);
   const inEditor = e.screen === 'editor';
   const lowQuality = ui.prefs.lowQualityPreview;
+  const [splash, setSplash] = useState(true);
 
   useEffect(() => { void editor.hydrateStoredAssets(); }, []);
 
@@ -217,7 +220,9 @@ export function Root() {
           ? <Editor canvasRef={canvasRef} stageRef={stageRef} rendererRef={rendererRef} />
           : <Home />}
         <Overlays />
+        {ui.aboutOpen && <AboutPage />}
         {ui.prefs.showDeviceChrome && <GestureBar />}
+        {splash && <Splash onDone={() => setSplash(false)} />}
         {e.toast && <div className={`um-toast ${e.toast.kind}`} key={e.toast.id}>{e.toast.text}</div>}
       </div>
     </div>
