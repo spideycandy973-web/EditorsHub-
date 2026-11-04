@@ -8,6 +8,7 @@ on:
     # Narrow trigger so a web/Capacitor rebuild does not race the native CI push.
     paths:
       - '.github/workflows/build-apk.yml'
+      - 'ci/smoke-capacitor.sh'
       - 'rebuild-capacitor-apk.txt'
 
 permissions:

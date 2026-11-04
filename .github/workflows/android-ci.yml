@@ -7,6 +7,7 @@ on:
       - arena/0bec11e2-editorshub
     paths:
       - 'EditorsHub/**'
+      - 'ci/smoke.sh'
       - '.github/workflows/android-ci.yml'
 
 permissions:

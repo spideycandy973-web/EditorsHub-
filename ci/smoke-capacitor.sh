@@ -35,8 +35,15 @@ tail -140 "$OUT"
 if [ -z "$PROC" ]; then
   fail "EditorsHub (Capacitor APK) process is not running after launch"
 fi
-if grep -q "FATAL EXCEPTION" "$OUT"; then
-  fail "Crash detected in logcat"
+# AndroidRuntime prints "FATAL EXCEPTION" followed by "Process: <package>".
+# During emulator boot, unrelated system processes (GmsCore, Phone, launcher,
+# ...) can crash without affecting the app. Only a crash whose process is
+# com.editorshub is a real EditorsHub launch failure.
+CRASH=$(grep -A4 "FATAL EXCEPTION" "$OUT" | grep "Process: com.editorshub" || true)
+if [ -n "$CRASH" ]; then
+  log "== crash context =="
+  grep -A12 "FATAL EXCEPTION" "$OUT" | tail -60
+  fail "EditorsHub crash detected in logcat: $CRASH"
 fi
 
 log "Capacitor APK launch smoke test passed (pid $PROC)"
