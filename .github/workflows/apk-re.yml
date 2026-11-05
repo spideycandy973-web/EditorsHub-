@@ -162,7 +162,7 @@ jobs:
             "$GH_DIR/support/analyzeHeadless" /tmp/ghidra-proj um \
               -import /tmp/smallest.so \
               -scriptPath "$(pwd)/tools/apk-re" \
-              -postScript GhidraFunctions.py \
+              -postScript GhidraFunctions.java \
               -deleteProject > /tmp/ghidra.log 2>&1
           else
             echo 'No native .so in APK' > /tmp/ghidra.log

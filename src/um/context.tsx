@@ -63,7 +63,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [xmlResult, setXmlResult] = useState<XmlImportResult | null>(null);
   const [importUrl, setImportUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [effectBrowser, setEffectBrowser] = useState(false);
   const [presetsDialog, setPresetsDialog] = useState(false);
