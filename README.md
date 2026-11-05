@@ -7,6 +7,18 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
+**v3.6.0 — master base, ready to customise.** Dead v2 code, 63 stale
+screenshots and six obsolete source archives were deleted. The engine now ships
+**44 real effects** (23 new pixel/procedural/geometry effects added in this
+release), every one distributed across the 32 Effect Browser categories. A new
+single-file customisation point, [`src/theme/brand.ts`](src/theme/brand.ts),
+controls the app name, wordmark, domain, package, version, links and the whole
+palette — edit one file before customising anything else.
+[`docs/MASTER_CLONE.md`](docs/MASTER_CLONE.md) maps all 30 reference screens to
+their implementation. `npm run typecheck`, `npm run build` and
+`node tools/smoke.mjs --shots` pass **58/58** headless checks with zero console
+errors.
+
 **v3.5.0 — reverse-engineered from the actual APK.** You supplied
 `UM Clone_8.0.1.apk` (294,346,248 bytes, `com.alightcreative.ultramotion`).
 Because it exceeds the agent workspace's 100 MiB per-file cap,
@@ -240,7 +252,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v3.5.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v3.6.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -250,4 +262,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the current v3.5.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the current v3.6.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).

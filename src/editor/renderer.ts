@@ -4,7 +4,19 @@ import { prop, valueAt } from './animation';
 import { clamp, hexToRgb, hsl, normalizeColor, withAlpha } from './utils';
 import type { MediaLibrary } from './media';
 
+type PixelOpKind = 'posterize' | 'threshold' | 'solarize' | 'duotone' | 'gradientMap'
+  | 'levels' | 'colorBalance' | 'emboss' | 'edgeDetect' | 'halftone' | 'scanlines'
+  | 'glitchBlocks' | 'ripple' | 'bulge' | 'twirl';
+interface PixelOp { kind: PixelOpKind; a: number; b: number; c: number }
+type ProceduralKind = 'lensFlare' | 'starfield' | 'bokeh' | 'rain';
+interface Procedural { kind: ProceduralKind; amount: number; hue: number; speed: number }
+
 interface FxState {
+  pixelOps: PixelOp[];
+  procedurals: Procedural[];
+  mirror: number;              // 0 off | 1 x | 2 y | 3 xy
+  kaleidoscope: number;        // segments, 0 = off
+  motionBlur: { angle: number; distance: number } | null;
   baseFilter: string;
   dropShadows: string[];
   pixelate: number;
@@ -21,6 +33,7 @@ interface FxState {
 }
 
 const emptyFx = (): FxState => ({
+  pixelOps: [], procedurals: [], mirror: 0, kaleidoscope: 0, motionBlur: null,
   baseFilter: '', dropShadows: [], pixelate: 0, sharpen: 0, noise: 0, chromatic: 0, chromaKey: null,
   vignette: null, wave: null, zoomBlur: null, tint: null,
   shake: { x: 0, y: 0 }, pulse: 1,
@@ -102,10 +115,279 @@ function buildFx(effects: Effect[], localTime: number, globalTime: number): FxSt
         s.pulse = 1 + (a / 100) * 0.5 * (1 + Math.sin(globalTime * bpm / 60 * Math.PI * 2));
         break;
       }
+      /* ---------------- v3.6.0 master effect library ---------------------- */
+      case 'posterize': s.pixelOps.push({ kind: 'posterize', a: p(fx, 'levels', localTime, 5), b: 0, c: 0 }); break;
+      case 'threshold': s.pixelOps.push({ kind: 'threshold', a: p(fx, 'cut', localTime, 128), b: 0, c: 0 }); break;
+      case 'solarize': s.pixelOps.push({ kind: 'solarize', a: p(fx, 'cut', localTime, 128), b: p(fx, 'amount', localTime, 100), c: 0 }); break;
+      case 'duotone': s.pixelOps.push({ kind: 'duotone', a: p(fx, 'hueA', localTime, 230), b: p(fx, 'hueB', localTime, 35), c: p(fx, 'amount', localTime, 100) }); break;
+      case 'gradientMap': s.pixelOps.push({ kind: 'gradientMap', a: p(fx, 'hue', localTime, 300), b: p(fx, 'amount', localTime, 100), c: 0 }); break;
+      case 'levels': s.pixelOps.push({ kind: 'levels', a: p(fx, 'black', localTime, 0), b: p(fx, 'white', localTime, 255), c: p(fx, 'gamma', localTime, 100) }); break;
+      case 'colorBalance': s.pixelOps.push({ kind: 'colorBalance', a: p(fx, 'r', localTime, 100), b: p(fx, 'g', localTime, 100), c: p(fx, 'b', localTime, 100) }); break;
+      case 'emboss': s.pixelOps.push({ kind: 'emboss', a: p(fx, 'amount', localTime, 60), b: 0, c: 0 }); break;
+      case 'edgeDetect': s.pixelOps.push({ kind: 'edgeDetect', a: p(fx, 'amount', localTime, 80), b: 0, c: 0 }); break;
+      case 'halftone': s.pixelOps.push({ kind: 'halftone', a: p(fx, 'size', localTime, 9), b: p(fx, 'amount', localTime, 100), c: 0 }); break;
+      case 'scanlines': s.pixelOps.push({ kind: 'scanlines', a: p(fx, 'spacing', localTime, 4), b: p(fx, 'amount', localTime, 55), c: 0 }); break;
+      case 'glitchBlocks': s.pixelOps.push({ kind: 'glitchBlocks', a: p(fx, 'blocks', localTime, 12), b: p(fx, 'amount', localTime, 35), c: 0 }); break;
+      case 'ripple': s.pixelOps.push({ kind: 'ripple', a: p(fx, 'amplitude', localTime, 18), b: p(fx, 'frequency', localTime, 8), c: globalTime }); break;
+      case 'bulge': s.pixelOps.push({ kind: 'bulge', a: p(fx, 'amount', localTime, 40), b: 0, c: 0 }); break;
+      case 'twirl': s.pixelOps.push({ kind: 'twirl', a: p(fx, 'angle', localTime, 90), b: 0, c: 0 }); break;
+      case 'mirror': s.mirror = Math.round(p(fx, 'axis', localTime, 0)) + 1; break;
+      case 'kaleidoscope': s.kaleidoscope = Math.round(p(fx, 'segments', localTime, 6)); break;
+      case 'motionBlur': s.motionBlur = { angle: p(fx, 'angle', localTime, 0), distance: p(fx, 'distance', localTime, 24) }; break;
+      case 'directionalBlur': s.motionBlur = { angle: p(fx, 'angle', localTime, 45), distance: p(fx, 'amount', localTime, 35) * 0.5 }; break;
+      case 'lensFlare': s.procedurals.push({ kind: 'lensFlare', amount: p(fx, 'intensity', localTime, 60), hue: p(fx, 'hue', localTime, 35), speed: 0 }); break;
+      case 'starfield': s.procedurals.push({ kind: 'starfield', amount: p(fx, 'density', localTime, 45), hue: p(fx, 'size', localTime, 3), speed: 0 }); break;
+      case 'bokeh': s.procedurals.push({ kind: 'bokeh', amount: p(fx, 'count', localTime, 24), hue: p(fx, 'hue', localTime, 190), speed: 0 }); break;
+      case 'rain': s.procedurals.push({ kind: 'rain', amount: p(fx, 'amount', localTime, 50), hue: 0, speed: p(fx, 'speed', localTime, 3) }); break;
     }
   }
   s.baseFilter = filters.join(' ').trim();
   return s;
+}
+
+/* --------------------- v3.6.0 real pixel operations ----------------------- */
+/** Deterministic pseudo-random in [0,1), stable across frames for a given seed. */
+function rnd(n: number): number {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+function hueRgb(h: number, l: number): [number, number, number] {
+  const a = Math.cos(h * Math.PI / 180) * 0.5 + 0.5;
+  const b = Math.cos((h - 120) * Math.PI / 180) * 0.5 + 0.5;
+  const c = Math.cos((h + 120) * Math.PI / 180) * 0.5 + 0.5;
+  return [a * 255 * l, b * 255 * l, c * 255 * l];
+}
+
+function applyPixelOp(canvas: HTMLCanvasElement, op: PixelOp): void {
+  const w = canvas.width, h = canvas.height;
+  if (!w || !h) return;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return;
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  const src = new Uint8ClampedArray(d);
+  const idx = (x: number, y: number) => ((y < 0 ? 0 : y >= h ? h - 1 : y) * w + (x < 0 ? 0 : x >= w ? w - 1 : x)) * 4;
+  const cl = (v: number) => v < 0 ? 0 : v > 255 ? 255 : v;
+
+  switch (op.kind) {
+    case 'posterize': {
+      const levels = Math.max(2, Math.round(op.a));
+      const q = 255 / (levels - 1);
+      for (let i = 0; i < d.length; i += 4) {
+        d[i] = Math.round(d[i] / q) * q; d[i + 1] = Math.round(d[i + 1] / q) * q; d[i + 2] = Math.round(d[i + 2] / q) * q;
+      }
+      break;
+    }
+    case 'threshold': {
+      for (let i = 0; i < d.length; i += 4) {
+        const l = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
+        const v = l >= op.a ? 255 : 0;
+        d[i] = d[i + 1] = d[i + 2] = v;
+      }
+      break;
+    }
+    case 'solarize': {
+      // Channels brighter than the cut are mirrored back from white.
+      const k = op.b / 100;
+      for (let i = 0; i < d.length; i += 4) {
+        for (let c = 0; c < 3; c++) {
+          const v = src[i + c];
+          d[i + c] = v > op.a ? cl(v + (255 - 2 * v) * k) : v;
+        }
+      }
+      break;
+    }
+    case 'duotone': {
+      const k = op.c / 100, A = hueRgb(op.a, 0.55), B = hueRgb(op.b, 1);
+      for (let i = 0; i < d.length; i += 4) {
+        const l = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) / 255;
+        for (let c = 0; c < 3; c++) d[i + c] = cl(d[i + c] * (1 - k) + (A[c] + (B[c] - A[c]) * l) * k);
+      }
+      break;
+    }
+    case 'gradientMap': {
+      const k = op.b / 100;
+      for (let i = 0; i < d.length; i += 4) {
+        const l = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) / 255;
+        const C = hueRgb(op.a + l * 120, 0.35 + l * 0.65);
+        for (let c = 0; c < 3; c++) d[i + c] = cl(d[i + c] * (1 - k) + C[c] * k);
+      }
+      break;
+    }
+    case 'levels': {
+      const lo = op.a * 2.55, hi = Math.max(lo + 1, op.b), gam = 100 / Math.max(1, op.c);
+      for (let i = 0; i < d.length; i += 4) {
+        for (let c = 0; c < 3; c++) {
+          const v = cl((d[i + c] - lo) / (hi - lo) * 255);
+          d[i + c] = cl(255 * Math.pow(v / 255, gam));
+        }
+      }
+      break;
+    }
+    case 'colorBalance': {
+      const kr = op.a / 100, kg = op.b / 100, kb = op.c / 100;
+      for (let i = 0; i < d.length; i += 4) {
+        d[i] = cl(d[i] * kr); d[i + 1] = cl(d[i + 1] * kg); d[i + 2] = cl(d[i + 2] * kb);
+      }
+      break;
+    }
+    case 'emboss': case 'edgeDetect': {
+      const k = op.a / 100;
+      const K = op.kind === 'emboss'
+        ? [-1, -1, 0, -1, 1, 1, 0, 1, 1]
+        : [-1, -1, -1, -1, 8, -1, -1, -1, -1];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        let acc = 0;
+        for (let ky = -1; ky <= 1; ky++) for (let kx = -1; kx <= 1; kx++) {
+          const j = idx(x + kx, y + ky);
+          acc += (src[j] * 0.299 + src[j + 1] * 0.587 + src[j + 2] * 0.114) * K[(ky + 1) * 3 + (kx + 1)];
+        }
+        const v = op.kind === 'emboss' ? cl(128 + acc * k) : cl(Math.abs(acc) * k);
+        const o = (y * w + x) * 4;
+        d[o] = d[o + 1] = d[o + 2] = v;
+      }
+      break;
+    }
+    case 'halftone': {
+      const cell = Math.max(3, Math.round(op.a)), k = op.b / 100;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const cx = Math.floor(x / cell) * cell + cell / 2;
+        const cy = Math.floor(y / cell) * cell + cell / 2;
+        const j = idx(Math.round(cx), Math.round(cy));
+        const l = (src[j] * 0.299 + src[j + 1] * 0.587 + src[j + 2] * 0.114) / 255;
+        const dist = Math.hypot(x - cx, y - cy);
+        const on = dist < (cell / 2) * (1 - l) ? 0 : 255;
+        const o = (y * w + x) * 4;
+        for (let c = 0; c < 3; c++) d[o + c] = cl(d[o + c] * (1 - k) + on * k);
+      }
+      break;
+    }
+    case 'scanlines': {
+      const sp = Math.max(2, Math.round(op.a)), k = op.b / 100;
+      for (let y = 0; y < h; y++) {
+        const dark = (y % sp) < sp / 2 ? 1 - k : 1;
+        for (let x = 0; x < w; x++) {
+          const o = (y * w + x) * 4;
+          d[o] *= dark; d[o + 1] *= dark; d[o + 2] *= dark;
+        }
+      }
+      break;
+    }
+    case 'glitchBlocks': {
+      const n = Math.max(2, Math.round(op.a)), k = op.b / 100;
+      const band = Math.max(2, Math.floor(h / n));
+      for (let b = 0; b < n; b++) {
+        const y0 = b * band;
+        const shift = Math.round((rnd(b * 3.7 + Math.floor(op.c * 4)) - 0.5) * w * 0.3 * k);
+        if (!shift) continue;
+        for (let y = y0; y < Math.min(h, y0 + band); y++) for (let x = 0; x < w; x++) {
+          const o = (y * w + x) * 4, j = idx(x - shift, y);
+          d[o] = src[j]; d[o + 1] = src[j + 1]; d[o + 2] = src[j + 2]; d[o + 3] = src[j + 3];
+        }
+      }
+      break;
+    }
+    case 'ripple': case 'bulge': case 'twirl': {
+      const cx = w / 2, cy = h / 2, maxR = Math.hypot(cx, cy);
+      const amp = op.a, freq = op.b, t = op.c;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy);
+        let sx = x, sy = y;
+        if (op.kind === 'ripple') {
+          const f = Math.sin(r / Math.max(1, maxR) * freq * 6.283 + t * 2) * amp;
+          sx = cx + dx + (r > 0 ? dx / r * f : 0);
+          sy = cy + dy + (r > 0 ? dy / r * f : 0);
+        } else if (op.kind === 'bulge') {
+          const k = 1 - (amp / 100) * (1 - Math.min(1, r / maxR));
+          sx = cx + dx / Math.max(0.05, k); sy = cy + dy / Math.max(0.05, k);
+        } else {
+          const a = (amp * Math.PI / 180) * (1 - r / maxR);
+          sx = cx + dx * Math.cos(a) - dy * Math.sin(a);
+          sy = cy + dx * Math.sin(a) + dy * Math.cos(a);
+        }
+        const j = idx(Math.round(sx), Math.round(sy)), o = (y * w + x) * 4;
+        d[o] = src[j]; d[o + 1] = src[j + 1]; d[o + 2] = src[j + 2]; d[o + 3] = src[j + 3];
+      }
+      break;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function applyProcedural(canvas: HTMLCanvasElement, p: Procedural, time: number): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width, h = canvas.height;
+  ctx.save();
+  if (p.kind === 'lensFlare') {
+    const k = p.amount / 100, x = w * 0.72, y = h * 0.28;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, Math.max(w, h) * 0.25);
+    g.addColorStop(0, `hsla(${p.hue},100%,92%,${0.85 * k})`);
+    g.addColorStop(0.25, `hsla(${p.hue},100%,70%,${0.35 * k})`);
+    g.addColorStop(1, 'hsla(0,0%,0%,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = `hsla(${p.hue},100%,85%,${0.5 * k})`;
+    ctx.lineWidth = Math.max(1, w / 500);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  } else if (p.kind === 'starfield') {
+    const n = Math.round(p.amount * 6), sz = Math.max(1, p.hue);
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < n; i++) {
+      ctx.globalAlpha = 0.2 + rnd(i * 1.7) * 0.8;
+      ctx.fillRect(rnd(i * 2.3) * w, rnd(i * 3.1) * h, sz, sz);
+    }
+  } else if (p.kind === 'bokeh') {
+    ctx.globalCompositeOperation = 'screen';
+    const n = Math.round(p.amount);
+    for (let i = 0; i < n; i++) {
+      const x = rnd(i * 2.7) * w, y = rnd(i * 4.1) * h, r = (4 + rnd(i * 5.3) * 18) * (w / 1080 + 0.4);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `hsla(${p.hue + rnd(i) * 60},90%,80%,.5)`);
+      g.addColorStop(1, 'hsla(0,0%,0%,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+    }
+  } else if (p.kind === 'rain') {
+    const n = Math.round(p.amount * 3), sp = p.speed;
+    ctx.strokeStyle = 'rgba(220,235,255,.35)'; ctx.lineWidth = Math.max(1, w / 800);
+    for (let i = 0; i < n; i++) {
+      const x = rnd(i * 1.9) * w;
+      const y = (rnd(i * 3.3) * h + time * sp * 220) % h;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 18); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function applyGeometry(canvas: HTMLCanvasElement, tmp: HTMLCanvasElement,
+  mirror: number, kaleidoscope: number): void {
+  if (!mirror && !kaleidoscope) return;
+  const w = canvas.width, h = canvas.height;
+  tmp.width = w; tmp.height = h;
+  const t = tmp.getContext('2d')!;
+  t.clearRect(0, 0, w, h);
+  t.save();
+  if (kaleidoscope > 2) {
+    const seg = Math.min(12, Math.round(kaleidoscope));
+    for (let i = 0; i < seg; i++) {
+      t.save(); t.translate(w / 2, h / 2); t.rotate(i * 2 * Math.PI / seg);
+      if (i % 2) t.scale(1, -1);
+      t.beginPath(); t.moveTo(0, 0);
+      t.arc(0, 0, Math.hypot(w, h), -Math.PI / seg, Math.PI / seg);
+      t.closePath(); t.clip();
+      t.drawImage(canvas, -w / 2, -h / 2);
+      t.restore();
+    }
+  } else {
+    const mx = mirror === 1 || mirror === 3 ? -1 : 1;
+    const my = mirror === 2 || mirror === 3 ? -1 : 1;
+    t.translate(mx < 0 ? w : 0, my < 0 ? h : 0); t.scale(mx, my);
+    t.drawImage(canvas, 0, 0);
+  }
+  t.restore();
+  const c = canvas.getContext('2d')!;
+  c.clearRect(0, 0, w, h);
+  c.drawImage(tmp, 0, 0);
 }
 
 /* --------------------------- pixel processing ----------------------------- */
@@ -710,7 +992,8 @@ export class Renderer {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    const sctx = scratch.getContext('2d')!;
+    // Pixel-level effects read back this canvas every frame; request the fast path once.
+    const sctx = scratch.getContext('2d', { willReadFrequently: true })!;
     /* A camera layer transforms the entire composition (pan / zoom / rotate). */
     let camera: { x: number; y: number; sx: number; sy: number; rot: number } | null = null;
     for (const l of this.project.layers) {
@@ -782,6 +1065,9 @@ export class Renderer {
       if (fx.sharpen > 0) applySharpen(scratch, fx.sharpen);
       if (fx.vignette && fx.vignette.amount > 0) applyVignette(scratch, scale, fx.vignette);
       if (fx.tint && fx.tint.amount > 0) applyTint(scratch, scale, fx.tint);
+      for (const op of fx.pixelOps) applyPixelOp(scratch, op);
+      for (const pr of fx.procedurals) applyProcedural(scratch, pr, time);
+      applyGeometry(scratch, scratch2, fx.mirror, fx.kaleidoscope);
       if (layer.mask.type !== 'none') applyMask(scratch, scale, layer, this.project, size.w, size.h);
 
       // composite onto the main canvas
@@ -802,6 +1088,17 @@ export class Renderer {
         }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         camTransform(ctx);
+        ctx.globalAlpha = alpha;
+      }
+      if (fx.motionBlur && fx.motionBlur.distance > 0) {
+        const steps = 6;
+        const rad = fx.motionBlur.angle * Math.PI / 180;
+        const dx = Math.cos(rad) * fx.motionBlur.distance;
+        const dy = Math.sin(rad) * fx.motionBlur.distance;
+        for (let s = 1; s <= steps; s++) {
+          ctx.globalAlpha = alpha / (steps + 1);
+          ctx.drawImage(scratch, dx * s / steps, dy * s / steps);
+        }
         ctx.globalAlpha = alpha;
       }
       ctx.drawImage(scratch, 0, 0);

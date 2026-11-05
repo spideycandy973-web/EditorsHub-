@@ -2,6 +2,9 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { editor } from './editor/store';
 import './um.css';
+import { applyBrand } from './theme/brand';
+
+applyBrand();
 
 // Exposed for debugging/automation; the editor is fully usable without it.
 (window as unknown as { __editor: typeof editor }).__editor = editor;

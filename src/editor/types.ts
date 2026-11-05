@@ -76,7 +76,13 @@ export type FillType = 'solid' | 'linear' | 'radial';
 export type EffectType =
   | 'blur' | 'sharpen' | 'colorAdjust' | 'glow' | 'dropShadow' | 'pixelate'
   | 'vignette' | 'grayscale' | 'invert' | 'sepia' | 'noise' | 'outline'
-  | 'tint' | 'shake' | 'chromatic' | 'chromaKey' | 'wave' | 'pulse' | 'zoomBlur';
+  | 'tint' | 'shake' | 'chromatic' | 'chromaKey' | 'wave' | 'pulse' | 'zoomBlur'
+  /* v3.6.0 master-clone effect library — every one is a real canvas operation */
+  | 'posterize' | 'threshold' | 'solarize' | 'duotone' | 'gradientMap'
+  | 'emboss' | 'edgeDetect' | 'halftone' | 'scanlines' | 'glitchBlocks'
+  | 'ripple' | 'bulge' | 'twirl' | 'colorBalance' | 'levels'
+  | 'lensFlare' | 'starfield' | 'bokeh' | 'rain'
+  | 'mirror' | 'kaleidoscope' | 'motionBlur' | 'directionalBlur';
 
 export interface EffectParamDef {
   key: string;
@@ -277,6 +283,30 @@ export const EFFECT_DEFS: EffectDef[] = [
     { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 12, unit: '%' },
     { key: 'bpm', label: 'Tempo', min: 20, max: 240, step: 1, default: 120, unit: 'BPM' },
   ] },
+  /* ------------------------- v3.6.0 master effect library ---------------- */
+  { type: 'posterize', label: 'Posterize', group: 'Color', description: 'Reduce each channel to a small number of levels.', params: [{ key: 'levels', label: 'Levels', min: 2, max: 16, step: 1, default: 5, unit: '' }] },
+  { type: 'threshold', label: 'Threshold', group: 'Color', description: 'Hard black/white cut at a luminance value.', params: [{ key: 'cut', label: 'Cut', min: 0, max: 255, step: 1, default: 128, unit: '' }] },
+  { type: 'solarize', label: 'Solarize', group: 'Color', description: 'Invert channels brighter than the threshold.', params: [{ key: 'cut', label: 'Cut', min: 0, max: 255, step: 1, default: 128, unit: '' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 100, unit: '%' }] },
+  { type: 'duotone', label: 'Duotone', group: 'Color', description: 'Map luminance between two hues.', params: [{ key: 'hueA', label: 'Shadow hue', min: 0, max: 360, step: 1, default: 230, unit: '°' }, { key: 'hueB', label: 'Highlight hue', min: 0, max: 360, step: 1, default: 35, unit: '°' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 100, unit: '%' }] },
+  { type: 'gradientMap', label: 'Gradient Map', group: 'Color', description: 'Colourise by a hue ramp.', params: [{ key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, default: 300, unit: '°' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 100, unit: '%' }] },
+  { type: 'levels', label: 'Levels', group: 'Color', description: 'Black point, white point and gamma.', params: [{ key: 'black', label: 'Black', min: 0, max: 100, step: 1, default: 0, unit: '' }, { key: 'white', label: 'White', min: 100, max: 255, step: 1, default: 255, unit: '' }, { key: 'gamma', label: 'Gamma', min: 20, max: 300, step: 1, default: 100, unit: '%' }] },
+  { type: 'colorBalance', label: 'Color Balance', group: 'Color', description: 'Independent red / green / blue gains.', params: [{ key: 'r', label: 'Red', min: 0, max: 200, step: 1, default: 100, unit: '%' }, { key: 'g', label: 'Green', min: 0, max: 200, step: 1, default: 100, unit: '%' }, { key: 'b', label: 'Blue', min: 0, max: 200, step: 1, default: 100, unit: '%' }] },
+  { type: 'emboss', label: 'Emboss', group: 'Stylize', description: 'Directional relief convolution.', params: [{ key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 60, unit: '%' }] },
+  { type: 'edgeDetect', label: 'Edge Detect', group: 'Stylize', description: 'Laplacian edge extraction.', params: [{ key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 80, unit: '%' }] },
+  { type: 'halftone', label: 'Halftone', group: 'Stylize', description: 'Print-style dot screen.', params: [{ key: 'size', label: 'Dot size', min: 3, max: 30, step: 1, default: 9, unit: 'px' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 100, unit: '%' }] },
+  { type: 'scanlines', label: 'Scanlines', group: 'Stylize', description: 'CRT-style alternating dark rows.', params: [{ key: 'spacing', label: 'Spacing', min: 2, max: 16, step: 1, default: 4, unit: 'px' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 55, unit: '%' }] },
+  { type: 'glitchBlocks', label: 'Glitch Blocks', group: 'Stylize', description: 'Deterministic horizontal block displacement.', params: [{ key: 'blocks', label: 'Blocks', min: 2, max: 40, step: 1, default: 12, unit: '' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 35, unit: '%' }] },
+  { type: 'ripple', label: 'Ripple', group: 'Distort', description: 'Concentric sine displacement.', params: [{ key: 'amplitude', label: 'Amplitude', min: 0, max: 80, step: 1, default: 18, unit: 'px' }, { key: 'frequency', label: 'Frequency', min: 1, max: 30, step: 0.5, default: 8, unit: '' }] },
+  { type: 'bulge', label: 'Bulge / Pinch', group: 'Distort', description: 'Radial magnification toward or away from the centre.', params: [{ key: 'amount', label: 'Amount', min: -100, max: 100, step: 1, default: 40, unit: '%' }] },
+  { type: 'twirl', label: 'Twirl', group: 'Distort', description: 'Radius-dependent rotation.', params: [{ key: 'angle', label: 'Angle', min: -720, max: 720, step: 1, default: 90, unit: '°' }] },
+  { type: 'mirror', label: 'Mirror', group: 'Distort', description: 'Flip horizontally, vertically or both.', params: [{ key: 'axis', label: 'Axis', min: 0, max: 2, step: 1, default: 0, unit: '' }] },
+  { type: 'kaleidoscope', label: 'Kaleidoscope', group: 'Distort', description: 'Radial mirrored segments.', params: [{ key: 'segments', label: 'Segments', min: 3, max: 12, step: 1, default: 6, unit: '' }] },
+  { type: 'motionBlur', label: 'Motion Blur', group: 'Blur & Sharpen', description: 'Stacked offset copies along an angle.', params: [{ key: 'angle', label: 'Angle', min: 0, max: 360, step: 1, default: 0, unit: '°' }, { key: 'distance', label: 'Distance', min: 0, max: 120, step: 1, default: 24, unit: 'px' }] },
+  { type: 'directionalBlur', label: 'Directional Blur', group: 'Blur & Sharpen', description: 'Soft linear smear along an angle.', params: [{ key: 'angle', label: 'Angle', min: 0, max: 360, step: 1, default: 45, unit: '°' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 35, unit: '%' }] },
+  { type: 'lensFlare', label: 'Lens Flare', group: 'Light', description: 'Procedural flare and streaks.', params: [{ key: 'intensity', label: 'Intensity', min: 0, max: 100, step: 1, default: 60, unit: '%' }, { key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, default: 35, unit: '°' }] },
+  { type: 'starfield', label: 'Starfield', group: 'Procedural', description: 'Deterministic procedural stars.', params: [{ key: 'density', label: 'Density', min: 0, max: 100, step: 1, default: 45, unit: '%' }, { key: 'size', label: 'Size', min: 1, max: 12, step: 1, default: 3, unit: 'px' }] },
+  { type: 'bokeh', label: 'Bokeh', group: 'Procedural', description: 'Soft procedural light circles.', params: [{ key: 'count', label: 'Count', min: 0, max: 80, step: 1, default: 24, unit: '' }, { key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, default: 190, unit: '°' }] },
+  { type: 'rain', label: 'Rain', group: 'Procedural', description: 'Animated procedural rain streaks.', params: [{ key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 50, unit: '%' }, { key: 'speed', label: 'Speed', min: 0, max: 10, step: 0.1, default: 3, unit: '' }] },
 ];
 
 export const EFFECT_MAP: Record<string, EffectDef> = Object.fromEntries(EFFECT_DEFS.map(d => [d.type, d]));

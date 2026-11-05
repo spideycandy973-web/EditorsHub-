@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/d5198657-editorshub
+      - arena/05dd09b3-editorshub
     # Narrow trigger so a web/Capacitor rebuild does not race the native CI push.
     paths:
       - '.github/workflows/build-apk.yml'
@@ -96,13 +96,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The native workflow creates v3.5.0. Wait for it instead of racing it.
+          # The native workflow creates v3.6.0. Wait for it instead of racing it.
           for i in $(seq 1 30); do
-            if gh release view v3.5.0 >/dev/null 2>&1; then echo "v3.5.0 release is live"; break; fi
-            echo "waiting for v3.5.0 release ($i/30)…"
+            if gh release view v3.6.0 >/dev/null 2>&1; then echo "v3.6.0 release is live"; break; fi
+            echo "waiting for v3.6.0 release ($i/30)…"
             sleep 20
           done
-          gh release upload v3.5.0 EditorsHub-Motion.apk --clobber || true
+          gh release upload v3.6.0 EditorsHub-Motion.apk --clobber || true
           gh release upload editorshub-latest EditorsHub-Motion.apk --clobber || true
 
       - name: Add APK to repository
@@ -112,14 +112,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f EditorsHub-Motion.apk
           git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
-          git pull origin arena/d5198657-editorshub --no-rebase || true
+          git pull origin arena/05dd09b3-editorshub --no-rebase || true
           pushed=0
           for attempt in 1 2 3; do
-            if git push origin HEAD:arena/d5198657-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:arena/05dd09b3-editorshub; then pushed=1; break; fi
             echo "push attempt $attempt failed; retrying"
             sleep 10
-            git fetch origin arena/d5198657-editorshub
-            git pull origin arena/d5198657-editorshub --no-rebase || true
+            git fetch origin arena/05dd09b3-editorshub
+            git pull origin arena/05dd09b3-editorshub --no-rebase || true
           done
           [ "$pushed" = "1" ]
 

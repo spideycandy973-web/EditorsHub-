@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BRAND } from '../theme/brand';
 
 /**
  * Cold-launch screen from the reference recording (0.75 s – ~3.0 s): a near-black
@@ -17,7 +18,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
   }, [onDone]);
 
   return (
-    <div className={`um-splash ${leaving ? 'leaving' : ''}`} aria-label="EditorsHub is starting">
+    <div className={`um-splash ${leaving ? 'leaving' : ''}`} aria-label={`${BRAND.appName} is starting`}>
       <svg className="um-splash-logo" viewBox="0 0 120 120" aria-hidden="true">
         <path className="um-splash-arc outer" d="M60 11a49 49 0 1 0 49 49" />
         <path className="um-splash-arc inner" d="M60 27a33 33 0 1 0 33 33" />

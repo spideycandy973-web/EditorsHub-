@@ -55,6 +55,47 @@ const SECONDARY: Category[] = [
   { name: 'Shake & Transform', hue: 158, effects: C(158, 'shake', 'pulse', 'wave', 'zoomBlur') },
 ];
 
+/** v3.6.0 master library: distribute the 23 additional real effects across the
+ *  32 APK categories so every category exposes a useful, working set. */
+const EXTRA: Record<string, EffectType[]> = {
+  'Color & Light': ['posterize', 'threshold', 'solarize', 'duotone', 'gradientMap', 'levels', 'colorBalance'],
+  'Drawing & Edge': ['emboss', 'edgeDetect', 'halftone', 'scanlines', 'twirl'],
+  'Blur': ['motionBlur', 'directionalBlur', 'ripple'],
+  'Distortion/Warp': ['ripple', 'bulge', 'twirl', 'mirror', 'kaleidoscope', 'glitchBlocks'],
+  'Procedural': ['starfield', 'bokeh', 'rain', 'lensFlare', 'halftone'],
+  '3D': ['emboss', 'lensFlare', 'bulge', 'mirror'],
+  'Move/Transform': ['motionBlur', 'mirror', 'kaleidoscope', 'twirl'],
+  'Repeat': ['kaleidoscope', 'halftone', 'scanlines', 'glitchBlocks'],
+  'Matte/Mask/Key': ['threshold', 'posterize', 'halftone'],
+  'Opacity/Visibility': ['levels', 'solarize', 'threshold'],
+  'Text': ['emboss', 'edgeDetect', 'scanlines'],
+  'Other': ['posterize', 'emboss', 'ripple', 'bulge', 'starfield', 'bokeh'],
+  'Nature & Weather': ['rain', 'starfield', 'bokeh', 'ripple'],
+  'Space & Cosmic': ['starfield', 'lensFlare', 'bokeh', 'glow'],
+  'Flares, Rays & Energy': ['lensFlare', 'bokeh', 'gradientMap', 'solarize'],
+  'Glow & Gradients': ['lensFlare', 'gradientMap', 'duotone', 'bokeh'],
+  'Grids & Tunnels': ['halftone', 'kaleidoscope', 'twirl', 'scanlines'],
+  'Backgrounds & Textures': ['starfield', 'bokeh', 'rain', 'halftone'],
+  'Glitch & Digital Damage': ['glitchBlocks', 'scanlines', 'posterize', 'threshold'],
+  'Retro TV, VHS & Film': ['scanlines', 'halftone', 'posterize', 'colorBalance'],
+  'Warp & Lens': ['bulge', 'twirl', 'ripple', 'motionBlur'],
+  'Water, Glass & Refraction': ['ripple', 'bulge', 'bokeh', 'directionalBlur'],
+  '3D Layer & Depth': ['emboss', 'bulge', 'lensFlare', 'mirror'],
+  '3D Shapes & Solids': ['emboss', 'edgeDetect', 'kaleidoscope'],
+  '3D Props & Objects': ['emboss', 'lensFlare', 'levels'],
+  'Blur, Focus & Sharpen': ['motionBlur', 'directionalBlur', 'ripple', 'halftone'],
+  'Color Grading': ['levels', 'colorBalance', 'duotone', 'gradientMap'],
+  'Color Looks & Tone Maps': ['gradientMap', 'duotone', 'posterize', 'solarize'],
+  'Ink, Paint & Halftone': ['halftone', 'edgeDetect', 'threshold', 'emboss'],
+  'Strokes, Bevels & Shadows': ['emboss', 'edgeDetect', 'levels'],
+  'Wipes, Keys & Shatter': ['glitchBlocks', 'threshold', 'kaleidoscope'],
+  'Shake & Transform': ['motionBlur', 'twirl', 'mirror', 'glitchBlocks'],
+};
+for (const cat of [...PRIMARY, ...SECONDARY]) {
+  const extra = EXTRA[cat.name] ?? [];
+  for (const t of extra) if (!cat.effects.includes(t)) cat.effects.push(t);
+}
+
 const QUICK: { name: string; type: EffectType; hue: number }[] = [
   { name: 'Chroma Key', type: 'chromaKey', hue: 152 },
   { name: 'Gaussian Blur', type: 'blur', hue: 210 },
@@ -173,7 +214,7 @@ export function EffectBrowser() {
               ))}
               {effects.length === 0 && <p className="um-hint center">No effects match that search.</p>}
             </div>
-            <p className="um-fx-honest">{effects.length} real effect{effects.length === 1 ? '' : 's'} in this category. Every tile applies a working canvas effect.</p>
+            <p className="um-fx-honest">{effects.length} real effect{effects.length === 1 ? '' : 's'} in this category · {ALL.length} in the library. Every tile applies a working canvas effect.</p>
           </>
         )}
       </div>
