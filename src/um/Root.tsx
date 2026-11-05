@@ -6,6 +6,8 @@ import { useUI } from './context';
 import { GestureBar, StatusBar } from './Chrome';
 import { Splash } from './Splash';
 import { AboutPage } from './AboutPage';
+import { EffectBrowser } from './EffectBrowser';
+import { PresetsDialog } from './PresetsDialog';
 import { Home } from './Home';
 import { Editor } from './Editor';
 import { Overlays } from './Overlays';
@@ -221,6 +223,8 @@ export function Root() {
           : <Home />}
         <Overlays />
         {ui.aboutOpen && <AboutPage />}
+        {ui.effectBrowser && <EffectBrowser />}
+        {ui.presetsDialog && <PresetsDialog />}
         {ui.prefs.showDeviceChrome && <GestureBar />}
         {splash && <Splash onDone={() => setSplash(false)} />}
         {e.toast && <div className={`um-toast ${e.toast.kind}`} key={e.toast.id}>{e.toast.text}</div>}

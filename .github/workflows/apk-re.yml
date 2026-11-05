@@ -154,6 +154,7 @@ jobs:
               open('/tmp/smallest-so.txt','w').write(n)
           PY
           GH_DIR=$(cat /tmp/ghidra-install-dir.txt)
+          mkdir -p /tmp/ghidra-proj
           export JAVA_HOME="${JAVA_HOME_21_X64:-$JAVA_HOME}"
           echo "JAVA_HOME=$JAVA_HOME"
           java -version

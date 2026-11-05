@@ -1,3 +1,3 @@
 Re-run the REA + Ghidra APK reverse-engineering workflow on
-arena/d5198657-editorshub (run 2: JADX MCP provider, explicit JAVA_HOME,
-Ghidra log capture). Source Drive id 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE.
+arena/d5198657-editorshub (run 3: create the Ghidra project directory before
+analyzeHeadless). Source Drive id 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE.

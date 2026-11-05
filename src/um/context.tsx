@@ -39,6 +39,11 @@ export interface UIState {
   /** Full-screen About page (the reference recording shows a page, not a dialog). */
   aboutOpen: boolean;
   setAboutOpen: (v: boolean) => void;
+  /** Full-screen Effect Browser and the Presets dialog from the reference APK. */
+  effectBrowser: boolean;
+  setEffectBrowser: (v: boolean) => void;
+  presetsDialog: boolean;
+  setPresetsDialog: (v: boolean) => void;
   openProperty: (p: PropertyId) => void;
   openAdd: () => void;
   setAddPage: (page: Preferences['addPage']) => void;
@@ -60,6 +65,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [effectBrowser, setEffectBrowser] = useState(false);
+  const [presetsDialog, setPresetsDialog] = useState(false);
 
   const setPrefs = (p: Preferences) => { savePrefs(p); setPrefsState(p); };
   const setAddPage = (page: Preferences['addPage']) => setPrefs({ ...prefs, addPage: page });
@@ -73,6 +80,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     selectedIds, setSelectedIds,
     toolsOpen, toggleTools: () => setToolsOpen(v => !v),
     aboutOpen, setAboutOpen,
+    effectBrowser, setEffectBrowser, presetsDialog, setPresetsDialog,
     openProperty: (p) => { setProperty(p); setSheet('property'); setSelectedIds([]); },
     openAdd: () => {
       const page = prefs.rememberAddPage ? prefs.addPage : 'add';
@@ -81,7 +89,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     },
     setAddPage,
   }), [sheet, property, moveView, activePropKey, homeTab, homeSegment, createTab, prefs,
-    xmlResult, importUrl, selectedIds, toolsOpen, aboutOpen]);
+    xmlResult, importUrl, selectedIds, toolsOpen, aboutOpen, effectBrowser, presetsDialog]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
