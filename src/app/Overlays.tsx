@@ -42,7 +42,7 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
   const ui = useUI();
   const [tab, setTab] = useState(ui.createTab);
   const [name, setName] = useState(tab === 'element' ? `Element ${listElements().length + 1}` : `New Project ${e.listProjects().length + 1}`);
-  const [ratio, setRatio] = useState<string>('9:16');
+  const [ratio, setRatio] = useState<string>('16:9');
   const [longSide, setLongSide] = useState('1920');
   const [fps, setFps] = useState('60');
   const [bg, setBg] = useState('#000000');
@@ -96,7 +96,7 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
           <NumField label="Height" value={ch} min={16} max={4096} onChange={setCh} unit="px" />
         </div>
       )}
-      <Row label="Resolution" sub={`Composition Size · ${dims().width} × ${dims().height}`}>
+      <Row label="Resolution" sub={<><b>Composition Size</b><b>{dims().width} × {dims().height}</b></>}>
         <Select value={longSide} onChange={setLongSide} options={RESOLUTIONS} title="Resolution" />
       </Row>
       <Row label="Frame Rate">

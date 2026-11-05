@@ -1,3 +1,35 @@
+# EditorsHub v4.1.0 — measured pixel alignment
+
+Package `com.editorshub`, application label `EditorsHub`; all code and assets are original.
+
+## What's new in 4.1.0
+
+- **Measured, not guessed.** `tools/visual-audit.py` samples all 28 reference
+  JPGs on a 430 × 956 canvas and reports exact card/button/sheet bounds and
+  palette values; `docs/VISUAL_AUDIT.md` records the deltas.
+- **Global `box-sizing: border-box`** removed 8–38 px of layout inflation from
+  every padded box. Bundled Roboto (400/500/700/900) so text metrics match.
+- **Exact palette** from the stills: `#121214`, `#1c1c1e`, `#262628`,
+  `#d8dcff`, `#01ffa7`.
+- Launcher card/button/nav bounds within 0–1 px of the reference; settings
+  −2/+3 px, create sheet 0/−1 px, add sheet −3/−1 px. Mean whole-screen luma
+  difference 2.58 % / 4.27 % / 7.51 % / 5.49 %.
+- Rounded rectangles instead of pills, flat teal FAB, dark-track toggle,
+  four-row Settings, 16:9 default create ratio with 1920 × 1080 composition,
+  circled clear-name button, two-line Composition Size.
+- `versionCode 15`, `versionName 4.1.0`, PWA cache `editorshub-v15`.
+  `npm run typecheck`, `npm run build`, `node tools/verify-gif.mjs` (7/7) and
+  `node tools/smoke.mjs --shots` (**67/67**, zero console errors) all pass.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, `com.editorshub`) is installable and is
+attached to `apk-latest`, `v4.1.0` and `editorshub-latest`. Release APK/AAB are
+unsigned by design (see `EditorsHub/docs/RELEASE_SIGNING.md`).
+`EditorsHub-source-v4.1.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v4.0.0 — fully new
 
 Package `com.editorshub`, application label `EditorsHub`; all code and assets are original.

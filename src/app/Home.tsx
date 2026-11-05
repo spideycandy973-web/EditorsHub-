@@ -476,11 +476,6 @@ function SettingsBody() {
           className={`um-toggle ${prefs.rememberAddPage ? 'on' : ''}`}
           onClick={() => setPrefs({ ...prefs, rememberAddPage: !prefs.rememberAddPage })}><span /></button>
       </div>
-      <div className="um-row"><span>Device chrome <i className="um-info">ⓘ</i></span>
-        <button type="button" role="switch" aria-checked={prefs.showDeviceChrome} title="Device chrome (status + gesture bar)"
-          className={`um-toggle ${prefs.showDeviceChrome ? 'on' : ''}`}
-          onClick={() => setPrefs({ ...prefs, showDeviceChrome: !prefs.showDeviceChrome })}><span /></button>
-      </div>
       <div className="um-row">
         <span>Default Layer Duration</span>
         <label className="um-select compact">
@@ -498,7 +493,7 @@ function SettingsBody() {
       {BRAND.links.map(link => (
         <button type="button" key={link.label} className="um-link-row"
           onClick={() => window.open(link.url, '_blank', 'noopener')}>
-          <span className="um-link-icon light">
+          <span className={`um-link-icon ${link.icon}`}>
             {link.icon === 'globe' ? <Globe2 size={19} /> : link.icon === 'send' ? <Send size={19} /> : <Music2 size={19} />}
           </span><b>{link.label}</b><ChevronRight size={17} />
         </button>

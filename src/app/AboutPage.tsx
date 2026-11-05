@@ -64,6 +64,11 @@ export function AboutPage() {
             <button type="button" onClick={() => { setMenu(false); ui.setSheet('help'); }}>
               Editing guide
             </button>
+            <button type="button" role="switch" aria-checked={ui.prefs.showDeviceChrome}
+              title="Device chrome (status + gesture bar)"
+              onClick={() => ui.setPrefs({ ...ui.prefs, showDeviceChrome: !ui.prefs.showDeviceChrome })}>
+              Device chrome: {ui.prefs.showDeviceChrome ? 'on' : 'off'}
+            </button>
           </div>
         )}
       </header>

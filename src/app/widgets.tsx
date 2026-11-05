@@ -80,7 +80,7 @@ export function Select({ value, options, onChange, title }: {
   );
 }
 
-export function Row({ label, sub, children }: { label: string; sub?: string; children: ReactNode }) {
+export function Row({ label, sub, children }: { label: string; sub?: ReactNode; children: ReactNode }) {
   return (
     <div className="um-field-row">
       <div className="um-field-label"><strong>{label}</strong>{sub && <small>{sub}</small>}</div>

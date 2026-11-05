@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.1.0 — measured pixel alignment (2026-11-05)
+
+- Added [`tools/visual-audit.py`](../tools/visual-audit.py) and
+  [`docs/VISUAL_AUDIT.md`](VISUAL_AUDIT.md): exact card/button/sheet row bounds
+  and palette samples from all 28 reference JPGs on the 430 × 956 canvas, with
+  a `--mine` mode that reports the deltas against headless screenshots.
+- **Global `box-sizing: border-box`** — without it every explicitly-sized
+  padded box was 8–38 px too tall. This was the main cause of the layout drift.
+- Bundled `@fontsource/roboto` (400/500/700/900) so text metrics match the
+  reference instead of falling back to DejaVu Sans.
+- Restored the exact palette measured from the stills: `#121214`, `#1c1c1e`,
+  `#262628`, `#d8dcff`, `#01ffa7`.
+- Launcher card/button/nav bounds now match within 0–1 px; settings −2/+3 px,
+  create sheet 0/−1 px, add sheet −3/−1 px. Whole-screen mean luma difference:
+  2.58 % launcher, 4.27 % settings, 7.51 % create, 5.49 % add.
+- Buttons changed from pills to 12–13 px rounded rectangles; flat 48 px teal
+  FAB/nav-plus with no glow; dark-track/teal-knob toggle.
+- Settings reduced to the reference's four rows; the still-functional Device
+  chrome control moved to the About menu.
+- Create sheet: default ratio **16:9** (1920 × 1080), transparent 48 px ratio
+  chips with corner brackets, circled clear-name button, two-line Composition
+  Size label.
+- `tools/smoke.mjs` extended to **67 checks** including measured launcher
+  geometry and the Roboto/palette tokens; all passing.
+- `versionCode 15`, `versionName 4.1.0`, PWA cache `editorshub-v15`.
+
 ## 4.0.0 — fully new (2026-11-05)
 
 - **Everything from the previous app removed and rebuilt.** The old UI tree was

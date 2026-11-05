@@ -11,24 +11,27 @@
      (apk-analysis/values.json): A10, A9, A9_W5P, A7, Y1. The still frames
      measured within ~1 value of these, so the APK is authoritative. */
   --um-bg: #070707;
-  --um-home: #121215;
-  --um-card: #1c1c1f;
-  --um-card-2: #262629;
-  --um-input: #262629;
+  --um-home: #121214;
+  --um-card: #1c1c1e;
+  --um-card-2: #262628;
+  --um-input: #262628;
   --um-line: #2e2e33;
   --um-text: #f3f3f6;
   --um-muted: #92929c;
-  --um-lav: #dfe3ff;
-  --um-teal: #00ffa8;
+  --um-lav: #d8dcff;
+  --um-teal: #01ffa7;
   --um-pink: #ff3b7f;
   --um-radius: 16px;
 }
 
+/* v4.1.0: measured pixel alignment. The reference layout uses border-box
+   everywhere; without this reset every padded box was 8-38 px too tall. */
+*, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body {
   background: #000;
   color: var(--um-text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: Roboto, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 14px;
   overflow: hidden;
   overscroll-behavior: none;
@@ -314,15 +317,15 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-name-input button { color: #9a9aa4; display: grid; place-items: center; }
 .um-ratios { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 2px 0 16px; }
 .um-ratio {
-  aspect-ratio: 1 / 1.12; border-radius: 5px; border: 0;
-  background: #262629; display: grid; place-items: center; font-size: 10px; color: #e2e2e9; position: relative;
+  height: 48px; border-radius: 5px; border: 0;
+  background: transparent; display: grid; place-items: center; font-size: 10px; color: #e2e2e9; position: relative;
 }
-.um-ratio.on { border: 2px solid #f2f2f6; background: transparent; font-weight: 700; }
-.um-ratio::before, .um-ratio::after { content: ''; position: absolute; width: 9px; height: 9px; border: 1px solid #8a8a92; }
+.um-ratio.on { border: 1.5px solid #f2f2f6; background: transparent; font-weight: 700; }
+.um-ratio::before, .um-ratio::after { content: ''; position: absolute; width: 9px; height: 9px; border: 1px solid #b9b9c2; }
 .um-ratio::before { top: 0; right: 0; border-left: 0; border-bottom: 0; }
 .um-ratio::after { bottom: 0; left: 0; border-right: 0; border-top: 0; }
 .um-crop { position: absolute; inset: 0; pointer-events: none; }
-.um-crop::before, .um-crop::after { content: ''; position: absolute; width: 9px; height: 9px; border: 1px solid #8a8a92; }
+.um-crop::before, .um-crop::after { content: ''; position: absolute; width: 9px; height: 9px; border: 1px solid #b9b9c2; }
 .um-crop::before { top: 0; left: 0; border-right: 0; border-bottom: 0; }
 .um-crop::after { bottom: 0; right: 0; border-left: 0; border-top: 0; }
 .um-ratio.on::before, .um-ratio.on::after, .um-ratio.on .um-crop { display: none; }
@@ -895,3 +898,69 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-export-preview { width: 100%; text-align: left; color: var(--um-lav); font-size: 11px;
   padding: 8px 2px; }
 .um-template-flow-entry { padding: 8px 12px 0; }
+
+/* ========================================================================== *
+ * v4.1.0 — measured pixel alignment against the 28 reference JPGs
+ * (1220x2712 scaled to the 430x956 phone canvas, tools/visual-audit.py).
+ * Reference geometry: launcher card 129-226 / 240-475, upload btn 157-198,
+ * import btn 367-407, nav pill 855-921, settings 137-745, create sheet
+ * 394-840, create button 779-823, add sheet 542-861.
+ * ========================================================================== */
+:root { --um-radius: 18px; }
+
+/* Launcher header + cards */
+.um-home-header { height: 86px; padding: 12px 18px 6px; }
+.um-wordmark strong { font-size: 19px; font-weight: 900; letter-spacing: 3.1px; }
+.um-wordmark span { font-size: 8px; letter-spacing: .8px; margin-top: 2px; }
+.um-home-body, .um-projects-body { padding: 9px 17px 10px; }
+.um-card { padding: 16px; margin-bottom: 14px; border-radius: var(--um-radius); }
+.um-upload-card { min-height: 97px; padding: 14px 16px; }
+.um-package-card { min-height: 235px; padding: 16px 16px 14px; }
+.um-package-title { margin-bottom: 12px; }
+.um-card-copy strong, .um-package-title strong { font-size: 16px; }
+.um-card-copy small, .um-package-title small { font-size: 11px; }
+
+/* Rounded rectangles, not pills */
+.um-lavender { height: 41px; border-radius: 12px; font-size: 14px; font-weight: 800; }
+.um-lavender.small { height: 41px; border-radius: 13px; padding: 0 20px; font-size: 13.5px; }
+.um-lavender.create { height: 44px; margin-top: 14px; border-radius: 12px; }
+.um-package-card .um-lavender { margin-top: 11px; height: 40px; }
+.um-qr { height: 42px; margin-top: 9px; border-radius: 12px; }
+.um-input { height: 44px; border-radius: 12px; }
+.um-sheet-floating { border-radius: 20px; }
+
+/* No glow on the FAB / nav plus; reference uses a flat teal disc */
+.um-nav::before { width: 240px; height: 66px; bottom: 15px; border-radius: 33px; }
+.um-nav-plus { width: 48px !important; height: 48px !important; margin: 0 14px;
+  box-shadow: none; transform: translateY(-3px); }
+.um-fab { width: 50px; height: 50px; box-shadow: none; }
+.um-editor .um-fab { box-shadow: none; }
+
+/* Toggle: dark track + teal knob (reference), not a filled teal track */
+.um-toggle { width: 46px; height: 26px; background: #3f3f46; }
+.um-toggle span { width: 20px; height: 20px; left: 3px; top: 3px; }
+.um-toggle.on { background: #2b3a35; }
+.um-toggle.on span { transform: translateX(20px); background: var(--um-teal); }
+
+/* Settings card + compact dropdown */
+.um-settings-card { top: 14.3%; bottom: 22%; padding: 16px 18px 12px; }
+.um-settings-card .um-sheet-head h2 { font-size: 18px; }
+.um-select.compact select { min-width: 76px; height: 34px; }
+
+/* Create sheet: name clear button circled, two-line composition size */
+.um-name-input button { width: 24px; height: 24px; border: 1.5px solid #6f6f79;
+  border-radius: 50%; color: #9a9aa4; }
+.um-field-label small { display: block; line-height: 1.35; }
+.um-field-label small b { display: block; font-weight: 400; }
+
+/* Coloured, original social badges (no third-party logo bitmaps) */
+.um-link-icon.globe { background: #f4f4f7 !important; color: #1b1b20 !important; }
+.um-link-icon.send { background: #2aabee !important; color: #fff !important; }
+.um-link-icon.music { background: #111114 !important; color: #fff !important; }
+
+/* Per-sheet vertical alignment measured from the reference JPGs. */
+.um-overlay-create { bottom: 116px; min-height: 446px; }
+.um-add-sheet { bottom: 75px; }
+.um-settings-card { top: 11.2%; bottom: 20.7%; }
+.um-package-card .um-lavender { margin-top: 19px; }
+.um-qr { margin-top: 1px; }

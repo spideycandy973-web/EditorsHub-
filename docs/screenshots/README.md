@@ -1,5 +1,6 @@
 # Screenshots
 
-Current UI: **v4.0.0**. All previous release screenshots were deleted in the
+Current UI: **v4.1.0**. All previous release screenshots were deleted in the
 v4.0.0 rebuild; the files here are generated fresh by
 `node tools/smoke.mjs --shots` against the production Vite build.
+Pixel measurements live in [`../VISUAL_AUDIT.md`](../VISUAL_AUDIT.md).
