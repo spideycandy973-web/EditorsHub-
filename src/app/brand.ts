@@ -37,7 +37,7 @@ export const BRAND: Brand = {
   wordmark: 'EDITORS HUB',
   domain: 'editorshub.app',
   packageName: 'com.editorshub',
-  version: '4.0.0',
+  version: '4.1.0',
   website: 'https://github.com/spideycandy973-web/EditorsHub-',
   links: [
     { label: 'Website', url: 'https://github.com/spideycandy973-web/EditorsHub-', icon: 'globe' },
@@ -46,9 +46,9 @@ export const BRAND: Brand = {
   ],
   // Recovered from the reference APK's decoded resources.arsc (apk-analysis/values.json).
   palette: {
-    home: '#121215', card: '#1c1c1f', input: '#262629', line: '#2e2e33',
-    text: '#f3f3f6', muted: '#92929c', lavender: '#dfe3ff',
-    accent: '#00ffa8', pink: '#ff3b7f',
+    home: '#121214', card: '#1c1c1e', input: '#262628', line: '#2e2e33',
+    text: '#f3f3f6', muted: '#92929c', lavender: '#d8dcff',
+    accent: '#01ffa7', pink: '#ff3b7f',
   },
   legal: 'EditorsHub is an original, independent motion editor. No assets or code from any other application are included.',
 };

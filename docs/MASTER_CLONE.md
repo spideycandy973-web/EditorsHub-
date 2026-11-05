@@ -1,4 +1,4 @@
-# Master screen & feature map (v4.0.0)
+# Master screen & feature map (v4.1.0)
 
 This document is the audit of what the app actually implements. It maps every
 screen, panel and behaviour observed in the reference recording (747 distinct UI
@@ -10,7 +10,7 @@ layout, colour, typography, interaction and behaviour with original code and
 original SVG/CSS artwork. It does **not** contain the reference application's
 DEX bytecode, decompiled source, bitmap assets, fonts, audio or trademark.
 
-v4.0.0 is a fully new application layer: the previous UI tree, stylesheet and
+v4.1.0 adds a measured pixel-alignment pass on top of the fully new v4.0.0 application layer: the previous UI tree, stylesheet and
 brand module were deleted and rebuilt under `src/app/`.
 Everything you may want to change first lives in one file:
 [`src/app/brand.ts`](../src/app/brand.ts) — name, wordmark, domain, package,
@@ -84,6 +84,6 @@ now exposes 6–12 working effects instead of 4.
 
 ## Verification
 
-`node tools/smoke.mjs --shots` → **64/64** headless checks, zero console
+`node tools/smoke.mjs --shots` → **67/67** headless checks, zero console
 errors/warnings. `node tools/verify-gif.mjs` → 7/7. Native and Capacitor CI build
-the installable APK, release APK/AAB and source ZIP for `v4.0.0`.
+the installable APK, release APK/AAB and source ZIP for `v4.1.0`.
