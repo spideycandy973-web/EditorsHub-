@@ -1,5 +1,39 @@
 # Changelog
 
+## 4.3.0 — APK features and editor rebuild (2026-11-06)
+
+- **Fixed the editor canvas.** All 20 reference editor JPGs show a 9:16
+  portrait canvas at x=80–349/y=113–593; the app had a small 16:9 landscape
+  rectangle centred in a 718px stage. Rebuilt the editor bands from measured
+  pixels: status 0–34, top bar 69–112 (#262628), stage 112–592, transport
+  590–636, ruler/timeline 636–728, property pane 728–936, 64/56px rails.
+  Default composition is now 9:16. `docs/VISUAL_AUDIT.md` has the deltas;
+  blank-editor mean luma difference is 3.47 %.
+- **Used the REA/Ghidra/APKTool evidence** (`apk-analysis/`: 72 activities,
+  37,206 classes, 43 Ghidra functions, 3,310 strings, 250 layout trees) to
+  build [`docs/FEATURE_MATRIX.md`](FEATURE_MATRIX.md) and implement the missing
+  user-facing features.
+- **Camera**: Active Camera View (renders through the camera POV), global Force
+  Blur, FOV/zoom/pan readouts, camera-X frustum, magenta clip, hint tooltip
+  that opens Camera Options.
+- **Border & Shadow**: Add Border empty state, 5 real stroke dash styles,
+  Start/End trim, colour toggle, Shadow Size/Alpha/Position X/Y — all wired to
+  the canvas renderer via new animatable props.
+- **Blending & Opacity**: Contrast / Difference / Color / Mask accordion groups
+  with working blend-mode thumbnails.
+- **Project Settings**: ratio chips (real composition resize), 720p–2160p,
+  12–240 fps, background, X close, and a live **Total Edit Time** counter.
+- **Nine APK-derived screens**: Colour Picker, Font Browser, Media Browser,
+  Audio Browser, Save To Storage, Open Source Libraries, Tutorial, Preset
+  Preview, and a **brand editor**.
+- **In-app identity customisation**: wordmark, app name, domain, website, About
+  text and three palette colours persist in localStorage and apply live via a
+  `BRAND` Proxy + change event. No third-party name/artwork is baked in.
+- `tools/smoke.mjs` extended to **94 checks** (all passing, zero console
+  errors), including live brand changes, camera flags, stroke props, blend
+  thumbnails and every new screen.
+- `versionCode 16`, `versionName 4.3.0`, PWA cache `editorshub-v16`.
+
 ## 4.1.0 — measured pixel alignment (2026-11-05)
 
 - Added [`tools/visual-audit.py`](../tools/visual-audit.py) and

@@ -1,3 +1,40 @@
+# EditorsHub v4.3.0 — APK features and editor rebuild
+
+Package `com.editorshub`; all code and artwork are original and the app identity is fully customisable in-app.
+
+## What's new in 4.3.0
+
+- **Editor rebuilt from measured pixels.** The reference editor JPGs show a
+  9:16 portrait canvas (269×480 at x=80/y=113); the app previously showed a
+  small 16:9 landscape rectangle. Rebuilt the status bar, top bar, stage,
+  transport, ruler/timeline and property pane to match within 0–5 px; default
+  composition is now 9:16. Blank-editor mean luma difference: 3.47 %.
+- **Features recovered with REA + Ghidra + JADX + APKTool** from the uploaded
+  APK (72 activities, 37,206 classes, 43 native functions, 3,310 strings,
+  250 layouts). See `docs/FEATURE_MATRIX.md`.
+- **Camera**: Active Camera View (real camera-POV render), Force Blur, FOV/zoom
+  readouts, camera frustum, magenta clip and the reference hint tooltip.
+- **Border & Shadow**: Add Border, five real stroke dash styles, Start/End trim
+  and Shadow Size/Alpha/Position, all wired to the compositor.
+- **Blending & Opacity**: four accordion groups with real blend thumbnails.
+- **Project Settings**: ratio chips, resolutions, fps, background, X close and
+  a live Total Edit Time counter.
+- **Nine new screens**: Colour Picker, Font/Media/Audio browsers, Save To
+  Storage, Open Source Libraries, Tutorial, Preset Preview and a **brand
+  editor** where wordmark, name, domain and colours are editable and persist.
+- `versionCode 16`, `versionName 4.3.0`, PWA cache `editorshub-v16`.
+  `npm run typecheck`, `npm run build`, `node tools/verify-gif.mjs` (7/7) and
+  `node tools/smoke.mjs --shots` (**94/94**, zero console errors) all pass.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, `com.editorshub`) is installable and is
+attached to `apk-latest`, `v4.3.0` and `editorshub-latest`. Release APK/AAB are
+unsigned by design (see `EditorsHub/docs/RELEASE_SIGNING.md`).
+`EditorsHub-source-v4.3.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v4.1.0 — measured pixel alignment
 
 Package `com.editorshub`, application label `EditorsHub`; all code and assets are original.

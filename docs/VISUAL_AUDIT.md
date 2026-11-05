@@ -1,4 +1,4 @@
-# Measured visual audit — v4.1.0
+# Measured visual audit — v4.3.0
 
 This pass stopped guessing and **measured** the 28 reference JPGs
 (1220 × 2712) against headless screenshots of the app at the same aspect ratio
@@ -68,3 +68,39 @@ reproduced pixels.
 All of this is original CSS/TypeScript. No image, font, icon or code from the
 reference application was copied into the build; the JPGs are used only as
 measurement input.
+
+
+## v4.3.0 — editor geometry (20 reference JPGs)
+
+The biggest v4.2 regression was the editor canvas: the app rendered a small
+**16:9 landscape** rectangle in the middle of an oversized stage, while every
+reference editor JPG shows a **9:16 portrait** canvas at the top. Measured on
+the 430 × 956 canvas:
+
+| Band | Reference | v4.3.0 | Δ |
+| --- | --- | --- | --- |
+| Status bar | 0–34 | 0–34 | 0 |
+| Blank strip | 34–69 | 34–69 | 0 |
+| Editor top bar (#262628) | 69–112 | 69–112 | 0 |
+| Canvas | x 80–349, y 113–593 (269×480) | x 81–349, y 112–588 (268×476) | ≤ 5 px |
+| Transport | ~592–638 | 590–636 | −2 |
+| Ruler / timeline | 638–728 | 636–728 | −2 |
+| Property pane | 728–956 | 728–936 | −20 (gesture bar) |
+| Left / right rail | 64 / 56 px | 64 / 56 px | 0 |
+
+The default composition is now **9:16 portrait**; the stage is a fixed 480 px
+band and the timeline expands when no property pane is docked. Chrome colours
+were sampled from the JPGs (`#262628` top bar, `#101012` stage surround).
+
+Whole-screen mean absolute luma difference (downscaled 215 × 478, 0–255):
+
+| Screen | v4.3.0 | % |
+| --- | --- | --- |
+| Launcher | 6.59 | 2.58 % |
+| Settings | 10.89 | 4.27 % |
+| Create sheet | 19.14 | 7.51 % |
+| Blank editor | 8.86 | 3.47 % |
+
+The residual is the wordmark/domain text, status-strip values (real device
+readings) and original icon artwork. All of those are now editable in-app:
+`docs/FEATURE_MATRIX.md` lists the new screens, including the brand editor.

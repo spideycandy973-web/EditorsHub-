@@ -1,5 +1,5 @@
-Rebuild and attach the Capacitor Android APK for EditorsHub v4.1.0
-(package com.editorshub) to the v4.1.0, apk-latest and editorshub-latest releases.
+Rebuild and attach the Capacitor Android APK for EditorsHub v4.3.0
+(package com.editorshub) to the v4.3.0, apk-latest and editorshub-latest releases.
 
 This marker deliberately changes with every release so the Capacitor workflow
 re-runs and publishes EditorsHub-Motion.apk built from the current web bundle.

@@ -61,6 +61,33 @@ export function AboutPage() {
             <button type="button" onClick={() => { setMenu(false); window.open(BRAND.website, '_blank', 'noopener'); }}>
               Source code
             </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('brand'); }}>
+              Customise app
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('fonts'); }}>
+              Font browser
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('media'); }}>
+              Media browser
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('audio'); }}>
+              Audio browser
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('colorPicker'); }}>
+              Color picker
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('save'); }}>
+              Save to storage
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('presetPreview'); }}>
+              Saved presets
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('opensource'); }}>
+              Open source libraries
+            </button>
+            <button type="button" onClick={() => { setMenu(false); ui.setSheet('tutorial'); }}>
+              Tutorial
+            </button>
             <button type="button" onClick={() => { setMenu(false); ui.setSheet('help'); }}>
               Editing guide
             </button>

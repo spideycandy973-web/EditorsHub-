@@ -289,21 +289,18 @@ function MoveBody({ sub }: { sub: number }) {
 }
 
 /* ------------------------------ blend & opacity --------------------------- */
+const BLEND_GROUPS: { label: string; modes: string[]; hue: number }[] = [
+  { label: 'Contrast', modes: ['normal', 'overlay', 'soft-light', 'hard-light'], hue: 268 },
+  { label: 'Difference', modes: ['difference', 'exclusion', 'color-dodge', 'color-burn'], hue: 190 },
+  { label: 'Color', modes: ['hue', 'saturation', 'color', 'luminosity'], hue: 330 },
+  { label: 'Mask', modes: ['darken', 'lighten', 'multiply', 'screen'], hue: 152 },
+];
 function BlendBody({ sub }: { sub: number }) {
   const e = useEditor();
   const { layer, get, set } = useProp();
+  const [open, setOpen] = useState<string | null>(null);
   if (!layer) return <p className="um-hint center">Select a layer.</p>;
-  if (sub === 0) return (
-    <div className="um-prop-body">
-      <div className="um-prop-heading">Opacity</div>
-      <RulerSlider label="Opacity" value={get('opacity')} min={0} max={100} onChange={v => set('opacity', v)} unit="%" accent />
-      <div className="um-prop-heading">Blend mode</div>
-      <Select value={layer.blend} onChange={v => e.setBlend(layer.id, v as typeof layer.blend)}
-        options={BLEND_MODES.map(b => ({ value: b, label: BLEND_LABELS[b] }))} />
-      <span className="um-prop-caption">BLENDING &amp; OPACITY</span>
-    </div>
-  );
-  return (
+  if (sub === 1) return (
     <div className="um-prop-body">
       <div className="um-prop-heading">Mask</div>
       <Seg value={layer.mask.type} onChange={v => e.setMask(layer.id, { type: v })}
@@ -311,7 +308,38 @@ function BlendBody({ sub }: { sub: number }) {
       <RulerSlider label="Feather" value={layer.mask.feather} min={0} max={200} onChange={v => e.setMask(layer.id, { feather: v })} unit="px" />
       <label className="um-checkline"><input type="checkbox" checked={layer.mask.invert}
         onChange={ev => e.setMask(layer.id, { invert: ev.target.checked })} /> Invert mask</label>
-      <span className="um-prop-caption">MASK</span>
+    </div>
+  );
+  return (
+    <div className="um-prop-body um-blend-panel">
+      <div className="um-blend-opacity">
+        <small>OPTIONS</small>
+        <input type="range" min={0} max={100} value={get('opacity')} aria-label="Opacity"
+          onChange={ev => set('opacity', Number(ev.target.value))} />
+        <b>{Math.round(get('opacity'))}%</b>
+      </div>
+      <div className="um-blend-groups">
+        {BLEND_GROUPS.map(g => (
+          <div key={g.label} className={`um-blend-group ${open === g.label ? 'open' : ''}`}>
+            <button type="button" onClick={() => setOpen(open === g.label ? null : g.label)}>
+              <span className="um-blend-arrow">▶</span><strong>{g.label}</strong>
+              <span className="um-blend-preview" style={{ background: `linear-gradient(120deg,hsl(${g.hue} 70% 55%),hsl(${g.hue + 60} 60% 25%))` }} />
+            </button>
+            {open === g.label && (
+              <div className="um-blend-thumbs">
+                {g.modes.map(m => (
+                  <button type="button" key={m} className={layer.blend === m ? 'on' : ''}
+                    title={BLEND_LABELS[m as keyof typeof BLEND_LABELS] ?? m}
+                    onClick={() => e.setBlend(layer.id, m as typeof layer.blend)}>
+                    <span style={{ background: `radial-gradient(circle at 30% 30%,hsl(${g.hue} 80% 65%),hsl(${g.hue + 90} 65% 22%))` }} />
+                    <small>{BLEND_LABELS[m as keyof typeof BLEND_LABELS] ?? m}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -361,21 +389,73 @@ function ColorBody({ sub }: { sub: number }) {
 }
 
 /* ------------------------------ border & shadow --------------------------- */
+const STROKE_STYLES = ['Solid', 'Dashed', 'Dotted', 'Dash dot', 'Long dash'];
 function BorderBody({ sub }: { sub: number }) {
   const e = useEditor();
   const { layer, get, set } = useProp();
   if (!layer) return <p className="um-hint center">Select a layer.</p>;
-  if (sub === 0) return (
-    <div className="um-prop-body">
-      <div className="um-prop-heading">Border</div>
-      <RulerSlider label="Width" value={get('strokeWidth')} min={0} max={200} onChange={v => set('strokeWidth', v)} unit="px" accent />
-      <div className="um-color-row">
-        <ColorInput value={layer.style.strokeColor} onChange={v => e.setStyle(layer.id, { strokeColor: v })} label="Border" />
+  const stroke = get('strokeWidth');
+  const hasBorder = stroke > 0;
+
+  if (sub === 0) {
+    return (
+      <div className="um-prop-body um-stroke-panel">
+        <div className="um-stroke-head">
+          <strong>Stroke</strong>
+          <button type="button" className="um-stroke-color" title="Stroke colour"
+            onClick={() => { e.setStyle(layer.id, { strokeColor: layer.style.strokeColor === '#ffffff' ? '#000000' : '#ffffff' }); }} />
+        </div>
+        <RulerSlider label="Width" value={stroke} min={0} max={200}
+          onChange={v => set('strokeWidth', v)} unit="px" accent />
+        <div className="um-stroke-val">{stroke.toFixed(1)}</div>
+        <div className="um-stroke-styles">
+          {STROKE_STYLES.map((label, i) => (
+            <button type="button" key={label} title={label}
+              className={Math.round(get('strokeDash')) === i ? 'on' : ''}
+              onClick={() => set('strokeDash', i)}>
+              <i style={{ background: ['linear-gradient(90deg,#ddd 0 100%)',
+                'repeating-linear-gradient(90deg,#ddd 0 7px,transparent 7px 11px)',
+                'repeating-linear-gradient(90deg,#ddd 0 2px,transparent 2px 6px)',
+                'repeating-linear-gradient(90deg,#ddd 0 9px,transparent 9px 12px,#ddd 12px 14px,transparent 14px 18px)',
+                'repeating-linear-gradient(90deg,#ddd 0 12px,transparent 12px 16px)'][i] }} />
+            </button>
+          ))}
+        </div>
+        <div className="um-stroke-ends">
+          <label>Start<select value={Math.round(get('strokeStart'))} aria-label="Stroke start"
+            onChange={ev => set('strokeStart', Number(ev.target.value))}>
+            {[0, 10, 25, 50].map(n => <option key={n} value={n}>{n}%</option>)}
+          </select></label>
+          <label>End<select value={Math.round(get('strokeEnd'))} aria-label="Stroke end"
+            onChange={ev => set('strokeEnd', Number(ev.target.value))}>
+            {[50, 75, 90, 100].map(n => <option key={n} value={n}>{n}%</option>)}
+          </select></label>
+        </div>
       </div>
-      <RulerSlider label="Corner radius" value={get('cornerRadius')} min={0} max={500} onChange={v => set('cornerRadius', v)} unit="px" />
-      <span className="um-prop-caption">BORDER</span>
-    </div>
-  );
+    );
+  }
+  if (sub === 2) {
+    return (
+      <div className="um-prop-body">
+        <div className="um-prop-heading">Rounded corners</div>
+        <RulerSlider label="Corner radius" value={get('cornerRadius')} min={0} max={500} onChange={v => set('cornerRadius', v)} unit="px" accent />
+        <RulerSlider label="Border width" value={stroke} min={0} max={200} onChange={v => set('strokeWidth', v)} unit="px" />
+        <div className="um-color-row">
+          <ColorInput value={layer.style.strokeColor} onChange={v => e.setStyle(layer.id, { strokeColor: v })} label="Border" />
+        </div>
+      </div>
+    );
+  }
+  if (!hasBorder) {
+    return (
+      <div className="um-prop-body um-add-border">
+        <button type="button" className="um-add-border-btn" onClick={() => set('strokeWidth', 4)}>
+          + Add Border
+        </button>
+        <p className="um-hint">Add a stroke to this layer, then tune its width, style and trim here.</p>
+      </div>
+    );
+  }
   const fx = layer.effects.find(f => f.type === 'dropShadow');
   const ensure = () => {
     const fresh = e.selectedLayer?.effects.find(f => f.type === 'dropShadow');
@@ -383,32 +463,18 @@ function BorderBody({ sub }: { sub: number }) {
     e.addEffect('dropShadow');
     return e.selectedLayer?.effects.find(f => f.type === 'dropShadow');
   };
-  const param = (key: string, v: number) => {
-    const f = ensure();
-    if (f) e.setEffectParam(f.id, key, v);
-  };
+  const param = (key: string, v: number) => { const f = ensure(); if (f) e.setEffectParam(f.id, key, v); };
   const value = (key: string, fallback: number) => fx ? e.getEffectValue(fx.id, key) : fallback;
-  if (sub === 2) return (
-    <div className="um-prop-body">
-      <div className="um-prop-heading">Rounded corners</div>
-      <RulerSlider label="Corner radius" value={get('cornerRadius')} min={0} max={500} onChange={v => set('cornerRadius', v)} unit="px" accent />
-      <RulerSlider label="Border width" value={get('strokeWidth')} min={0} max={200} onChange={v => set('strokeWidth', v)} unit="px" />
-      <div className="um-color-row">
-        <ColorInput value={layer.style.strokeColor} onChange={v => e.setStyle(layer.id, { strokeColor: v })} label="Border" />
-      </div>
-      <span className="um-prop-caption">ROUNDED CORNERS</span>
-    </div>
-  );
   return (
-    <div className="um-prop-body">
-      <div className="um-prop-heading">Shadow {fx ? <button type="button" className="um-mini-btn" onClick={() => e.removeEffect(fx.id)}>Remove</button> : <button type="button" className="um-mini-btn" onClick={() => param('blur', 24)}>Add</button>}</div>
+    <div className="um-prop-body um-shadow-panel">
+      <div className="um-stroke-head"><strong>Shadow</strong>
+        <button type="button" className="um-stroke-color" title="Shadow colour" onClick={() => param('blur', Math.max(1, value('blur', 0)))} />
+      </div>
       <RulerSlider label="Size" value={value('blur', 0)} min={0} max={120} onChange={v => param('blur', v)} unit="px" accent />
       <RulerSlider label="Alpha" value={value('opacity', 0)} min={0} max={100} onChange={v => param('opacity', v)} unit="%" />
-      <div className="um-num-row">
-        <NumField label="Position X" value={value('offsetX', 0)} min={-200} max={200} onChange={v => param('offsetX', v)} />
-        <NumField label="Position Y" value={value('offsetY', 0)} min={-200} max={200} onChange={v => param('offsetY', v)} />
-      </div>
-      <span className="um-prop-caption">DROP SHADOW</span>
+      <RulerSlider label="Position X" value={value('offsetX', 0)} min={-200} max={200} onChange={v => param('offsetX', v)} unit="px" />
+      <RulerSlider label="Position Y" value={value('offsetY', 0)} min={-200} max={200} onChange={v => param('offsetY', v)} unit="px" />
+      <div className="um-shadow-pos">X: <b>{Math.round(value('offsetX', 0))}</b> Y: <b>{Math.round(value('offsetY', 0))}</b></div>
     </div>
   );
 }
@@ -559,9 +625,23 @@ function CameraBody({ sub }: { sub: number }) {
   const get = (k: string) => e.getLayerProp(camera, k);
   const set = (k: string, v: number) => { if (ui.activePropKey !== k) ui.setActivePropKey(k); e.setProp(camera.id, k, v); };
   if (sub === 0) return (
-    <div className="um-prop-body">
-      <div className="um-prop-heading">Camera {cameras.length > 1 ? `1 of ${cameras.length}` : ''}</div>
-      <RulerSlider label="Zoom" value={get('scaleX')} min={20} max={400} onChange={v => { set('scaleX', v); e.setProp(camera.id, 'scaleY', v); }} unit="%" accent />
+    <div className="um-prop-body um-camera-panel">
+      <div className="um-prop-heading">Camera View</div>
+      <label className="um-checkline um-camera-toggle">
+        <input type="checkbox" checked={e.activeCameraView}
+          onChange={ev => e.setActiveCameraView(ev.target.checked)} />
+        Active Camera View
+      </label>
+      <p className="um-hint">Renders the composition through the active camera's point of view.</p>
+      <RulerSlider label="Force Blur" value={e.forceBlur} min={0} max={100}
+        onChange={v => e.setForceBlur(v)} unit="%" accent />
+      <div className="um-camera-grid">
+        <div><small>FIELD OF VIEW</small><b>{get('scaleX').toFixed(0)}°</b></div>
+        <div><small>ZOOM</small><b>{get('scaleY').toFixed(0)}</b></div>
+        <div><small>PAN X</small><b>{get('x').toFixed(0)}</b></div>
+        <div><small>PAN Y</small><b>{get('y').toFixed(0)}</b></div>
+      </div>
+      <RulerSlider label="Zoom" value={get('scaleX')} min={20} max={400} onChange={v => { set('scaleX', v); e.setProp(camera.id, 'scaleY', v); }} unit="%" />
       <RulerSlider label="Pan X" value={get('x')} min={-2000} max={2000} onChange={v => set('x', v)} unit="px" />
       <RulerSlider label="Pan Y" value={get('y')} min={-2000} max={2000} onChange={v => set('y', v)} unit="px" />
       <RulerSlider label="Rotation" value={get('rotation')} min={-360} max={360} onChange={v => set('rotation', v)} unit="°" />
