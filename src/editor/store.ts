@@ -49,6 +49,13 @@ class EditorStore {
   showGuides = false;
   showGrid = false;
   snapToFrame = true;
+  /** Camera Options from the reference: view through the active camera and
+   *  a global force-blur amount. Both affect the real compositor. */
+  activeCameraView = false;
+  forceBlur = 0;
+  /** Real wall-clock seconds spent in the editor, shown in Project Settings. */
+  editTime = 0;
+  private editTimer: number | undefined;
 
   version = 0;
   timeVersion = 0;
@@ -208,6 +215,16 @@ class EditorStore {
   setSnap(v: boolean): void { this.snapToFrame = v; this.emit(); }
   setTimelineZoom(v: number): void { this.timelineZoom = clamp(v, 12, 220); this.emit(); }
   setPreviewZoom(v: number): void { this.previewZoom = clamp(v, 0.4, 3); this.emit(); }
+  setActiveCameraView(v: boolean): void { this.activeCameraView = v; this.emit(); }
+  setForceBlur(v: number): void { this.forceBlur = clamp(v, 0, 100); this.emit(); }
+  startEditClock(): void {
+    if (this.editTimer !== undefined) return;
+    this.editTimer = window.setInterval(() => { this.editTime += 1; }, 1000);
+  }
+  stopEditClock(): void {
+    if (this.editTimer === undefined) return;
+    window.clearInterval(this.editTimer); this.editTimer = undefined;
+  }
   toggleGuides(): void { this.showGuides = !this.showGuides; this.emit(); }
   toggleGrid(): void { this.showGrid = !this.showGrid; this.emit(); }
 

@@ -1,9 +1,20 @@
-# EditorsHub v4.1.0
+# EditorsHub v4.3.0
 
 A **real, working mobile video & motion-graphics editor** that runs entirely in
 the browser, packaged as an Android app (`com.editorshub`). Layers, keyframes,
 44 effects, blending, masks, media, XML project import/export, six real export
 encoders — all backed by a canvas compositor that draws every frame for real.
+
+**v4.3.0 — APK features + editor rebuild.** The editor canvas was wrong (a
+small landscape rectangle); it is now the reference's **9:16 portrait canvas at
+x=80/y=113** with the exact top bar, transport, timeline and property-pane
+bands. Added the features recovered from the 72 APK activities and the reference
+JPGs: Active Camera View + Force Blur, Stroke styles/Start-End trim, Add Border,
+blend accordion groups, Total Edit Time, colour/font/media/audio browsers, save
+to storage, open-source libraries, tutorial, preset preview, and a **fully
+persisted in-app brand editor** (wordmark, name, domain, colours — set whatever
+you want). See [`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md). Headless
+checks: **94/94**, zero console errors.
 
 **v4.1.0 measured pixel alignment.** The 28 reference JPGs were measured at
 430 × 956 and the launcher, settings, create sheet and add sheet now match
@@ -51,9 +62,9 @@ then `node tools/frames-libs.mjs` and run against `npm run preview`.
 ## Android
 
 `EditorsHub-Motion.apk` (Capacitor, installable) is committed at the repository
-root and attached to `apk-latest`, `v4.1.0` and `editorshub-latest`, together
+root and attached to `apk-latest`, `v4.3.0` and `editorshub-latest`, together
 with `EditorsHub-debug.apk`, `EditorsHub-release-unsigned.apk`,
-`EditorsHub-release.aab` and `EditorsHub-source-v4.1.0.zip`. Release APK/AAB are
+`EditorsHub-release.aab` and `EditorsHub-source-v4.3.0.zip`. Release APK/AAB are
 unsigned by design; see `EditorsHub/docs/RELEASE_SIGNING.md` for the keystore
 workflow. All Android builds run in GitHub Actions.
 

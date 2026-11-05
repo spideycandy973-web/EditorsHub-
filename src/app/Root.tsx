@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { editor, useEditor } from '../editor/store';
 import { Renderer } from '../editor/renderer';
 import { clamp } from '../editor/utils';
+import { BRAND_CHANGED, applyBrand } from './brand';
 import { useUI } from './context';
 import { GestureBar, StatusBar } from './Chrome';
 import { Splash } from './Splash';
@@ -9,6 +10,7 @@ import { AboutPage } from './AboutPage';
 import { EffectBrowser } from './EffectBrowser';
 import { PresetsDialog } from './PresetsDialog';
 import { Flows, detectMissingFonts } from './Flows';
+import { BrandSheet } from './BrandSheet';
 import { Home } from './Home';
 import { Editor } from './Editor';
 import { Overlays } from './Overlays';
@@ -22,6 +24,20 @@ export function Root() {
   const inEditor = e.screen === 'editor';
   const lowQuality = ui.prefs.lowQualityPreview;
   const [splash, setSplash] = useState(true);
+  const [, forceBrand] = useState(0);
+
+  /* Automation handle, mirroring window.__editor in main.tsx. */
+  useEffect(() => {
+    (window as unknown as { __ui?: typeof ui }).__ui = ui;
+  }, [ui]);
+
+  /* The in-app brand editor changes the running identity; re-render every
+   * screen that reads BRAND and refresh the CSS custom properties. */
+  useEffect(() => {
+    const onChange = () => { applyBrand(); forceBrand(v => v + 1); };
+    window.addEventListener(BRAND_CHANGED, onChange);
+    return () => window.removeEventListener(BRAND_CHANGED, onChange);
+  }, []);
 
   useEffect(() => { void editor.hydrateStoredAssets(); }, []);
 
@@ -57,6 +73,7 @@ export function Root() {
 
     const renderer = new Renderer(canvas, editor.project, editor.media, 0.3);
     rendererRef.current = renderer;
+    editor.startEditClock();
 
     let disposed = false;
     let dirty = true;
@@ -74,8 +91,9 @@ export function Root() {
     const fit = () => {
       const p = editor.project;
       const ratio = p.width / p.height;
-      const availW = Math.max(60, (stageW - 8) * 0.72);
-      const availH = Math.max(60, stageH - 18);
+      // Measured from the reference editor JPGs: 269x480 at x=80, y=113.
+      const availW = Math.max(60, (stageW - 8) * 0.635);
+      const availH = Math.max(60, stageH);
       let cssW = Math.min(availW, availH * ratio);
       let cssH = cssW / ratio;
       if (cssH > availH) { cssH = availH; cssW = cssH * ratio; }
@@ -99,6 +117,8 @@ export function Root() {
       raf = 0;
       if (disposed || document.hidden) return;
       if (editor.screen === 'home') return;
+      renderer.activeCameraView = editor.activeCameraView;
+      renderer.forceBlur = editor.forceBlur;
 
       if (lastProject !== editor.project) {
         renderer.setProject(editor.project);
@@ -176,6 +196,7 @@ export function Root() {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('beforeunload', onBeforeUnload);
       rendererRef.current = null;
+      editor.stopEditClock();
     };
   }, [inEditor, lowQuality]);
 
@@ -236,6 +257,7 @@ export function Root() {
         {ui.aboutOpen && <AboutPage />}
         {ui.effectBrowser && <EffectBrowser />}
         {ui.presetsDialog && <PresetsDialog />}
+        {ui.sheet === 'brand' && <BrandSheet />}
         <Flows />
         {ui.prefs.showDeviceChrome && <GestureBar />}
         {splash && <Splash onDone={() => setSplash(false)} />}

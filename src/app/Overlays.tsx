@@ -21,6 +21,10 @@ import {
   saveCurrentAsElement, SAMPLE_RATE, xmlOfProject, saveTemplate, listTemplates,
 } from './lib';
 import { parseMotionXml } from '../editor/xml';
+import {
+  ColorPickerBody, FontBrowserBody, MediaBrowserBody, OpenSourceBody,
+  PresetPreviewBody, SaveToStorageBody, TutorialBody,
+} from './FeatureSheets';
 
 const RATIOS = [
   { id: '16:9', label: '16:9', r: 16 / 9 },
@@ -42,7 +46,7 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
   const ui = useUI();
   const [tab, setTab] = useState(ui.createTab);
   const [name, setName] = useState(tab === 'element' ? `Element ${listElements().length + 1}` : `New Project ${e.listProjects().length + 1}`);
-  const [ratio, setRatio] = useState<string>('16:9');
+  const [ratio, setRatio] = useState<string>('9:16');
   const [longSide, setLongSide] = useState('1920');
   const [fps, setFps] = useState('60');
   const [bg, setBg] = useState('#000000');
@@ -124,77 +128,110 @@ function ProjectSettingsBody() {
   const e = useEditor();
   const ui = useUI();
   const [name, setName] = useState(e.project.name);
-  const [elementName, setElementName] = useState(e.project.name);
-
+  const [custom, setCustom] = useState(false);
+  const [cw, setCw] = useState(e.project.width);
+  const [ch, setCh] = useState(e.project.height);
+  const [advanced, setAdvanced] = useState(false);
   const patch = (p: Parameters<typeof e.setProjectSettings>[0]) => { e.setProjectSettings(p); e.saveNow(); };
+  const ratioOf = (w: number, h: number) => RATIOS.find(r => Math.abs(r.r - w / h) < 0.02)?.id ?? '';
+  const [ratio, setRatio] = useState(ratioOf(e.project.width, e.project.height));
+  const setR = (id: string) => {
+    setRatio(id); setCustom(false);
+    const r = RATIOS.find(x => x.id === id)!.r;
+    const long = Math.max(e.project.width, e.project.height);
+    patch(r >= 1 ? { width: long, height: Math.round(long / r) }
+                 : { width: Math.round(long * r), height: long });
+  };
+  const res = ['720', '1080', '1440', '2160'].find(v => Math.abs(Number(v) - Math.max(e.project.width, e.project.height) * 0.5625) < 400)
+    ?? String(Math.max(e.project.width, e.project.height));
+  const editClock = `${String(Math.floor(e.editTime / 60)).padStart(2, '0')}:${String(e.editTime % 60).padStart(2, '0')}`;
 
   return (
-    <div className="um-scroll">
-      <div className="um-section-title">Composition</div>
-      <div className="um-name-input">
-        <input value={name} onChange={ev => setName(ev.target.value)} aria-label="Project name" />
-        <button type="button" title="Apply name" onClick={() => patch({ name })}><Save size={16} /></button>
+    <div className="um-ps-body">
+      <div className="um-ps-head">
+        <strong>Settings</strong>
+        <IBtn title="Close project settings" onClick={() => ui.setSheet('none')}><X size={19} /></IBtn>
       </div>
-      <div className="um-custom-size">
-        <NumField label="Width" value={e.project.width} min={16} max={4096} onChange={v => patch({ width: v })} unit="px" />
-        <NumField label="Height" value={e.project.height} min={16} max={4096} onChange={v => patch({ height: v })} unit="px" />
-      </div>
-      <div className="um-custom-size">
-        <NumField label="FPS" value={e.project.fps} min={1} max={120} onChange={v => patch({ fps: v })} />
-        <NumField label="Duration" value={e.project.duration} min={0.5} max={600} step={0.5} onChange={v => patch({ duration: v })} unit="s" />
-      </div>
-      <Row label="Background" sub="Composition colour">
-        <ColorInput value={e.project.background} onChange={v => patch({ background: v })} label="Background" />
-      </Row>
-      <div className="um-swatches-wrap">
-        {PALETTE.map(c => (
-          <button key={c} type="button" title={c} style={{ background: c }}
-            onClick={() => patch({ background: c })} />
-        ))}
-      </div>
-
-      <div className="um-section-title">Playback</div>
-      <div className="um-checkgrid">
-        {([
-          ['Loop playback', e.loop, () => e.setLoop(!e.loop)],
-          ['Snap to frame', e.snapToFrame, () => e.setSnap(!e.snapToFrame)],
-          ['Auto keyframes', e.autoKey, () => e.setAutoKey(!e.autoKey)],
-          ['Safe-area guides', e.showGuides, () => e.toggleGuides()],
-          ['Grid overlay', e.showGrid, () => e.toggleGrid()],
-          ['Low quality preview', ui.prefs.lowQualityPreview, () => ui.setPrefs({ ...ui.prefs, lowQualityPreview: !ui.prefs.lowQualityPreview })],
-        ] as const).map(([label, on, fn]) => (
-          <button type="button" key={label} className={`um-check ${on ? 'on' : ''}`} onClick={fn}>
-            <span>{on ? '✓' : ''}</span>{label}
+      <div className="um-ps-ratios">
+        {RATIOS.map(r => (
+          <button type="button" key={r.id} className={`um-ps-ratio ${!custom && ratio === r.id ? 'on' : ''}`} onClick={() => setR(r.id)}>
+            <i /><span>{r.label}</span>
           </button>
         ))}
+        <button type="button" className={`um-ps-ratio ${custom ? 'on' : ''}`} title="Custom size" onClick={() => setCustom(true)}>
+          <span>✎</span>
+        </button>
       </div>
+      {custom && (
+        <div className="um-custom-size">
+          <NumField label="Width" value={cw} min={16} max={4096} onChange={v => { setCw(v); patch({ width: v }); }} unit="px" />
+          <NumField label="Height" value={ch} min={16} max={4096} onChange={v => { setCh(v); patch({ height: v }); }} unit="px" />
+        </div>
+      )}
+      <div className="um-ps-row">
+        <span>Resolution</span>
+        <label className="um-select"><select value={res} aria-label="Resolution"
+          onChange={ev => {
+            const long = Number(ev.target.value) * 16 / 9;
+            const r = e.project.width / e.project.height;
+            patch(r >= 1 ? { width: Math.round(long), height: Math.round(long / r) }
+                         : { width: Math.round(long * r), height: Math.round(long) });
+          }}>
+          <option value="720">720p</option><option value="1080">1080p</option>
+          <option value="1440">1440p</option><option value="2160">2160p</option>
+        </select></label>
+      </div>
+      <div className="um-ps-row">
+        <span>Frame Rate</span>
+        <label className="um-select"><select value={String(e.project.fps)} aria-label="Frame rate"
+          onChange={ev => patch({ fps: Number(ev.target.value) })}>
+          {[12, 15, 20, 24, 25, 30, 50, 60, 120].map(n => <option key={n} value={n}>{n} fps</option>)}
+        </select></label>
+      </div>
+      <div className="um-ps-row">
+        <span>Background</span>
+        <label className="um-select"><select value={e.project.background} aria-label="Background colour"
+          onChange={ev => patch({ background: ev.target.value })}>
+          {[['#000000', 'Black'], ['#ffffff', 'White'], ['#121214', 'Charcoal'], ['#0b1d3a', 'Navy']].map(([v, l]) =>
+            <option key={v} value={v}>{l}</option>)}
+        </select></label>
+        <i className="um-ps-swatch" style={{ background: e.project.background }} />
+      </div>
+      <div className="um-ps-total">Total Edit Time: {editClock}</div>
 
-      <div className="um-section-title">Save & share</div>
-      <div className="um-name-input">
-        <input value={elementName} onChange={ev => setElementName(ev.target.value)} aria-label="Element name" placeholder="Element name" />
-        <button type="button" title="Save as element" onClick={() => {
-          void saveCurrentAsElement(elementName).then(rec => {
-            e.notify(`Element “${rec.name}” saved`, 'ok');
-          }).catch(err => e.notify((err as Error).message, 'warn'));
-        }}><Sparkles size={16} /></button>
-      </div>
-      <div className="um-action-grid">
-        <Btn variant="dark" onClick={() => { void xmlOfProject().then(x => downloadXml(e.project.name, x)); e.notify('XML exported', 'ok'); }}>
-          <FileCode2 size={15} /> Export XML
-        </Btn>
-        <Btn variant="dark" onClick={() => { e.saveAs(`${e.project.name} copy`); }}>
-          <Copy size={15} /> Save a copy
-        </Btn>
-        <Btn variant="dark" onClick={() => ui.setSheet('xml')}><Upload size={15} /> Import XML</Btn>
-        <Btn variant="dark" onClick={() => ui.setSheet('export')}><Download size={15} /> Export media</Btn>
-        <Btn variant="dark" onClick={() => { e.newProject(e.project.width, e.project.height, false); e.notify('Demo layers added', 'ok'); }}>
-          <Layers size={15} /> Add demo layers
-        </Btn>
-        <Btn variant="dark" onClick={() => { e.deleteProject(e.project.id); e.newProject(); e.notify('Project deleted', 'ok'); }}>
-          <Trash2 size={15} /> Delete project
-        </Btn>
-      </div>
-      <p className="um-hint">Projects autosave on this device. XML export carries layers, keyframes, effects and embedded media (up to 12 MB per asset).</p>
+      <button type="button" className="um-ps-more" onClick={() => setAdvanced(v => !v)}>
+        {advanced ? 'Hide advanced settings' : 'Advanced settings'} {advanced ? '▴' : '▾'}
+      </button>
+      {advanced && (
+        <div className="um-ps-advanced">
+          <div className="um-name-input">
+            <input value={name} onChange={ev => setName(ev.target.value)} aria-label="Project name" />
+            <button type="button" title="Apply name" onClick={() => patch({ name })}><Save size={16} /></button>
+          </div>
+          <div className="um-custom-size">
+            <NumField label="Duration" value={e.project.duration} min={0.5} max={600} step={0.5} onChange={v => patch({ duration: v })} unit="s" />
+            <NumField label="Force blur" value={e.forceBlur} min={0} max={100} onChange={v => e.setForceBlur(v)} unit="%" />
+          </div>
+          <div className="um-checkgrid">
+            {([
+              ['Loop playback', e.loop, () => e.setLoop(!e.loop)],
+              ['Snap to frame', e.snapToFrame, () => e.setSnap(!e.snapToFrame)],
+              ['Auto keyframes', e.autoKey, () => e.setAutoKey(!e.autoKey)],
+              ['Safe-area guides', e.showGuides, () => e.toggleGuides()],
+              ['Grid overlay', e.showGrid, () => e.toggleGrid()],
+              ['Active camera view', e.activeCameraView, () => e.setActiveCameraView(!e.activeCameraView)],
+            ] as const).map(([label, on, fn]) => (
+              <button type="button" key={label} className={`um-check ${on ? 'on' : ''}`} onClick={fn}>
+                <span>{on ? '✓' : ''}</span>{label}
+              </button>
+            ))}
+          </div>
+          <div className="um-action-grid">
+            <Btn variant="dark" onClick={() => { e.saveAs(`${e.project.name} copy`); }}><Copy size={15} /> Save a copy</Btn>
+            <Btn variant="dark" onClick={() => ui.setSheet('export')}><Download size={15} /> Export media</Btn>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -545,6 +582,14 @@ export function Overlays() {
     </>), variant: 'floating' },
     elements: { title: 'Elements & Projects', body: <ElementsBody />, variant: 'floating' },
     rename: { title: 'Rename layer', body: <RenameBody />, variant: 'floating' },
+    colorPicker: { title: 'Color Picker', body: <ColorPickerBody />, variant: 'floating' },
+    fonts: { title: 'Font Browser', body: <FontBrowserBody />, variant: 'floating' },
+    media: { title: 'Media Browser', body: <MediaBrowserBody />, variant: 'floating' },
+    opensource: { title: 'Open Source Libraries', body: <OpenSourceBody />, variant: 'floating' },
+    tutorial: { title: 'Tutorial', body: <TutorialBody />, variant: 'floating' },
+    audio: { title: 'Audio Browser', body: <MediaBrowserBody audioOnly />, variant: 'floating' },
+    save: { title: 'Save To Storage', body: <SaveToStorageBody />, variant: 'floating' },
+    presetPreview: { title: 'Preset Preview', body: <PresetPreviewBody />, variant: 'floating' },
   };
   const c = config[sheet];
   if (!c) return null;

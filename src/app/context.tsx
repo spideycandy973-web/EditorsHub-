@@ -5,7 +5,8 @@ import type { XmlImportResult } from '../editor/xml';
 export type SheetId =
   | 'none' | 'add' | 'shape' | 'properties' | 'property' | 'settings' | 'create'
   | 'export' | 'projectSettings' | 'xml' | 'about' | 'overflow' | 'draw' | 'vector'
-  | 'templates' | 'help' | 'elements' | 'rename';
+  | 'templates' | 'help' | 'elements' | 'rename' | 'brand' | 'fonts' | 'media' | 'audio' | 'colorPicker' | 'opensource' | 'tutorial'
+  | 'save' | 'presetPreview';
 
 export type PropertyId =
   | 'move' | 'blend' | 'color' | 'border' | 'editShape' | 'presets' | 'effects' | 'camera';

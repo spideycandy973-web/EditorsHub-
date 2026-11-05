@@ -580,6 +580,9 @@ export class Renderer {
   project: Project;
   media: MediaLibrary;
   scale = 0.4;
+  /** Set from the UI: draw the active-camera viewfinder frame and a global blur. */
+  activeCameraView = false;
+  forceBlur = 0;
 
   constructor(canvas: HTMLCanvasElement, project: Project, media: MediaLibrary, scale = 0.4) {
     this.canvas = canvas;
@@ -861,7 +864,21 @@ export class Renderer {
           ctx.lineWidth = stroke;
           ctx.lineJoin = 'round'; ctx.lineCap = 'round';
           ctx.strokeStyle = normalizeColor(style.strokeColor, '#000000');
+          const dash = Math.round(prop(layer, 'strokeDash', t, 0));
+          const wPx = Math.max(1, stroke);
+          ctx.setLineDash(dash === 1 ? [wPx * 3, wPx * 2]
+            : dash === 2 ? [wPx, wPx * 2]
+            : dash === 3 ? [wPx * 6, wPx * 2, wPx, wPx * 2]
+            : dash === 4 ? [wPx * 4, wPx * 1.5] : []);
+          const start = prop(layer, 'strokeStart', t, 0);
+          const end = prop(layer, 'strokeEnd', t, 100);
+          if (start > 0 || end < 100) {
+            const unit = (w + h) * 2;
+            ctx.setLineDash([unit * Math.max(0, end - start) / 100, unit]);
+            ctx.lineDashOffset = -unit * start / 100;
+          }
           if (path) ctx.stroke(path); else ctx.stroke();
+          ctx.setLineDash([]); ctx.lineDashOffset = 0;
         }
         break;
       }
@@ -1008,13 +1025,23 @@ export class Renderer {
       };
       break;
     }
+    // "Active Camera View" (Camera Options) decides whether the preview is
+    // rendered through the camera's transform (camera POV) or as the flat
+    // editing view. Both are real renders of the same composition.
+    const camEnabled = this.activeCameraView && !!camera;
     const camTransform = (c: CanvasRenderingContext2D) => {
-      if (!camera) return;
-      c.translate(canvas.width / 2 + camera.x, canvas.height / 2 + camera.y);
-      c.scale(camera.sx, camera.sy);
-      c.rotate(camera.rot);
+      if (!camEnabled) return;
+      c.translate(canvas.width / 2 + camera!.x, canvas.height / 2 + camera!.y);
+      c.scale(camera!.sx, camera!.sy);
+      c.rotate(camera!.rot);
       c.translate(-canvas.width / 2, -canvas.height / 2);
     };
+    if (camEnabled) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
     // bottom-to-top (index 0 is topmost)
     for (let i = this.project.layers.length - 1; i >= 0; i--) {
       const layer = this.project.layers[i];
@@ -1076,7 +1103,9 @@ export class Renderer {
       camTransform(ctx);
       ctx.globalCompositeOperation = layer.blend || 'source-over';
       ctx.globalAlpha = alpha;
-      ctx.filter = fx.dropShadows.length ? fx.dropShadows.join(' ') : 'none';
+      const fb = Math.max(prop(layer, 'forceBlur', t, 0), this.forceBlur);
+      const blurFilter = fb > 0 ? `blur(${(fb * size.w / 100).toFixed(1)}px)` : '';
+      ctx.filter = [fx.dropShadows.join(' '), blurFilter].filter(Boolean).join(' ') || 'none';
       if (fx.zoomBlur && fx.zoomBlur.amount > 0 && fx.zoomBlur.steps > 1) {
         const steps = clamp(Math.round(fx.zoomBlur.steps), 2, 12);
         const cx = canvas.width / 2, cy = canvas.height / 2;

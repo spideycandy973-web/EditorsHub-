@@ -275,6 +275,13 @@ function Stage({ canvasRef, stageRef, rendererRef }: {
         {cameraSelected && <svg className="um-camera-x" viewBox="0 0 100 100" preserveAspectRatio="none">
           <line x1="0" y1="0" x2="100" y2="100" /><line x1="100" y1="0" x2="0" y2="100" />
         </svg>}
+        {cameraSelected && !e.activeCameraView && (
+          <button type="button" className="um-camera-hint" title="Open Camera Options"
+            onClick={() => { e.selectLayer(e.selectedLayer!.id); ui.openProperty('camera'); }}>
+            <div className="um-camera-hint-icons"><span>⛶</span><Play size={13} fill="currentColor" /><VideoOff size={14} /><Play size={13} fill="currentColor" /><i /></div>
+            <p>To see from the camera's point of view, open this panel and turn on Active Camera View.</p>
+          </button>
+        )}
       </div>
       {e.showGrid && <div className="um-grid-overlay" />}
       {dragOver && <div className="um-drop-hint"><ImagePlus size={30} /> Drop media to import</div>}

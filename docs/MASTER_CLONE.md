@@ -1,4 +1,4 @@
-# Master screen & feature map (v4.1.0)
+# Master screen & feature map (v4.3.0)
 
 This document is the audit of what the app actually implements. It maps every
 screen, panel and behaviour observed in the reference recording (747 distinct UI
@@ -84,6 +84,6 @@ now exposes 6–12 working effects instead of 4.
 
 ## Verification
 
-`node tools/smoke.mjs --shots` → **67/67** headless checks, zero console
+`node tools/smoke.mjs --shots` → **94/94** headless checks, zero console
 errors/warnings. `node tools/verify-gif.mjs` → 7/7. Native and Capacitor CI build
-the installable APK, release APK/AAB and source ZIP for `v4.1.0`.
+the installable APK, release APK/AAB and source ZIP for `v4.3.0`.
