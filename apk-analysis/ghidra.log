@@ -5,7 +5,7 @@ INFO  Using log config file: jar:file:/tmp/ghidra/ghidra_12.2_PUBLIC/Ghidra/Fram
 INFO  Using log file: /home/runner/.config/ghidra/ghidra_12.2_PUBLIC/application.log (LoggingInitialization)  
 INFO  Loading user preferences: /home/runner/.config/ghidra/ghidra_12.2_PUBLIC/preferences (Preferences)  
 INFO  Searching for classes... (ClassSearcher)  
-INFO  Class search complete (1111 ms) (ClassSearcher)  
+INFO  Class search complete (664 ms) (ClassSearcher)  
 INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
 INFO  Initializing Random Number Generator... (SecureRandomFactory)  
 INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
@@ -14,7 +14,7 @@ INFO  Loaded 120 trusted CA certificates from the OS trust store. (DefaultTrustM
 INFO  Loaded 120 trusted CA certificates from the Java default trust store. (DefaultTrustManagerFactory)  
 INFO  Starting cache cleanup: /var/tmp/runner-ghidra/fscache2 (FileCacheMaintenanceDaemon)  
 INFO  Finished cache cleanup, estimated storage used: 0 (FileCacheMaintenanceDaemon)  
-INFO  Headless startup complete (5443 ms) (AnalyzeHeadless)  
+INFO  Headless startup complete (3708 ms) (AnalyzeHeadless)  
 INFO  Class searcher loaded 60 extension points (19 false positives) (ClassSearcher)  
 INFO  HEADLESS Script Paths:
     /tmp/ghidra/ghidra_12.2_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
@@ -42,4 +42,91 @@ INFO  HEADLESS Script Paths:
     /tmp/ghidra/ghidra_12.2_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts (HeadlessAnalyzer)  
 INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
 INFO  Creating temporary project: /tmp/ghidra-proj/um (HeadlessAnalyzer)  
-ERROR Abort due to error: Directory not found: /tmp/ghidra-proj (HeadlessAnalyzer)  
+INFO  Creating project: /tmp/ghidra-proj/um (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: /tmp/ghidra-proj/um (HeadlessAnalyzer)  
+INFO  IMPORTING: file:///tmp/smallest.so (HeadlessAnalyzer)  
+INFO  Using Loader: Executable and Linking Format (ELF) (ProgramLoader)  
+INFO  Using Language/Compiler: ARM:LE:32:v8:default (ProgramLoader)  
+INFO  Using Library Search Path: [., /bin, /lib, /lib64, /lib/x86_64-linux-gnu, /lib/aarch64-linux-gnu, /usr/bin, /usr/lib, /usr/X11R6/bin, /usr/X11R6/lib, /usr/java/packages/lib, /usr/lib64] (ProgramLoader)  
+INFO  Additional info:
+Loading file:///tmp/smallest.so?MD5=53ad743f25b032a7122e44c5cd1bf32f...
+Setting block .data.rel.ro to read-only
+Setting block .fini_array to read-only
+Setting block .dynamic to read-only
+------------------------------------------------
+
+Linking the External Programs of 'smallest.so' to imported libraries...
+  [liblog.so] -> not found in project
+  [libjnigraphics.so] -> not found in project
+  [libc.so] -> not found in project
+  [libm.so] -> not found in project
+  [libdl.so] -> not found in project
+------------------------------------------------
+
+Resolving External Symbols of [/smallest.so] - 12 unresolved symbols, no external libraries configured - skipping
+ (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: file:///tmp/smallest.so (HeadlessAnalyzer)  
+INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)  
+INFO  Packed database cache: /var/tmp/runner-ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: generic_clib (ApplyDataArchiveAnalyzer)  
+INFO  No functions detected that make variadic function calls with format strings containing format specifiers (FormatStringAnalyzer)  
+INFO  -----------------------------------------------------
+    ARM Constant Reference Analyzer            0.107 secs
+    ARM Symbol                                 0.001 secs
+    ASCII Strings                              0.169 secs
+    Apply Data Archives                        0.371 secs
+    Call Convention ID                         0.000 secs
+    Call-Fixup Installer                       0.004 secs
+    Create Address Tables                      0.004 secs
+    Create Address Tables - One Time           0.014 secs
+    Create Function                            0.038 secs
+    DWARF                                      0.001 secs
+    Data Reference                             0.059 secs
+    Decompiler Switch Analysis                 1.134 secs
+    Demangler GNU                              0.008 secs
+    Disassemble                                0.136 secs
+    Disassemble Entry Points                   0.079 secs
+    Embedded Media                             0.002 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.015 secs
+    Function Start Pre Search                  0.006 secs
+    Function Start Search                      0.047 secs
+    Function Start Search After Code           0.003 secs
+    Function Start Search After Data           0.004 secs
+    Function Start Search delayed - One Time   0.003 secs
+    Non-Returning Functions - Discovered       0.004 secs
+    Non-Returning Functions - Known            0.002 secs
+    Reference                                  0.109 secs
+    Shared Return Calls                        0.004 secs
+    Source Language Support                    0.003 secs
+    Stack                                      0.071 secs
+    Subroutine References                      0.058 secs
+    Subroutine References - One Time           0.001 secs
+    Variadic Function Signature Override       0.008 secs
+-----------------------------------------------------
+     Total Time   2 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: file:///tmp/smallest.so (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: GhidraFunctions.py  (HeadlessAnalyzer)  
+ERROR  (HeadlessAnalyzer)  
+ERROR REPORT SCRIPT ERROR: GhidraFunctions.py : Ghidra was not started with PyGhidra. Python is not available (HeadlessAnalyzer) ghidra.app.script.GhidraScriptLoadException: Ghidra was not started with PyGhidra. Python is not available
+	at ghidra.pyghidra.PyGhidraScriptProvider.getScriptInstance(PyGhidraScriptProvider.java:75)
+	at ghidra.app.util.headless.HeadlessAnalyzer.runScriptsList(HeadlessAnalyzer.java:929)
+	at ghidra.app.util.headless.HeadlessAnalyzer.analyzeProgram(HeadlessAnalyzer.java:1107)
+	at ghidra.app.util.headless.HeadlessAnalyzer.processFileWithImport(HeadlessAnalyzer.java:1606)
+	at ghidra.app.util.headless.HeadlessAnalyzer.processWithLoader(HeadlessAnalyzer.java:1770)
+	at ghidra.app.util.headless.HeadlessAnalyzer.processWithImport(HeadlessAnalyzer.java:1705)
+	at ghidra.app.util.headless.HeadlessAnalyzer.processWithImport(HeadlessAnalyzer.java:1795)
+	at ghidra.app.util.headless.HeadlessAnalyzer.processLocal(HeadlessAnalyzer.java:464)
+	at ghidra.app.util.headless.AnalyzeHeadless.launch(AnalyzeHeadless.java:211)
+	at ghidra.GhidraLauncher.launch(GhidraLauncher.java:78)
+	at ghidra.Ghidra.main(Ghidra.java:41)
+ 
+INFO  ANALYZING changes made by post scripts: file:///tmp/smallest.so (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: file:///tmp/smallest.so (HeadlessAnalyzer)  
+INFO  /smallest.so: file created (runner) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /smallest.so (um:/smallest.so) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  
