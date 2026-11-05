@@ -5,7 +5,7 @@
  *   node tools/frames-libs.mjs          # one-time: inflate the AL2023 shared libs
  *   node tools/smoke.mjs               # against `npm run preview` on :4173
  *
- * Set BASE_URL to test another host. Pass --shots to write v3.3.0 screenshots
+ * Set BASE_URL to test another host. Pass --shots to write v3.5.0 screenshots
  * into docs/screenshots/.
  */
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
@@ -59,7 +59,7 @@ check('Upload XML card present', await page.getByText('Upload XML file').count()
 check('Import Project Package present', await page.getByText('Import Project Package').count() >= 1);
 if (SHOTS) {
   mkdirSync(resolve(ROOT, 'docs/screenshots'), { recursive: true });
-  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/home-v3.4.0.png') });
+  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/home-v3.5.0.png') });
 }
 
 // Settings switch is a real control
@@ -67,7 +67,7 @@ await page.getByTitle('Settings').first().click();
 await page.waitForSelector('.um-settings-card');
 const chromeSwitch = page.getByTitle('Device chrome (status + gesture bar)');
 check('Device chrome switch present', await chromeSwitch.count() === 1);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/settings-v3.4.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/settings-v3.5.0.png') });
 await chromeSwitch.click();
 check('switch hides status strip', await page.locator('.um-statusbar').count() === 0);
 check('switch hides gesture pill', await page.locator('.um-gesturebar').count() === 0);
@@ -100,7 +100,7 @@ await page.waitForTimeout(320);
 check('About is a full page', await page.locator('.um-about-page').count() === 1);
 check('device info card is real', (await page.locator('.um-device-card').innerText()).includes('Device & build information'));
 check('About shows a live viewport value', /\d+ × \d+ px/.test(await page.locator('.um-device-card').innerText()));
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/about-v3.4.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/about-v3.5.0.png') });
 await page.getByTitle('Back').click();
 check('About closes', await page.locator('.um-about-page').count() === 0);
 
@@ -117,7 +117,7 @@ check('editor opened', await page.locator('.um-editor').count() === 1);
 check('canvas present', await page.locator('.um-editor canvas').count() >= 1);
 check('status strip visible in editor', await page.locator('.um-statusbar').count() === 1);
 if (SHOTS && await page.locator('.um-editor').count()) {
-  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/editor-v3.4.0.png') });
+  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/editor-v3.5.0.png') });
 }
 
 // Export & Share option list (v3.4.0)
@@ -126,7 +126,7 @@ await page.waitForSelector('.um-overlay-export');
 check('Export & Share lists six real formats', await page.locator('.um-export-option').count() === 6);
 check('storage figure is honest', (await page.locator('.um-export-space').innerText()).includes('Available Space'));
 check('template export toggle present', await page.locator('.um-template-toggle input').count() === 1);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/export-v3.4.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/export-v3.5.0.png') });
 // Real GIF89a output: render frames, LZW-encode, download, inspect the bytes.
 await page.locator('.um-export-option').filter({ hasText: 'GIF' }).click();
 await page.locator('.um-export-settings select').first().selectOption('160');
@@ -155,8 +155,64 @@ check('shape picker has five pages', await page.locator('.um-shape-sheet .um-dot
 check('first shape page has 18 shapes', await page.locator('.um-shape-cell').count() === 18);
 await page.locator('.um-shape-sheet .um-dots button').nth(4).click();
 check('vector preset page renders real glyphs', await page.locator('.um-shape-cell svg path').count() >= 18);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/shapes-v3.4.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/shapes-v3.5.0.png') });
 await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+// ---- v3.5.0: APK-derived full-screen panels -------------------------------
+// Add a real shape layer so the effect browser can apply an effect to it.
+await page.locator('.um-fab').click();
+await page.waitForSelector('.um-add-sheet');
+await page.locator('.um-add-tile').filter({ hasText: 'Shape' }).first().click();
+await page.waitForSelector('.um-shape-sheet');
+await page.locator('.um-shape-cell').first().click();
+await page.waitForTimeout(350);
+check('right preview tool rail is visible', await page.locator('.um-right-tools').count() === 1);
+check('property pane has seven panel tabs', await page.locator('.um-prop-tabs button').count() === 7);
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/pane-v3.5.0.png') });
+
+// Open the property detail so the "Full screen" link exists, then launch it.
+await page.locator('.um-prop-tabs button').filter({ hasText: 'Effects' }).first().click();
+await page.waitForTimeout(250);
+await page.getByText('Full screen').first().click();
+await page.waitForSelector('.um-fx-browser');
+check('Effect Browser lists all 32 APK categories', await page.locator('.um-fx-cat').count() === 32);
+check('Effect Browser has five quick picks', await page.locator('.um-fx-quick-big').count() + await page.locator('.um-fx-quick-small button').count() === 5);
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/fx-browser-v3.5.0.png') });
+await page.locator('.um-fx-cat').filter({ hasText: 'Blur, Focus' }).first().click();
+await page.waitForTimeout(200);
+check('category drill-down shows real effects', await page.locator('.um-fx-cell').count() >= 3);
+await page.locator('.um-fx-cell').first().click();
+await page.waitForTimeout(200);
+check('Guide card describes the selected effect', (await page.locator('.um-fx-guide-body').innerText()).includes('Gaussian Blur'));
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/fx-guide-v3.5.0.png') });
+await page.locator('.um-fx-add').click();
+await page.waitForTimeout(300);
+check('Standard Settings adds a real effect', await page.locator('.um-fx-browser').count() === 0);
+check('effect landed on the layer', await page.evaluate(() => {
+  const ed = window.__editor;
+  return !!ed && (ed.project?.layers?.some(l => l.effects?.length > 0) ?? false);
+}));
+
+// Presets dialog: save, list and discover all real.
+await page.locator('.um-prop-tabs button').filter({ hasText: 'Presets' }).first().click();
+await page.waitForTimeout(300);
+check('Presets dialog opens', await page.locator('.um-presets-card').count() === 1);
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/presets-v3.5.0.png') });
+await page.locator('.um-presets-card').getByText('Save selected layer', { exact: true }).click();
+await page.waitForTimeout(250);
+check('preset is stored locally', await page.locator('.um-presets-row').count() >= 1);
+await page.locator('.um-presets-card').getByText('Discover Presets').click();
+await page.waitForTimeout(200);
+check('Discover Presets lists real motion presets', await page.locator('.um-presets-gallery button').count() >= 8);
+await page.locator('.um-presets-card').getByText('Back', { exact: true }).click();
+await page.waitForTimeout(150);
+await page.locator('.um-presets-card').getByText('Close', { exact: true }).click();
+await page.waitForTimeout(200);
+
+// Palette measured from the APK resource table.
+const teal = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--um-teal').trim());
+check('teal matches APK resource Y1', teal === '#00ffa8', teal);
 
 check('no console errors/warnings', errors.length === 0, errors.slice(0, 4).join(' | '));
 await browser.close();

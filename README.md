@@ -7,6 +7,28 @@ No placeholder screens, no mocked buttons.
 
 > The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
 
+**v3.5.0 — reverse-engineered from the actual APK.** You supplied
+`UM Clone_8.0.1.apk` (294,346,248 bytes, `com.alightcreative.ultramotion`).
+Because it exceeds the agent workspace's 100 MiB per-file cap,
+[`.github/workflows/apk-re.yml`](.github/workflows/apk-re.yml) downloads it
+inside GitHub Actions and runs **REA** (with its JADX MCP provider), **Ghidra
+12.2 headless**, **JADX**, **APKTool** and **androguard**. REA loaded 37,206
+classes and 5,437 resources; Ghidra exported 43 native functions; APKTool
+decoded 1,076 colours, 1,237 dimensions, 3,310 strings, 1,379 styles and 250
+layout trees. Only compact structural measurements are committed in
+`apk-analysis/` — see [docs/APK_AUDIT.md](docs/APK_AUDIT.md).
+
+From those facts v3.5.0 adds the **full-screen Effect Browser** (X / title /
+search header, five quick picks, all 32 exact APK category names, 3-column
+subcategory grids and the bottom Guide / `+ Standard Settings` card), the
+**`No presets... yet!` dialog** with real local preset storage and a built-in
+motion gallery, the **seven-panel bottom tab strip**, an always-visible right
+preview/zoom rail, and the exact APK palette tokens (`#121215`, `#1c1c1f`,
+`#262629`, `#2e2e33`, `#00ffa8`). Every visible effect tile applies a real
+canvas effect; nothing is faked. `npm run typecheck`, `npm run build` and
+`node tools/smoke.mjs --shots` pass **52/52** headless checks with zero console
+errors.
+
 **v3.4.0 — built from the full 10:29.66 reference recording.** The 301,626,146-byte
 Drive video could not enter the 100 MiB agent workspace, so
 [`.github/workflows/reference-frames.yml`](.github/workflows/reference-frames.yml) downloads it
@@ -218,7 +240,7 @@ cd EditorsHub
 ```
 
 CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v3.4.0` and `editorshub-latest`
+release APK, an AAB and a complete source archive to the `v3.5.0` and `editorshub-latest`
 GitHub releases and to `/artifacts`.
 Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
 or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
@@ -228,4 +250,4 @@ or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md
 The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
 nothing was removed.
 
-Screenshots of the current v3.4.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+Screenshots of the current v3.5.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).

@@ -2,6 +2,11 @@
 
 **Status: full recording analysed. 747 distinct UI states extracted and reviewed.**
 
+> v3.5.0 continues this work with the actual APK. See
+> [APK_AUDIT.md](APK_AUDIT.md) for REA / Ghidra / JADX / APKTool results, the
+> exact `resources.arsc` palette, all 32 Effect Browser categories and the
+> full-screen panels built from them.
+
 ## How the 100 MiB transfer limit was solved
 
 The source is one Google Drive file:

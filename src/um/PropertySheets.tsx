@@ -655,7 +655,7 @@ const TABS: { id: PropertyId; label: string }[] = [
 
 export function PropertyPane() {
   const ui = useUI();
-  const showTabs = ui.sheet === 'property';
+  const showTabs = ui.sheet === 'property' || ui.sheet === 'properties';
   return (
     <div className={`um-prop-pane ${showTabs ? 'with-tabs' : ''}`}>
       <div className="um-prop-main">

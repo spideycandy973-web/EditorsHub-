@@ -1,3 +1,43 @@
+# EditorsHub v3.5.0 — reference APK reverse-engineering
+
+Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.
+
+## What's new in 3.5.0
+
+- **Reverse-engineered the actual APK you shared.** `UM Clone_8.0.1.apk`
+  (294,346,248 bytes, `com.alightcreative.ultramotion`) was downloaded inside
+  GitHub Actions and analysed with **REA** (JADX MCP provider: 37,206 classes,
+  5,437 resources), **Ghidra 12.2 headless** (43 native functions via a Java
+  GhidraScript), **JADX 1.5.6**, **APKTool 3.0.3** (1,076 colours, 1,237
+  dimensions, 3,310 strings, 1,379 styles, 250 layouts) and **androguard**.
+  Only compact measurements are committed in `apk-analysis/`; the APK, DEX
+  bytecode and proprietary bitmaps are not.
+  [docs/APK_AUDIT.md](docs/APK_AUDIT.md) has the full table.
+- **Exact palette** from `resources.arsc`: `#121215` / `#1c1c1f` / `#262629` /
+  `#2e2e33` / `#00ffa8`.
+- **Full-screen Effect Browser** with X / "Effect Browser" / search, five quick
+  picks, all **32 exact APK category names**, 3-column subcategory grids and the
+  bottom **Guide card** (description, tag chips, `+ Standard Settings`, star
+  favourites). Every tile applies a real working canvas effect.
+- **`No presets... yet!` dialog** with the mini-editor illustration,
+  `Discover Presets`, `Close`, real local preset storage (save / list / apply /
+  delete) and a built-in motion-preset gallery.
+- **Seven-panel bottom tab strip** in the property pane, always-visible right
+  preview/zoom rail, and `Save Preset` rewired to store locally.
+- `versionCode 12`, `versionName 3.5.0`, PWA cache `editorshub-v12`.
+  `npm run typecheck`, `npm run build`, `node tools/verify-gif.mjs` (7/7) and
+  `node tools/smoke.mjs --shots` (**52/52**, zero console errors) all pass.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, `com.editorshub`) is the installable build
+and is attached to `apk-latest`, `v3.5.0` and `editorshub-latest`.
+`EditorsHub-debug.apk` is the native Compose build; release APK/AAB are unsigned
+by design (see `EditorsHub/docs/RELEASE_SIGNING.md`).
+`EditorsHub-source-v3.5.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v3.4.0 — full reference-recording pass
 
 Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.
