@@ -281,3 +281,61 @@ export function deleteTemplate(id: string): void {
   try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(listTemplates().filter(t => t.id !== id))); }
   catch { /* storage full */ }
 }
+
+/* ------------------------- local layer presets ---------------------------- */
+export interface SavedPreset {
+  id: string;
+  name: string;
+  createdAt: number;
+  /** A serialisable snapshot of the layer's properties, style, blend and effects. */
+  layer: {
+    style: Record<string, unknown>;
+    props: Record<string, unknown>;
+    blend: string;
+    effects: Record<string, unknown>[];
+  };
+}
+const PRESET_KEY = 'editorshub.ultra.layerPresets.v1';
+export function listPresets(): SavedPreset[] {
+  try { return JSON.parse(localStorage.getItem(PRESET_KEY) || '[]') as SavedPreset[]; }
+  catch { return []; }
+}
+export function savePreset(name: string): SavedPreset {
+  const l = editor.selectedLayer;
+  if (!l) throw new Error('Select a layer first.');
+  const p: SavedPreset = {
+    id: uid('preset'), name: name.trim() || `${l.name} preset`, createdAt: Date.now(),
+    layer: {
+      style: structuredClone(l.style) as unknown as Record<string, unknown>,
+      props: structuredClone(l.props) as unknown as Record<string, unknown>,
+      blend: l.blend,
+      effects: structuredClone(l.effects) as unknown as Record<string, unknown>[],
+    },
+  };
+  try { localStorage.setItem(PRESET_KEY, JSON.stringify([p, ...listPresets()].slice(0, 60))); }
+  catch { /* storage full */ }
+  return p;
+}
+export function deletePreset(id: string): void {
+  try { localStorage.setItem(PRESET_KEY, JSON.stringify(listPresets().filter(p => p.id !== id))); }
+  catch { /* storage full */ }
+}
+/** Apply a saved preset to the currently selected layer for real. */
+export function applyPreset(preset: SavedPreset): void {
+  const l = editor.selectedLayer;
+  if (!l) throw new Error('Select a layer first.');
+  editor.beginBatch();
+  editor.setStyle(l.id, preset.layer.style as never);
+  editor.setBlend(l.id, preset.layer.blend as never);
+  for (const [k, a] of Object.entries(preset.layer.props as Record<string, { value?: number }>)) {
+    if (typeof a?.value === 'number') editor.setProp(l.id, k, a.value, false);
+  }
+  editor.patchLayer(l.id, {
+    effects: (preset.layer.effects as Record<string, unknown>[]).map(f => {
+      const copy: Record<string, unknown> = structuredClone(f);
+      copy.id = uid('fx');
+      return copy as never;
+    }),
+  });
+  editor.endBatch();
+}

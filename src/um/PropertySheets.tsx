@@ -447,10 +447,13 @@ function EditShapeBody({ sub }: { sub: number }) {
 /* ---------------------------------- presets ------------------------------- */
 function PresetsBody() {
   const e = useEditor();
+  const ui = useUI();
   const layer = e.selectedLayer;
   return (
     <div className="um-prop-body um-prop-scroll">
-      <div className="um-prop-heading">Motion presets</div>
+      <div className="um-prop-heading">Motion presets
+        <button type="button" className="um-mini-btn" onClick={() => ui.setPresetsDialog(true)}>Presets library ↗</button>
+      </div>
       <div className="um-preset-grid">
         {MOTION_PRESETS.map(p => (
           <button type="button" key={p.id} title={p.description} disabled={!layer}
@@ -478,7 +481,9 @@ function EffectsBody({ sub }: { sub: number }) {
   const groups = ['All', ...Array.from(new Set(EFFECT_DEFS.map(d => d.group)))];
   if (sub === 0) return (
     <div className="um-prop-body um-prop-scroll">
-      <div className="um-prop-heading">Effect Browser</div>
+      <div className="um-prop-heading">Effect Browser
+        <button type="button" className="um-mini-btn" onClick={() => ui.setEffectBrowser(true)}>Full screen ↗</button>
+      </div>
       <div className="um-browser-grid">
         {groups.filter(g => g !== 'All').map((g, i) => (
           <button type="button" key={g} className={group === g ? 'on' : ''}
@@ -641,11 +646,33 @@ function PropertyDetail() {
   );
 }
 
+const TABS: { id: PropertyId; label: string }[] = [
+  { id: 'color', label: 'Color & Fill' }, { id: 'border', label: 'Border & Shadow' },
+  { id: 'blend', label: 'Blending & Opacity' }, { id: 'move', label: 'Move & Transform' },
+  { id: 'editShape', label: 'Edit Shape' }, { id: 'presets', label: 'Presets' },
+  { id: 'effects', label: 'Effects' },
+];
+
 export function PropertyPane() {
   const ui = useUI();
+  const showTabs = ui.sheet === 'property' || ui.sheet === 'properties';
   return (
-    <div className="um-prop-pane">
-      {ui.sheet === 'properties' ? <PropertiesRoot /> : <PropertyDetail />}
+    <div className={`um-prop-pane ${showTabs ? 'with-tabs' : ''}`}>
+      <div className="um-prop-main">
+        {ui.sheet === 'properties' ? <PropertiesRoot /> : <PropertyDetail />}
+      </div>
+      {showTabs && (
+        <div className="um-prop-tabs">
+          {TABS.map(t => (
+            <button type="button" key={t.id} className={ui.property === t.id ? 'on' : ''}
+              title={t.label} onClick={() => t.id === 'presets'
+                ? (ui.openProperty('presets'), ui.setPresetsDialog(true))
+                : ui.openProperty(t.id)}>
+              {TILE_ICONS[t.id]}<small>{t.label.replace(' & ', ' / ')}</small>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

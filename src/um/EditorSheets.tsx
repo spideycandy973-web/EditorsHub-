@@ -10,7 +10,7 @@ import { useUI } from './context';
 import { Backdrop, Btn, IBtn, PALETTE, Sheet } from './widgets';
 import { ShapeGlyph } from './ShapeGlyph';
 import {
-  addDrawing, addMediaFiles, addVectorPath, saveSelectedLayerPreset,
+  addDrawing, addMediaFiles, addVectorPath, saveSelectedLayerPreset, savePreset,
 } from './lib';
 
 /* Multi-layer clipboard. Operations are applied to the real project. */
@@ -335,7 +335,11 @@ function OverflowMenu() {
     { label: `Duplicate ${count} Layer${count === 1 ? '' : 's'}`, icon: <Copy size={17} />, disabled: !count,
       run: () => { e.beginBatch(); ids.forEach(id => e.duplicateLayer(id)); e.endBatch(); close(); e.notify(`${count} layer(s) duplicated`, 'ok'); } },
     { label: 'Save Preset', icon: <FileCode2 size={17} />, badge: 'NEW', disabled: !layer,
-      run: () => { void saveSelectedLayerPreset().then(() => e.notify('Preset XML downloaded', 'ok')).catch(err => e.notify((err as Error).message, 'warn')); close(); } },
+      run: () => {
+        try { const p = savePreset(`${layer!.name} preset`); e.notify(`Preset “${p.name}” saved`, 'ok'); }
+        catch (err) { e.notify((err as Error).message, 'warn'); }
+        close(); ui.setPresetsDialog(true);
+      } },
     { label: `Copy ${count} Layer${count === 1 ? '' : 's'}`, icon: <Copy size={17} />, disabled: !count,
       run: () => { layerClipboard = ids.map(id => e.layer(id)).filter(Boolean).map(l => structuredClone(l!)); clipboardVersion++; e.notify(`${layerClipboard.length} layer(s) copied`, 'ok'); force(n => n + 1); close(); } },
     { label: 'Paste Layer', icon: <FolderOpen size={17} />, disabled: !layerClipboard,

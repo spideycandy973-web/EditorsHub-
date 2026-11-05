@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.5.0 — reference APK reverse-engineering pass (2026-11-05)
+
+- Installed and ran **REA** (`rea-agents` + `jadx-headless-mcp` 0.7.1), **Ghidra
+  12.2 headless**, **JADX 1.5.6**, **APKTool 3.0.3**, **androguard** and
+  **pyaxmlparser** against the user's `UM Clone_8.0.1.apk` (294,346,248 bytes,
+  md5 `9a75e85edfc1c1dbdb4da793ed95bbf8`, package
+  `com.alightcreative.ultramotion`). CI downloads the APK from Drive, verifies
+  its hash and commits only structural measurements to `apk-analysis/`.
+- Recovered the exact resource palette from `resources.arsc`: `A10 #121215`,
+  `A9 #1c1c1f`, `A9_W5P #262629`, `A7 #2e2e33`, `Y1 #00ffa8`; applied to
+  `src/um.css`.
+- Recovered all **32 Effect Browser category names** from the decoded string
+  table and reproduced the full-screen browser: quick picks, 2-column
+  illustrated categories, 3-column subcategory grids, Guide card with tag
+  chips, `+ Standard Settings` and real favourites (`src/um/EffectBrowser.tsx`).
+- Added the **`No presets... yet!`** dialog with the mini-editor illustration,
+  `Discover Presets`, `Close`, and real localStorage preset save / list / apply /
+  delete plus a built-in motion-preset gallery (`src/um/PresetsDialog.tsx`,
+  `src/um/lib.ts`).
+- Added the seven-panel bottom property tab strip, made the right preview/zoom
+  rail visible by default, and rewired `Save Preset` to store locally.
+- `tools/smoke.mjs` extended to **52 checks**: 32 categories, category drill-down,
+  Guide card, real effect application, preset persistence, seven tabs, right
+  rail, APK teal token, GIF byte signature — all passing, zero console errors.
+- `docs/APK_AUDIT.md` documents the toolchain, evidence files and the deliberate
+  no-proprietary-assets boundary.
+- CI/release branch moved to `arena/d5198657-editorshub`, tag to `v3.5.0`.
+- `versionCode 12`, `versionName 3.5.0`, PWA cache `editorshub-v12`.
+
 ## 3.4.0 — full reference-recording pass (2026-11-04)
 
 - **The whole 10:29.66 recording was analysed.** `.github/workflows/reference-frames.yml`
