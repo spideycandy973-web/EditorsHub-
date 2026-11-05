@@ -8,7 +8,7 @@
 - Drawable resources: 2208
 - UI strings: 6000
 - Java classes inventoried: 12000
-- Ghidra native functions: 0
+- Ghidra native functions: 44
 
 Tools: REA (`rea-agents`), Ghidra headless, JADX, APKTool, androguard.
 Only structural measurements are recorded here: no decompiled source,
