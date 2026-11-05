@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { editor } from './editor/store';
-import './um.css';
-import { applyBrand } from './theme/brand';
+import './app.css';
+import { applyBrand } from './app/brand';
 
 applyBrand();
 

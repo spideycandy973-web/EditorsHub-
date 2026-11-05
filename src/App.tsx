@@ -1,8 +1,8 @@
 import React from 'react';
-import { UIProvider } from './um/context';
-import { Root } from './um/Root';
+import { UIProvider } from './app/context';
+import { Root } from './app/Root';
 
-/** EditorsHub — Ultra-style launcher + timeline editor over the real engine. */
+/** EditorsHub v4.0.0 — fully new application layer over the real engine. */
 export default function App() {
   return (
     <UIProvider>

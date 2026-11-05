@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import { createDemoProject } from '../editor/defaults';
-import { BRAND } from '../theme/brand';
+import { BRAND } from './brand';
 import { useUI } from './context';
 import { Backdrop, Btn, IBtn, Seg, Sheet } from './widgets';
 import {

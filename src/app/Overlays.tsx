@@ -353,6 +353,9 @@ function ExportBody() {
           ]} /></Row>
         </div>
       )}
+      <button type="button" className="um-export-preview" onClick={() => ui.setFlow('exportPreview')}>
+        Preview the current frame before exporting ↗
+      </button>
       <p className="um-hint">{estimateNote}. Every format above is rendered and encoded for real — no placeholder downloads.</p>
 
       <label className="um-checkline um-template-toggle">
@@ -528,12 +531,18 @@ export function Overlays() {
     export: { title: 'Export & Share', body: <ExportBody />, variant: 'floating' },
     projectSettings: { title: 'Project Settings', body: <ProjectSettingsBody />, variant: 'floating' },
     help: { title: 'Editing guide', body: <HelpBody />, variant: 'floating' },
-    templates: { title: 'Templates', body: (
+    templates: { title: 'Templates', body: (<>
+      <div className="um-template-flow-entry">
+        <button type="button" className="um-mini-btn" onClick={() => { ui.setSheet('none'); ui.setFlow('replaceMedia'); }}>
+          Replace media in the current project ↗
+        </button>
+      </div>
+      <div className="um-scroll">
       <div className="um-scroll"><TemplateGrid onPick={(name, w, h) => {
         const p = createDemoProject(); p.name = name; p.width = w; p.height = h;
         e.replaceProject(p); e.setScreen('editor'); close(); e.notify(`Template “${name}” opened`, 'ok');
-      }} /></div>
-    ), variant: 'floating' },
+      }} /></div></div>
+    </>), variant: 'floating' },
     elements: { title: 'Elements & Projects', body: <ElementsBody />, variant: 'floating' },
     rename: { title: 'Rename layer', body: <RenameBody />, variant: 'floating' },
   };

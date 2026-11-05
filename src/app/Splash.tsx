@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BRAND } from '../theme/brand';
+import { BRAND } from './brand';
 
 /**
  * Cold-launch screen from the reference recording (0.75 s – ~3.0 s): a near-black

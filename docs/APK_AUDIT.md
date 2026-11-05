@@ -1,6 +1,6 @@
 # Reference APK reverse-engineering audit — v3.5.0
 
-**Status: complete.** v3.6.0 builds on this evidence with 23 additional real
+**Status: complete.** v4.0.0 builds on this evidence with 23 additional real
 effects, a single-file brand/palette configuration and the
 [MASTER_CLONE.md](MASTER_CLONE.md) screen map. REA, Ghidra, JADX, APKTool, androguard and `aapt`-style
 resource decoding were installed and run against the user-supplied APK inside
@@ -47,7 +47,7 @@ Evidence files: `hashes.json`, `inventory.json`, `manifest.json`,
   `AboutActivity`, `EffectBrowserActivity`, `FontBrowserActivity`,
   `ColorPickerActivity`, `PresetPreviewActivity`, `TemplateImportPreviewActivity`,
   `ExportPreviewActivity` — confirming the screen graph seen in the recording.
-- **Exact palette tokens** (now used by `src/um.css`):
+- **Exact palette tokens** (now used by `src/app.css`):
 
   | APK token | Value | CSS variable |
   | --- | --- | --- |
@@ -72,7 +72,7 @@ Evidence files: `hashes.json`, `inventory.json`, `manifest.json`,
   `Color Looks & Tone Maps`, `Ink, Paint & Halftone`,
   `Strokes, Bevels & Shadows`, `Wipes, Keys & Shatter`, `Shake & Transform`.
   All 32 are implemented as real, navigable categories in
-  `src/um/EffectBrowser.tsx`.
+  `src/app/EffectBrowser.tsx`.
 - **Panel wording** recovered from the screenshots and the APK: `Move &
   Transform`, `Border & Shadow`, `Blending & Opacity`, `Edit Shape`, `Color &
   Fill`, `Presets`, `Effects`, `No presets... yet!`, `Discover Presets`,
