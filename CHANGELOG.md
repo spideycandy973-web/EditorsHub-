@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.6.0 — master base (2026-11-05)
+
+- **Deleted the legacy.** Removed the unused v2 `src/components/` tree, 63 stale
+  screenshots and six obsolete source ZIPs; only current/previous release
+  artefacts remain.
+- **One-file customisation.** New `src/theme/brand.ts` holds the app name,
+  wordmark, domain, Android package, version, social links and the full palette;
+  `applyBrand()` pushes the palette into CSS custom properties at startup. Home,
+  Settings and About now read every identity value from it.
+- **44 real effects.** Added 23 working canvas effects to `EFFECT_DEFS` and
+  `src/editor/renderer.ts`: posterize, threshold, solarize, duotone, gradient
+  map, levels, colour balance, emboss, edge detect, halftone, scanlines, glitch
+  blocks, ripple, bulge, twirl, mirror, kaleidoscope, motion blur, directional
+  blur, lens flare, starfield, bokeh and rain. All 23 render at multiple playhead
+  positions with zero console errors; the scratch canvas now uses the
+  `willReadFrequently` fast path.
+- Every Effect Browser category now exposes 6–12 real effects instead of 4.
+- `docs/MASTER_CLONE.md` documents the 30-screen/feature map and the customising
+  workflow.
+- `tools/smoke.mjs` extended to **58 checks** (brand config, A10/Y1 tokens,
+  Posterize end-to-end, all 23 new effects rendering cleanly) — all passing.
+- CI/release branch moved to `arena/05dd09b3-editorshub`, tag to `v3.6.0`.
+- `versionCode 13`, `versionName 3.6.0`, PWA cache `editorshub-v13`.
+
 ## 3.5.0 — reference APK reverse-engineering pass (2026-11-05)
 
 - Installed and ran **REA** (`rea-agents` + `jadx-headless-mcp` 0.7.1), **Ghidra

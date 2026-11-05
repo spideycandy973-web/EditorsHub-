@@ -1,3 +1,39 @@
+# EditorsHub v3.6.0 — master base, ready to customise
+
+Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.
+
+## What's new in 3.6.0
+
+- **Deleted the legacy:** unused v2 `src/components/` tree, 63 stale screenshots
+  and six obsolete source archives are gone.
+- **One-file customisation:** `src/theme/brand.ts` controls the app name,
+  wordmark, domain, Android package, version, links and palette; `applyBrand()`
+  applies the palette as CSS variables at startup. Home, Settings and About read
+  every identity value from it. Change one file, then customise from there.
+- **44 real effects** (up from 21). Added 23 working canvas effects: posterize,
+  threshold, solarize, duotone, gradient map, levels, colour balance, emboss,
+  edge detect, halftone, scanlines, glitch blocks, ripple, bulge, twirl, mirror,
+  kaleidoscope, motion blur, directional blur, lens flare, starfield, bokeh and
+  rain. All are distributed across the 32 Effect Browser categories, so each
+  category now offers 6–12 working effects.
+- The compositor's scratch canvas now requests `willReadFrequently`, removing
+  all Canvas2D readback warnings.
+- `docs/MASTER_CLONE.md` maps all 30 reference screens/panels to their
+  implementations and explains the clean-room boundary.
+- `versionCode 13`, `versionName 3.6.0`, PWA cache `editorshub-v13`.
+  `npm run typecheck`, `npm run build`, `node tools/verify-gif.mjs` (7/7) and
+  `node tools/smoke.mjs --shots` (**58/58**, zero console errors) all pass.
+
+## Install
+
+`EditorsHub-Motion.apk` (Capacitor, `com.editorshub`) is the installable build
+and is attached to `apk-latest`, `v3.6.0` and `editorshub-latest`.
+`EditorsHub-debug.apk` is the native Compose build; release APK/AAB are unsigned
+by design (see `EditorsHub/docs/RELEASE_SIGNING.md`).
+`EditorsHub-source-v3.6.0.zip` contains the complete source tree.
+
+---
+
 # EditorsHub v3.5.0 — reference APK reverse-engineering
 
 Package remains `com.editorshub`, application label `EditorsHub`; all code and assets are original.

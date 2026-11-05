@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useEditor } from '../editor/store';
 import { createDemoProject } from '../editor/defaults';
+import { BRAND } from '../theme/brand';
 import { useUI } from './context';
 import { Backdrop, Btn, IBtn, Seg, Sheet } from './widgets';
 import {
@@ -45,10 +46,10 @@ function Header() {
         <Settings size={23} strokeWidth={1.8} />
       </IBtn>
       <div className="um-wordmark">
-        <strong>EDITORS HUB</strong>
-        <span>editorshub.app</span>
+        <strong>{BRAND.wordmark}</strong>
+        <span>{BRAND.domain}</span>
       </div>
-      <IBtn title="About EditorsHub" onClick={() => ui.setAboutOpen(true)} className="um-avatar-solid">
+      <IBtn title={`About ${BRAND.appName}`} onClick={() => ui.setAboutOpen(true)} className="um-avatar-solid">
         <UserRound size={20} strokeWidth={1.8} />
       </IBtn>
     </header>
@@ -492,17 +493,16 @@ function SettingsBody() {
       <div className="um-settings-label">Audio Resampling</div>
       <Seg value={prefs.audioResampling} onChange={v => setPrefs({ ...prefs, audioResampling: v })}
         options={[{ id: 'low', label: 'Low' }, { id: 'high', label: 'High' }, { id: 'ultra', label: 'Ultra' }]} />
-      <div className="um-settings-brand"><span />✦ EDITORS HUB ✦<span /></div>
+      <div className="um-settings-brand"><span />✦ {BRAND.wordmark} ✦<span /></div>
       <div className="um-settings-divider" />
-      <button type="button" className="um-link-row" onClick={() => window.open('https://github.com/spideycandy973-web/EditorsHub-', '_blank', 'noopener')}>
-        <span className="um-link-icon light"><Globe2 size={19} /></span><b>Website</b><ChevronRight size={17} />
-      </button>
-      <button type="button" className="um-link-row" onClick={() => window.open('https://t.me/', '_blank', 'noopener')}>
-        <span className="um-link-icon light"><Send size={19} /></span><b>Telegram</b><ChevronRight size={17} />
-      </button>
-      <button type="button" className="um-link-row" onClick={() => window.open('https://www.tiktok.com/', '_blank', 'noopener')}>
-        <span className="um-link-icon light"><Music2 size={19} /></span><b>TikTok</b><ChevronRight size={17} />
-      </button>
+      {BRAND.links.map(link => (
+        <button type="button" key={link.label} className="um-link-row"
+          onClick={() => window.open(link.url, '_blank', 'noopener')}>
+          <span className="um-link-icon light">
+            {link.icon === 'globe' ? <Globe2 size={19} /> : link.icon === 'send' ? <Send size={19} /> : <Music2 size={19} />}
+          </span><b>{link.label}</b><ChevronRight size={17} />
+        </button>
+      ))}
       <div className="um-settings-divider" />
       <button type="button" className="um-link-row about" onClick={() => { ui.setSheet('none'); ui.setAboutOpen(true); }}>
         <b>About</b><ChevronRight size={17} />

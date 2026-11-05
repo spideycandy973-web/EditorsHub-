@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
 import { useUI } from './context';
 import { SwirlMark } from './Splash';
+import { BRAND } from '../theme/brand';
 
 /** Real values only: nothing on this page is invented. */
 function readDeviceInfo() {
@@ -11,8 +12,9 @@ function readDeviceInfo() {
     userAgentData?: { platform?: string };
   };
   const rows: [string, string][] = [
-    ['App', 'EditorsHub'],
-    ['Version', '3.4.0 (web/PWA build)'],
+    ['App', BRAND.appName],
+    ['Version', `${BRAND.version} (web/PWA build)`],
+    ['Package', BRAND.packageName],
     ['Platform', n.userAgentData?.platform || navigator.platform || 'Unknown'],
     ['Screen', `${window.screen.width} × ${window.screen.height} px`],
     ['Viewport', `${window.innerWidth} × ${window.innerHeight} px`],
@@ -56,7 +58,7 @@ export function AboutPage() {
           onClick={() => setMenu(v => !v)}><MoreVertical size={19} /></button>
         {menu && (
           <div className="um-about-menu">
-            <button type="button" onClick={() => { setMenu(false); window.open('https://github.com/spideycandy973-web/EditorsHub-', '_blank', 'noopener'); }}>
+            <button type="button" onClick={() => { setMenu(false); window.open(BRAND.website, '_blank', 'noopener'); }}>
               Source code
             </button>
             <button type="button" onClick={() => { setMenu(false); ui.setSheet('help'); }}>
@@ -69,9 +71,9 @@ export function AboutPage() {
       <div className="um-about-scroll">
         <div className="um-about-brand">
           <SwirlMark size={44} />
-          <h1>EDITORS HUB</h1>
-          <a href="https://github.com/spideycandy973-web/EditorsHub-" target="_blank" rel="noopener noreferrer">
-            editorshub.app
+          <h1>{BRAND.wordmark}</h1>
+          <a href={BRAND.website} target="_blank" rel="noopener noreferrer">
+            {BRAND.domain}
           </a>
         </div>
 
@@ -85,8 +87,7 @@ export function AboutPage() {
           </dl>
         </section>
         <p className="um-about-legal">
-          EditorsHub is an original, independent motion editor. No assets or code from
-          any other application are included.
+          {BRAND.legal}
         </p>
       </div>
     </div>

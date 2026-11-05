@@ -1,6 +1,8 @@
 # Reference APK reverse-engineering audit — v3.5.0
 
-**Status: complete.** REA, Ghidra, JADX, APKTool, androguard and `aapt`-style
+**Status: complete.** v3.6.0 builds on this evidence with 23 additional real
+effects, a single-file brand/palette configuration and the
+[MASTER_CLONE.md](MASTER_CLONE.md) screen map. REA, Ghidra, JADX, APKTool, androguard and `aapt`-style
 resource decoding were installed and run against the user-supplied APK inside
 GitHub Actions (`.github/workflows/apk-re.yml`). Compact structural evidence is
 committed in `apk-analysis/`; the APK itself is never committed.
