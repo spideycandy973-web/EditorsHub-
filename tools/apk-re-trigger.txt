@@ -1,3 +1,3 @@
 Re-run the REA + Ghidra APK reverse-engineering workflow on
-arena/d5198657-editorshub. Source Drive id 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE
-(UM Clone_8.0.1.apk, 294,346,248 bytes, md5 9a75e85edfc1c1dbdb4da793ed95bbf8).
+arena/d5198657-editorshub (run 2: JADX MCP provider, explicit JAVA_HOME,
+Ghidra log capture). Source Drive id 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE.

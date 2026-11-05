@@ -72,6 +72,12 @@ jobs:
           curl -sSL "$A_URL" -o /tmp/apktool.jar
           java -jar /tmp/apktool.jar --version > /tmp/apktool-version.txt 2>&1 || true
 
+          # --- REA's caller-supplied JADX MCP provider (0.7.1) ---
+          curl -sSL https://github.com/1013503897/jadx-headless-mcp/releases/download/v0.7.1/jadx-headless-mcp-0.7.1-all.jar \
+            -o /tmp/jadx-headless-mcp.jar
+          echo "REA_JADX_MCP_JAR=/tmp/jadx-headless-mcp.jar" >> "$GITHUB_ENV"
+          ls -l /tmp/jadx-headless-mcp.jar
+
       - name: Download the reference APK
         env:
           DRIVE_ID: 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE
@@ -138,12 +144,19 @@ jobs:
           small.sort()
           print('native libs:', len(small))
           for size,n in small[:5]: print(' ',size,n)
-          if small:
-              _,n=small[0]
+          # Prefer a substantive renderer/filter library over a tiny stub.
+          preferred=[(sz,n) for sz,n in small if 'native-filters' in n or 'nanovg' in n]
+          pick = preferred[0] if preferred else (small[0] if small else None)
+          if pick:
+              _,n=pick
+              print('ghidra target:',n)
               open('/tmp/smallest.so','wb').write(z.read(n))
               open('/tmp/smallest-so.txt','w').write(n)
           PY
           GH_DIR=$(cat /tmp/ghidra-install-dir.txt)
+          export JAVA_HOME="${JAVA_HOME_21_X64:-$JAVA_HOME}"
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
           if [ -f /tmp/smallest.so ]; then
             "$GH_DIR/support/analyzeHeadless" /tmp/ghidra-proj um \
               -import /tmp/smallest.so \
@@ -153,7 +166,8 @@ jobs:
           else
             echo 'No native .so in APK' > /tmp/ghidra.log
           fi
-          tail -25 /tmp/ghidra.log
+          tail -35 /tmp/ghidra.log
+          cp /tmp/ghidra.log apk-analysis/ghidra.log 2>/dev/null || true
           wc -l /tmp/ghidra-functions.txt 2>/dev/null || true
 
       - name: REA inspection
@@ -163,13 +177,19 @@ jobs:
           set +e
           REA=/tmp/rea-tools/node_modules/rea-agents/scripts/rea.mjs
           node "$REA" doctor --format json > /tmp/rea-doctor.txt 2>&1
-          node "$REA" inspect-artifact /tmp/um.apk --format json --token-limit 4000 > /tmp/rea-artifact.json 2>&1
+          node "$REA" inspect-artifact /tmp/um.apk --format json > /tmp/rea-artifact.json 2>&1
           node "$REA" identify-flutter-build /tmp/um.apk --format json > /tmp/rea-flutter.json 2>&1
           node "$REA" inspect-android-package /tmp/um.apk --format json > /tmp/rea-package.json 2>&1
-          node "$REA" search-android-classes /tmp/um.apk "" --format json --token-limit 4000 > /tmp/rea-classes.json 2>&1
+          node "$REA" search-android-classes /tmp/um.apk "" --format json > /tmp/rea-classes.json 2>&1
           echo "--- REA doctor ---"; head -30 /tmp/rea-doctor.txt
           echo "--- REA artifact ---"; head -25 /tmp/rea-artifact.json
           echo "--- REA flutter ---"; head -15 /tmp/rea-flutter.json
+          echo "--- REA package ---"; head -20 /tmp/rea-package.json
+          echo "--- REA classes ---"; head -20 /tmp/rea-classes.json
+          cp /tmp/rea-package.json apk-analysis/rea-package.json 2>/dev/null || true
+          cp /tmp/rea-classes.json apk-analysis/rea-classes.json 2>/dev/null || true
+          cp /tmp/rea-artifact.json apk-analysis/rea-artifact.json 2>/dev/null || true
+          cp /tmp/rea-flutter.json apk-analysis/rea-flutter.json 2>/dev/null || true
 
       - name: Build compact evidence
         run: |
