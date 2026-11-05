@@ -355,6 +355,8 @@ function OverflowMenu() {
         e.patchLayer(layer.id, { effects: src.effects.map(f => ({ ...structuredClone(f), id: `fx-${Date.now()}-${Math.random().toString(36).slice(2)}` })) });
         e.endBatch(); close(); e.notify('Style pasted', 'ok');
       } },
+    { label: 'Replace media…', icon: <FolderOpen size={17} />,
+      run: () => { close(); ui.setFlow('replaceMedia'); } },
     { label: 'Split at playhead', icon: <Scissors size={17} />, disabled: !layer,
       run: () => { if (layer) e.splitLayer(layer.id); close(); } },
     { label: 'Add keyframe', icon: <Diamond size={17} />, disabled: !layer,

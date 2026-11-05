@@ -37,7 +37,7 @@ export const BRAND: Brand = {
   wordmark: 'EDITORS HUB',
   domain: 'editorshub.app',
   packageName: 'com.editorshub',
-  version: '3.6.0',
+  version: '4.0.0',
   website: 'https://github.com/spideycandy973-web/EditorsHub-',
   links: [
     { label: 'Website', url: 'https://github.com/spideycandy973-web/EditorsHub-', icon: 'globe' },

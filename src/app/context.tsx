@@ -11,6 +11,7 @@ export type PropertyId =
   | 'move' | 'blend' | 'color' | 'border' | 'editShape' | 'presets' | 'effects' | 'camera';
 
 export type MoveView = 'pos' | 'size' | 'skew' | 'rotation' | 'easing';
+export type FlowId = 'none' | 'replaceMedia' | 'missingFonts' | 'exportPreview';
 
 export interface UIState {
   sheet: SheetId;
@@ -44,6 +45,11 @@ export interface UIState {
   setEffectBrowser: (v: boolean) => void;
   presetsDialog: boolean;
   setPresetsDialog: (v: boolean) => void;
+  /** Full-screen template / import flows from the reference recording. */
+  flow: FlowId;
+  setFlow: (v: FlowId) => void;
+  missingFonts: string[];
+  setMissingFonts: (v: string[]) => void;
   openProperty: (p: PropertyId) => void;
   openAdd: () => void;
   setAddPage: (page: Preferences['addPage']) => void;
@@ -67,6 +73,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [effectBrowser, setEffectBrowser] = useState(false);
   const [presetsDialog, setPresetsDialog] = useState(false);
+  const [flow, setFlow] = useState<FlowId>('none');
+  const [missingFonts, setMissingFonts] = useState<string[]>([]);
 
   const setPrefs = (p: Preferences) => { savePrefs(p); setPrefsState(p); };
   const setAddPage = (page: Preferences['addPage']) => setPrefs({ ...prefs, addPage: page });
@@ -81,6 +89,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     toolsOpen, toggleTools: () => setToolsOpen(v => !v),
     aboutOpen, setAboutOpen,
     effectBrowser, setEffectBrowser, presetsDialog, setPresetsDialog,
+    flow, setFlow, missingFonts, setMissingFonts,
     openProperty: (p) => { setProperty(p); setSheet('property'); setSelectedIds([]); },
     openAdd: () => {
       const page = prefs.rememberAddPage ? prefs.addPage : 'add';
@@ -89,7 +98,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     },
     setAddPage,
   }), [sheet, property, moveView, activePropKey, homeTab, homeSegment, createTab, prefs,
-    xmlResult, importUrl, selectedIds, toolsOpen, aboutOpen, effectBrowser, presetsDialog]);
+    xmlResult, importUrl, selectedIds, toolsOpen, aboutOpen, effectBrowser, presetsDialog, flow, missingFonts]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

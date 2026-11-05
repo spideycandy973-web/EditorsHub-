@@ -1,265 +1,59 @@
-# EditorsHub
+# EditorsHub v4.0.0
 
-A **real, working mobile video & motion-graphics editor** that runs entirely in the browser.
-It is an Alight‑Motion‑style tool: layers, keyframes, effects, blending, masks, media and
-XML project import/export — backed by a canvas compositor that draws **every frame for real**.
-No placeholder screens, no mocked buttons.
+A **real, working mobile video & motion-graphics editor** that runs entirely in
+the browser, packaged as an Android app (`com.editorshub`). Layers, keyframes,
+44 effects, blending, masks, media, XML project import/export, six real export
+encoders — all backed by a canvas compositor that draws every frame for real.
 
-> The old repository (a super-resolution enhancer) was removed; this is a complete rewrite.
+**This is a fully new application layer.** The previous UI tree was removed and
+rebuilt under `src/app/`; the old screenshots, source archives and legacy
+components were deleted. `src/editor/` is the real engine.
 
-**v3.6.0 — master base, ready to customise.** Dead v2 code, 63 stale
-screenshots and six obsolete source archives were deleted. The engine now ships
-**44 real effects** (23 new pixel/procedural/geometry effects added in this
-release), every one distributed across the 32 Effect Browser categories. A new
-single-file customisation point, [`src/theme/brand.ts`](src/theme/brand.ts),
-controls the app name, wordmark, domain, package, version, links and the whole
-palette — edit one file before customising anything else.
-[`docs/MASTER_CLONE.md`](docs/MASTER_CLONE.md) maps all 30 reference screens to
-their implementation. `npm run typecheck`, `npm run build` and
-`node tools/smoke.mjs --shots` pass **58/58** headless checks with zero console
-errors.
+## Customise it
 
-**v3.5.0 — reverse-engineered from the actual APK.** You supplied
-`UM Clone_8.0.1.apk` (294,346,248 bytes, `com.alightcreative.ultramotion`).
-Because it exceeds the agent workspace's 100 MiB per-file cap,
-[`.github/workflows/apk-re.yml`](.github/workflows/apk-re.yml) downloads it
-inside GitHub Actions and runs **REA** (with its JADX MCP provider), **Ghidra
-12.2 headless**, **JADX**, **APKTool** and **androguard**. REA loaded 37,206
-classes and 5,437 resources; Ghidra exported 43 native functions; APKTool
-decoded 1,076 colours, 1,237 dimensions, 3,310 strings, 1,379 styles and 250
-layout trees. Only compact structural measurements are committed in
-`apk-analysis/` — see [docs/APK_AUDIT.md](docs/APK_AUDIT.md).
+One file: [`src/app/brand.ts`](src/app/brand.ts) holds the app name, wordmark,
+domain, Android package, version, links and the complete palette. `applyBrand()`
+pushes the palette into CSS custom properties when the app starts. Change that
+file first, then anything else.
 
-From those facts v3.5.0 adds the **full-screen Effect Browser** (X / title /
-search header, five quick picks, all 32 exact APK category names, 3-column
-subcategory grids and the bottom Guide / `+ Standard Settings` card), the
-**`No presets... yet!` dialog** with real local preset storage and a built-in
-motion gallery, the **seven-panel bottom tab strip**, an always-visible right
-preview/zoom rail, and the exact APK palette tokens (`#121215`, `#1c1c1f`,
-`#262629`, `#2e2e33`, `#00ffa8`). Every visible effect tile applies a real
-canvas effect; nothing is faked. `npm run typecheck`, `npm run build` and
-`node tools/smoke.mjs --shots` pass **52/52** headless checks with zero console
-errors.
+## Screen map
 
-**v3.4.0 — built from the full 10:29.66 reference recording.** The 301,626,146-byte
-Drive video could not enter the 100 MiB agent workspace, so
-[`.github/workflows/reference-frames.yml`](.github/workflows/reference-frames.yml) downloads it
-inside GitHub Actions and commits only compact derived frames. That produced **747 distinct UI
-states** (38 labelled contact sheets), 630 one-second timeline frames and 8 timeline sheets — all
-reviewed. See [docs/VIDEO_AUDIT.md](docs/VIDEO_AUDIT.md) for the exact screen-by-screen findings
-and the palette sampled from the decoded pixels. This release adds the cold-launch swirl splash,
-the full-screen About page with real device/build data, Projects sorting and a working selection
-mode (Select All / Fix / Export / Duplicate / Delete with confirmation), the complete Export &
-Share list with **six real encoders** including a hand-written GIF89a/LZW encoder, a five-page
-shape picker with 18 original vector silhouettes, and the Effect Browser category tiles.
-`npm run typecheck`, `npm run build` and `node tools/smoke.mjs --shots` pass **40/40** headless
-checks with zero console errors; the GIF download is verified byte-for-byte.
+[`docs/MASTER_CLONE.md`](docs/MASTER_CLONE.md) maps all 30 screens and panels to
+their implementation, including the v4.0.0 flows: template editor / replace
+media, the "Are you done replacing media?" gate, the missing-fonts report, the
+export preview and the keyframes-required hint.
 
-**v3.3.0 — reference-recording chrome and frame-audit tooling.** The Android status strip and
-gesture pill visible in every 1220 × 2712 reference frame are reproduced in the browser/PWA
-shell, driven only by real browser APIs (local clock, Battery Status API, Network Information API
-and online/offline events); no value is ever invented, and the chrome is suppressed on native
-Android. Screen and tab switches animate, with a `prefers-reduced-motion` opt-out and a real
-**Device chrome** switch in Settings. v3.3.0 was built from the 20 attached stills only — the
-full video pass is the v3.4.0 work above.
+The reverse-engineering evidence used to match the reference geometry is in
+[`docs/APK_AUDIT.md`](docs/APK_AUDIT.md) and
+[`docs/VIDEO_AUDIT.md`](docs/VIDEO_AUDIT.md).
 
-**v3.2.0 — responsive, fully wired editor.** Every exposed control was audited end-to-end
-(143 interactive checks, all passing). The editor store now coalesces continuous edits into one
-React notification per frame and one undo snapshot per gesture; the timeline no longer captures
-pointer events away from its own buttons, so the eye, clip-back, keyframe, trim and transport
-controls all respond again; property rail labels now match the panels they open; the Border &
-Shadow rail has a real third view; a shadow slider can no longer create duplicate effects; and the
-Move & Transform screens gained the reference teal readouts, swipe area and corner marks.
+## Build & verify
 
-**v3.1.0 — smooth, pixel-aligned studio.** The v3.0.0 UI was rebuilt from the supplied
-black/lavender reference screenshots, then corrected against them again: the launcher now uses the
-bare gear / filled avatar / two-word wordmark, a single-line Upload XML card and the filled-house /
-square-play bottom nav; settings follows the five-row + three-link card; the create sheet has crop-
-marked ratio chips; and the editor centres the 9:16 canvas, hides the tools rail until requested,
-shows real selection handles on the selected layer, and uses the seven-icon transport without a
-play-button disc. Performance was rebuilt too: the compositor is demand-driven (no idle animation
-frame loop), playback is capped at a sustainable preview rate and rendered at a reduced backing
-store, the timeline playhead scrolls imperatively instead of re-rendering React, startup no longer
-encodes four full-size JPEGs, and the unused legacy stylesheet and StrictMode double work are gone.
-
-**v3.0.0 UI — dark studio rebuild.** The launcher and editor were rebuilt from the ground up to
-match the supplied black/lavender reference screenshots: near-black `#0B0B0D` launcher with a
-centred bold wordmark, gear/avatar circles, a lavender **Upload XML file** button, an **Import
-Project Package** card with a URL field / lavender Import button / teal **Scan QR image** action,
-and a floating pill nav (Home · teal **+** · Projects). The Projects screen has
-Projects / Your Templates / Elements segments, a searchable Elements library and an honest empty
-state. The Settings sheet exposes Low Quality Preview, Show Off Timeline, Remember Add page,
-Default Layer Duration, Audio Resampling and working navigation rows. A bottom **Create** sheet
-offers Project / Element tabs, six ratio chips plus custom size, resolution, frame rate and
-background before a lavender **Create Project** button.
-
-The editor is a black 9:16 stage with a back/title/gear/export bar, seven thin transport icons, a
-centred `00:00:00` pill above a dotted ruler with a fixed white playhead, striped clip bars with a
-`‹` circle and keyframe diamond, a right zoom toolbar and a solid teal **+** FAB. The **Add** grid
-has Media / Text / Shape / Audio / Freehand Drawing / Vector Drawing / Element Project / Template /
-Camera / Null / Empty Group; the **Shape** picker has 18 real canvas shapes across three pages.
-Selected layers open a contextual top bar (duplicate / trash / overflow) and bottom property sheets
-with left and right rails for Move & Transform (X/Y, W/H, skew, rotation dial, cubic-bezier
-easing), Blending & Opacity, Color & Fill, Border & Shadow, Edit Shape, Presets, Effects and Camera
-Options. Every exposed control performs a real edit. EditorsHub keeps its own name, logo and
-original code — no proprietary assets are copied.
-
----
-
-**Android APK** — `EditorsHub-Motion.apk` (package `com.editorshub`) is published in the
-[`apk-latest`](https://github.com/spideycandy973-web/EditorsHub-/releases/tag/apk-latest) release
-and attached to every versioned release. It is built from the same web app with Capacitor and is
-smoke-tested on an Android 33 emulator before release.
-
-## Run it
-
-```bash
-npm install
-npm run dev          # http://localhost:5173  (binds 0.0.0.0, preview-host friendly)
-npm run typecheck    # TypeScript, no errors
-npm run build        # production bundle in dist/
-npm run preview      # serve dist/
+```sh
+npm ci
+npm run typecheck
+npm run build
+node tools/verify-gif.mjs              # 7/7 GIF89a encoder checks
+node tools/smoke.mjs --shots          # 58+ headless UI checks
 ```
 
-Open it on a phone (or your browser's device toolbar) — the UI is mobile-first and also docks
-the inspector to the right on desktop. It is an installable PWA (`manifest.json` + `sw.js`),
-works offline after first load, and needs **no server, account or API key**.
+`tools/smoke.mjs` needs optional tooling:
+`npm install --no-save --package-lock=false @sparticuz/chromium playwright-core`
+then `node tools/frames-libs.mjs` and run against `npm run preview`.
 
-### Android / native app
+## Android
 
-```bash
-npm run cap:add:android   # generates android/ and copies the web bundle
-npm run cap:sync          # rebuild + resync
-npx cap open android      # open in Android Studio to build an APK/AAB
-```
+`EditorsHub-Motion.apk` (Capacitor, installable) is committed at the repository
+root and attached to `apk-latest`, `v4.0.0` and `editorshub-latest`, together
+with `EditorsHub-debug.apk`, `EditorsHub-release-unsigned.apk`,
+`EditorsHub-release.aab` and `EditorsHub-source-v4.0.0.zip`. Release APK/AAB are
+unsigned by design; see `EditorsHub/docs/RELEASE_SIGNING.md` for the keystore
+workflow. All Android builds run in GitHub Actions.
 
-Capacitor wraps the same app; no native code needs to be written.
+## Boundary
 
-### Prebuilt APK
-
-`EditorsHub-Motion.apk` at the repository root is a ready-to-install, debug-signed build.
-It is produced by `.github/workflows/build-apk.yml` on every relevant push (and can be run
-manually with **Actions → Build Android APK → Run workflow**). The same workflow publishes
-the APK to the `apk-latest` GitHub Release and uploads it as a workflow artifact.
-
-To install: copy the APK to an Android device, allow "Install unknown apps", and open it.
-Minimum Android 6.0 (API 23); built against API 35.
-
----
-
-## What actually works
-
-| Area | Features |
-| --- | --- |
-| **Composition** | 9:16 / 1:1 / 16:9 / 4:5 / custom resolution, 12–60 fps, duration, background color, grid & safe-area guides, preview zoom |
-| **Layers** | Text, Shape (8 shapes), Solid/gradient, Image, Video, Audio, Group/null parent. Visibility, lock, rename, duplicate, copy/paste, delete, reorder, split at playhead, drag-to-move, drag-edges-to-trim, in/out points, speed, loop, volume |
-| **Transform** | Position X/Y, scale X/Y, rotation, opacity, anchor X/Y, skew — all keyframeable |
-| **Keyframes** | Add/remove/drag on the timeline, 10 easing functions (linear, hold, cubic, back, elastic, bounce, spring…), auto-keyframe mode, frame snapping, easing curve graph, per-keyframe time/value/easing editing, 12 motion presets (fade, slide, pop, spin, swing, pulse, float, typewriter…) |
-| **Effects** | 19 effects: Gaussian blur, sharpen, radial zoom blur, color/light (brightness, contrast, saturation, hue, exposure), grayscale, sepia, invert, tint, glow, drop shadow, outline, mosaic/pixelate, film grain, vignette, chromatic aberration, **chroma key (green screen)**, wave distortion, camera shake, beat pulse. Every parameter is animatable. Reorder / enable / disable. |
-| **Styling** | Solid, linear and radial gradients, stroke, corner radius, font family (including uploaded TTF/OTF/WOFF fonts), weight, italic, caps, alignment, letter spacing, line height, text stroke, shape parameters, fit modes |
-| **Blending** | Normal, Multiply, Screen, Overlay, Darken, Lighten, Color Dodge/Burn, Hard/Soft Light, Difference, Exclusion, Hue, Saturation, Color, Luminosity, Add |
-| **Masks** | Rectangle, ellipse and linear fade masks with feather + invert |
-| **Parenting** | Any layer can be parented to another layer/group; transforms compose through the chain |
-| **Media** | Import images / videos / audio / fonts from disk or drag-and-drop. Stored in IndexedDB so projects survive reloads. Built-in gradient backgrounds and a generated sample video clip. Video frames are decoded by real `<video>` elements and audio by real `<audio>`/Web Audio |
-| **Playback** | Play / pause, loop, frame stepping, scrubbing, timeline zoom, auto-sync of all media to the playhead |
-| **Export** | **Real MP4/WebM video** (canvas.captureStream + MediaRecorder + Web Audio mix), **PNG/JPEG frame-sequence ZIP** (frame-accurate seeks), **single PNG frame**, project **XML**, project JSON |
-| **Import** | XML projects/presets (tolerant Alight-Motion-style parser, embedded `data:` media), JSON projects |
-| **Projects** | Autosave, multiple saved projects, save-as, open/delete, undo/redo (80 steps) |
-| **Input** | Touch/pointer editing, keyboard shortcuts (Space, ←/→, K, S, D, Delete, Ctrl+Z/Y, 1–5, E, ?) |
-
-### Keyboard shortcuts
-
-`Space` play/pause · `←` `→` frame step · `K` keyframe · `S` split · `D` duplicate ·
-`Delete` delete layer · `Ctrl/⌘+Z` undo · `Ctrl/⌘+Y` redo · `1`–`5` panels · `E` export · `?` help
-
----
-
-## Architecture
-
-```
-src/
-  editor/
-    types.ts        data model + all property/effect definitions
-    defaults.ts     layer/project factories, demo composition, motion presets
-    animation.ts    easing functions, keyframe interpolation, helpers
-    store.ts        editor state, history, selection, playback, project CRUD
-    storage.ts      localStorage projects + IndexedDB media
-    media.ts        import/probe, MediaLibrary (video/audio sync + exact seeks),
-                    built-in assets, generated sample clip
-    renderer.ts     canvas compositor: transforms, parenting, blend modes,
-                    shapes/text/gradients, masks, 19 effects, hit testing
-    xml.ts          XML serializer + tolerant project/preset parser
-    export.ts       MediaRecorder video, frame ZIP (fflate), still PNG
-  components/       TopBar, Preview, PlayerBar, Timeline, BottomNav,
-                    panels (Add/Edit/Effects/Keys/Project), Modals, ui primitives
-  App.tsx           app shell, render loop (rAF), keyboard shortcuts
-  index.css         full mobile + desktop responsive design
-public/             PWA manifest, EditorsHub logo/icons, service worker
-```
-
-**Rendering pipeline** — each frame the compositor clears the background, walks layers
-bottom-to-top, computes animated values at the layer-local time, composes parent/child
-matrices, draws content into an isolated scratch canvas (with CSS canvas filters and
-shadows), applies pixel-level effects (`getImageData`), applies the mask, then composites
-with `globalCompositeOperation` and alpha. The preview renders at fitted device resolution;
-exports render at 50/75/100% of the project resolution.
-
----
-
-## XML projects
-
-Export from **Project → Export XML** (optionally embed media as `data:` URIs), import from
-**Project → Import XML** — paste text or pick a `.xml` file, see a validation report, then
-either open it as a new project or append its layers to the current one.
-
-The parser is deliberately tolerant: it accepts the documented `EditorsHubMotion` schema,
-Alight-Motion-style preset fragments (`<Layer>`, `<Item>`, `<Track>`…), shorthand
-`<Position x=… y=…>`, inline `keyframes="0:0;1:100"`, alias attribute names, and nested
-`<Keyframe>` elements. See **[XML_FORMAT.md](./XML_FORMAT.md)** for the schema.
-
-> Note: Alight Motion's own XML is a proprietary, app-specific format that can reference
-> media and effects not available in a browser. This importer reconstructs the standard
-> parts (layers, transforms, keyframes, text, colors, common effects) and reports anything
-> it cannot map; it does not claim 100% binary/project compatibility with that app.
-
----
-
-## Browser support / honest limitations
-
-- **Video export** uses `MediaRecorder`: Chrome/Edge produce WebM (and MP4 on newer builds),
-  Safari produces MP4. It records in **real time** (a 10 s project takes 10 s) because canvas
-  capture is a live stream. Use **Frames (ZIP)** for deterministic frame-accurate output.
-- **Frame ZIP export** is capped at 900 frames and full-resolution PNGs can be large.
-- Canvas `filter` (blur, glow, drop-shadow, color adjustments) needs a modern Chromium/Safari;
-  unsupported filter strings are ignored gracefully.
-- Media stays on **your device** (IndexedDB / localStorage); clearing site data removes it.
-  Use XML or JSON export to back projects up.
-- Mobile browsers may limit autoplay; tap Play once to unlock audio/video playback.
-
----
-
-## EditorsHub — native Android app (`EditorsHub/`)
-
-This repository also contains **EditorsHub**, a complete, original Android Studio project:
-Kotlin + Jetpack Compose + Material 3, package `com.editorshub`. It implements a real
-multilayer compositor, keyframe engine with Bezier curves and graph editor, 18 animatable GPU/Canvas
-effects, transitions, text/shape/vector editing, masks, audio mixing with waveforms, Room project
-autosave/versioning, and genuine MediaCodec/MediaMuxer MP4 export (480p–4K, H.264/H.265, AAC).
-
-```bash
-cd EditorsHub
-./gradlew :app:assembleDebug :app:testDebugUnitTest
-```
-
-CI builds it on every relevant push, runs JVM unit tests, and publishes a debug APK, an unsigned
-release APK, an AAB and a complete source archive to the `v3.6.0` and `editorshub-latest`
-GitHub releases and to `/artifacts`.
-Use `android-release.yml` with keystore secrets for a **signed** production release — no keystore
-or password is committed. Full docs: [EditorsHub/README.md](EditorsHub/README.md),
-[architecture](EditorsHub/docs/ARCHITECTURE.md), [dependencies](EditorsHub/docs/DEPENDENCIES.md),
-[release signing](EditorsHub/docs/RELEASE_SIGNING.md).
-
-The web/PWA editor above and its Capacitor APK (`EditorsHub-Motion.apk`) remain fully functional;
-nothing was removed.
-
-Screenshots of the current v3.6.0 UI: [docs/screenshots/README.md](docs/screenshots/README.md).
+EditorsHub is an **original, clean-room implementation**. Its layout, colours,
+interaction and behaviour are matched to the reference with original TypeScript,
+original SVG glyphs and original CSS artwork. It contains no code, bitmap,
+vector, font or audio assets from any other application, and no third-party
+trademark. All assets and code here are yours to customise.

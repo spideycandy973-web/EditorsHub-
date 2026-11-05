@@ -176,6 +176,7 @@ function EasingGraph({ layer, propKey }: { layer: Layer | null; propKey: string 
   const [p2, setP2] = useState({ x: 0.75, y: 0.9 });
   const ref = useRef<SVGSVGElement>(null);
   const dragging = useRef<1 | 2 | null>(null);
+  const keyframeCount = layer ? e.getAnim(layer, propKey).keyframes.length : 0;
 
   const save = (a: typeof p1, b: typeof p2) => {
     if (!layer) return;
@@ -203,6 +204,12 @@ function EasingGraph({ layer, propKey }: { layer: Layer | null; propKey: string 
 
   return (
     <div className="um-easing">
+      {keyframeCount < 2 && (
+        <div className="um-keyframes-hint">
+          <strong>Keyframes Required</strong>
+          <p>Before adjusting animation easing, you must add at least two keyframes. If you already have keyframes on another property, select that property before adjusting easing.</p>
+        </div>
+      )}
       <svg ref={ref} viewBox="0 0 1 1" preserveAspectRatio="none" className="um-bezier"
         onPointerMove={onMove}
         onPointerUp={() => { if (dragging.current) { dragging.current = null; e.notify('Cubic bezier easing applied', 'ok'); } }}

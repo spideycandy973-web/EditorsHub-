@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
 import { useUI } from './context';
 import { SwirlMark } from './Splash';
-import { BRAND } from '../theme/brand';
+import { BRAND } from './brand';
 
 /** Real values only: nothing on this page is invented. */
 function readDeviceInfo() {

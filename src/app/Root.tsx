@@ -8,6 +8,7 @@ import { Splash } from './Splash';
 import { AboutPage } from './AboutPage';
 import { EffectBrowser } from './EffectBrowser';
 import { PresetsDialog } from './PresetsDialog';
+import { Flows, detectMissingFonts } from './Flows';
 import { Home } from './Home';
 import { Editor } from './Editor';
 import { Overlays } from './Overlays';
@@ -23,6 +24,16 @@ export function Root() {
   const [splash, setSplash] = useState(true);
 
   useEffect(() => { void editor.hydrateStoredAssets(); }, []);
+
+  /* A newly imported project can reference fonts this device does not have.
+     Report them honestly once per project instead of silently substituting. */
+  const seenProject = useRef('');
+  useEffect(() => {
+    if (seenProject.current === e.project.id) return;
+    seenProject.current = e.project.id;
+    const missing = detectMissingFonts();
+    if (missing.length) { ui.setMissingFonts(missing); ui.setFlow('missingFonts'); }
+  }, [e.project.id, ui]);
 
   /* Every fresh pointer/focus interaction starts a new undo snapshot. */
   useEffect(() => {
@@ -225,6 +236,7 @@ export function Root() {
         {ui.aboutOpen && <AboutPage />}
         {ui.effectBrowser && <EffectBrowser />}
         {ui.presetsDialog && <PresetsDialog />}
+        <Flows />
         {ui.prefs.showDeviceChrome && <GestureBar />}
         {splash && <Splash onDone={() => setSplash(false)} />}
         {e.toast && <div className={`um-toast ${e.toast.kind}`} key={e.toast.id}>{e.toast.text}</div>}
