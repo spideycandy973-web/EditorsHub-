@@ -1,0 +1,196 @@
+name: Reverse-engineer reference APK
+
+# The 294,346,248-byte APK in Google Drive is larger than the agent workspace's
+# 100 MiB per-file transfer cap. GitHub Actions has full network access and a
+# JDK, so REA + Ghidra + JADX + APKTool run there. Only compact, structural
+# measurements are committed back; the APK, its DEX bytecode and its bitmap
+# assets never enter the repository.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arena/d5198657-editorshub
+    paths:
+      - '.github/workflows/apk-re.yml'
+      - 'tools/apk-re/**'
+      - 'tools/apk-re-trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21 and Node 22
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install REA, Ghidra, JADX, APKTool, androguard
+        run: |
+          set -euo pipefail
+          npm install --prefix /tmp/rea-tools --no-audit --no-fund rea-agents
+          python3 -m pip install --quiet --disable-pip-version-check gdown androguard pyaxmlparser pillow
+          REA=/tmp/rea-tools/node_modules/rea-agents/scripts/rea.mjs
+          node "$REA" --help > /tmp/rea-version.txt 2>&1 || true
+          head -1 /tmp/rea-version.txt
+
+          # --- Ghidra (official GitHub release, resolved by API) ---
+          GH_URL=$(curl -sSL https://api.github.com/repos/NationalSecurityAgency/ghidra/releases/latest \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print([a['browser_download_url'] for a in d['assets'] if a['name'].endswith('.zip')][0])")
+          echo "Ghidra: $GH_URL"
+          curl -sSL "$GH_URL" -o /tmp/ghidra.zip
+          unzip -q -o /tmp/ghidra.zip -d /tmp/ghidra
+          GH_DIR=$(find /tmp/ghidra -maxdepth 1 -type d -name 'ghidra_*' | head -1)
+          echo "$GH_DIR" > /tmp/ghidra-install-dir.txt
+          echo "GHIDRA_INSTALL_DIR=$GH_DIR" >> "$GITHUB_ENV"
+          "$GH_DIR/support/analyzeHeadless" --help > /tmp/ghidra-version.txt 2>&1 || true
+
+          # --- JADX ---
+          J_URL=$(curl -sSL https://api.github.com/repos/skylot/jadx/releases/latest \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print([a['browser_download_url'] for a in d['assets'] if a['name'].endswith('.zip') and 'win' not in a['name']][0])")
+          echo "JADX: $J_URL"
+          curl -sSL "$J_URL" -o /tmp/jadx.zip
+          unzip -q -o /tmp/jadx.zip -d /tmp/jadx
+          /tmp/jadx/bin/jadx --version > /tmp/jadx-version.txt 2>&1 || true
+
+          # --- APKTool ---
+          A_URL=$(curl -sSL https://api.github.com/repos/iBotPeaches/Apktool/releases/latest \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print([a['browser_download_url'] for a in d['assets'] if a['name'].endswith('.jar')][0])")
+          echo "APKTool: $A_URL"
+          curl -sSL "$A_URL" -o /tmp/apktool.jar
+          java -jar /tmp/apktool.jar --version > /tmp/apktool-version.txt 2>&1 || true
+
+      - name: Download the reference APK
+        env:
+          DRIVE_ID: 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE
+        run: |
+          set -euo pipefail
+          V=/tmp/um.apk
+          python3 -m gdown --id "$DRIVE_ID" -O "$V" || true
+          if [ ! -s "$V" ] || [ "$(stat -c%s "$V")" -lt 290000000 ]; then
+            rm -f "$V"
+            curl -sSL -c /tmp/cj -b /tmp/cj \
+              "https://drive.google.com/uc?export=download&id=$DRIVE_ID" -o /tmp/page.html || true
+            TOKEN=$(python3 - <<'PY'
+          import re
+          s=open('/tmp/page.html',errors='ignore').read()
+          m=re.search(r'name="confirm"\s+value="([^"]+)"',s)
+          print(m.group(1) if m else 't')
+          PY
+            )
+            UUID=$(python3 - <<'PY'
+          import re
+          s=open('/tmp/page.html',errors='ignore').read()
+          m=re.search(r'name="uuid"\s+value="([^"]+)"',s)
+          print(m.group(1) if m else '')
+          PY
+            )
+            echo "confirm=$TOKEN uuid=$UUID"
+            curl -sSL -c /tmp/cj -b /tmp/cj \
+              "https://drive.usercontent.google.com/download?id=$DRIVE_ID&export=download&confirm=$TOKEN&uuid=$UUID" \
+              -o "$V" || true
+          fi
+          SIZE=$(stat -c%s "$V" 2>/dev/null || echo 0)
+          MD5=$(md5sum "$V" | cut -d' ' -f1)
+          echo "Downloaded $SIZE bytes, md5 $MD5 (expected 294346248 / 9a75e85edfc1c1dbdb4da793ed95bbf8)"
+          if [ "$SIZE" -lt 290000000 ]; then
+            echo "::error::Could not obtain the full APK ($SIZE bytes)"
+            exit 1
+          fi
+
+      - name: APKTool resource decode
+        run: |
+          timeout 900 java -jar /tmp/apktool.jar d -s -f -o /tmp/apktool-out /tmp/um.apk \
+            > /tmp/apktool-decode.log 2>&1 || true
+          tail -20 /tmp/apktool-decode.log
+          find /tmp/apktool-out/res -type f 2>/dev/null | wc -l
+
+      - name: JADX class inventory
+        run: |
+          timeout 900 /tmp/jadx/bin/jadx --no-res --no-debug-info -j 4 \
+            -d /tmp/jadx-out /tmp/um.apk > /tmp/jadx.log 2>&1 || true
+          tail -20 /tmp/jadx.log
+          find /tmp/jadx-out -name '*.java' 2>/dev/null | wc -l
+
+      - name: Ghidra headless native analysis
+        run: |
+          set +e
+          mkdir -p /tmp/libextract
+          python3 - <<'PY'
+          import zipfile, os
+          z=zipfile.ZipFile('/tmp/um.apk')
+          small=[]
+          for n in z.namelist():
+              if n.endswith('.so'):
+                  small.append((z.getinfo(n).file_size, n))
+          small.sort()
+          print('native libs:', len(small))
+          for size,n in small[:5]: print(' ',size,n)
+          if small:
+              _,n=small[0]
+              open('/tmp/smallest.so','wb').write(z.read(n))
+              open('/tmp/smallest-so.txt','w').write(n)
+          PY
+          GH_DIR=$(cat /tmp/ghidra-install-dir.txt)
+          if [ -f /tmp/smallest.so ]; then
+            "$GH_DIR/support/analyzeHeadless" /tmp/ghidra-proj um \
+              -import /tmp/smallest.so \
+              -scriptPath "$(pwd)/tools/apk-re" \
+              -postScript GhidraFunctions.py \
+              -deleteProject > /tmp/ghidra.log 2>&1
+          else
+            echo 'No native .so in APK' > /tmp/ghidra.log
+          fi
+          tail -25 /tmp/ghidra.log
+          wc -l /tmp/ghidra-functions.txt 2>/dev/null || true
+
+      - name: REA inspection
+        env:
+          GHIDRA_INSTALL_DIR: ${{ env.GHIDRA_INSTALL_DIR }}
+        run: |
+          set +e
+          REA=/tmp/rea-tools/node_modules/rea-agents/scripts/rea.mjs
+          node "$REA" doctor --format json > /tmp/rea-doctor.txt 2>&1
+          node "$REA" inspect-artifact /tmp/um.apk --format json --token-limit 4000 > /tmp/rea-artifact.json 2>&1
+          node "$REA" identify-flutter-build /tmp/um.apk --format json > /tmp/rea-flutter.json 2>&1
+          node "$REA" inspect-android-package /tmp/um.apk --format json > /tmp/rea-package.json 2>&1
+          node "$REA" search-android-classes /tmp/um.apk "" --format json --token-limit 4000 > /tmp/rea-classes.json 2>&1
+          echo "--- REA doctor ---"; head -30 /tmp/rea-doctor.txt
+          echo "--- REA artifact ---"; head -25 /tmp/rea-artifact.json
+          echo "--- REA flutter ---"; head -15 /tmp/rea-flutter.json
+
+      - name: Build compact evidence
+        run: |
+          python3 tools/apk-re/analyze.py /tmp/um.apk
+          du -sh apk-analysis
+          find apk-analysis -type f | wc -l
+          head -20 apk-analysis/SUMMARY.md
+
+      - name: Commit evidence to this branch
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f apk-analysis/
+          git commit -m "analysis: REA + Ghidra + JADX + APKTool evidence from the reference APK [skip ci]" || echo "no changes"
+          pushed=0
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:arena/d5198657-editorshub; then pushed=1; break; fi
+            echo "push attempt $attempt failed; refreshing"
+            sleep 8
+            git fetch origin arena/d5198657-editorshub
+            git pull origin arena/d5198657-editorshub --no-rebase || true
+          done
+          [ "$pushed" = "1" ]
