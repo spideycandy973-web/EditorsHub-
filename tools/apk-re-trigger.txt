@@ -1,3 +1,9 @@
-Re-run the REA + Ghidra APK reverse-engineering workflow on
-arena/d5198657-editorshub (run 4: Java GhidraScript because Ghidra 12.2 removed
-Jython / requires PyGhidra). Source Drive id 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE.
+Re-run the REA + Ghidra + JADX + APKTool pipeline on arena/be31b8e1-editorshub.
+
+v4.5.0 run: the Ghidra post-script now also exports native function body
+sizes, external symbols and defined strings; analyze.py derives an exact
+palette/dimension/layout fact table (apk-analysis/measurements.json) from the
+decoded resource tables. No decompiled source, DEX bytecode, proprietary
+bitmap/font/audio assets or APK bytes are committed.
+
+Source Drive id 1QP75dHFWSSUBESfW36vVNiQeBnA6vTIE (294,346,248 bytes).

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - arena/d5198657-editorshub
+      - arena/be31b8e1-editorshub
     paths:
       - '.github/workflows/apk-re.yml'
       - 'tools/apk-re/**'
@@ -208,10 +208,10 @@ jobs:
           git commit -m "analysis: REA + Ghidra + JADX + APKTool evidence from the reference APK [skip ci]" || echo "no changes"
           pushed=0
           for attempt in 1 2 3 4; do
-            if git push origin HEAD:arena/d5198657-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:arena/be31b8e1-editorshub; then pushed=1; break; fi
             echo "push attempt $attempt failed; refreshing"
             sleep 8
-            git fetch origin arena/d5198657-editorshub
-            git pull origin arena/d5198657-editorshub --no-rebase || true
+            git fetch origin arena/be31b8e1-editorshub
+            git pull origin arena/be31b8e1-editorshub --no-rebase || true
           done
           [ "$pushed" = "1" ]

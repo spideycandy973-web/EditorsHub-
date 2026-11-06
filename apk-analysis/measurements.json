@@ -1,0 +1,5491 @@
+{
+  "source": "REA + Ghidra + JADX + APKTool structural evidence only",
+  "package": "com.alightcreative.ultramotion",
+  "activity_count": 72,
+  "color_count": 750,
+  "dimen_count": 1237,
+  "layout_count": 250,
+  "drawable_count": 2000,
+  "palette": {
+    "A1": {
+      "value": "#ff191c25",
+      "rgb": [
+        25,
+        28,
+        37
+      ],
+      "hex": "#191c25"
+    },
+    "A10": {
+      "value": "#ff121215",
+      "rgb": [
+        18,
+        18,
+        21
+      ],
+      "hex": "#121215"
+    },
+    "A11": {
+      "value": "#ff101013",
+      "rgb": [
+        16,
+        16,
+        19
+      ],
+      "hex": "#101013"
+    },
+    "A11_a40": {
+      "value": "#66141620",
+      "rgb": [
+        20,
+        22,
+        32
+      ],
+      "hex": "#141620"
+    },
+    "A11_a80": {
+      "value": "#cc141620",
+      "rgb": [
+        20,
+        22,
+        32
+      ],
+      "hex": "#141620"
+    },
+    "A12": {
+      "value": "#ff0f0f10",
+      "rgb": [
+        15,
+        15,
+        16
+      ],
+      "hex": "#0f0f10"
+    },
+    "A2": {
+      "value": "#ff1e2239",
+      "rgb": [
+        30,
+        34,
+        57
+      ],
+      "hex": "#1e2239"
+    },
+    "A3": {
+      "value": "#ff1f1f22",
+      "rgb": [
+        31,
+        31,
+        34
+      ],
+      "hex": "#1f1f22"
+    },
+    "A4": {
+      "value": "#ff2b2f39",
+      "rgb": [
+        43,
+        47,
+        57
+      ],
+      "hex": "#2b2f39"
+    },
+    "A5": {
+      "value": "#ff2a2f36",
+      "rgb": [
+        42,
+        47,
+        54
+      ],
+      "hex": "#2a2f36"
+    },
+    "A6": {
+      "value": "#ff363942",
+      "rgb": [
+        54,
+        57,
+        66
+      ],
+      "hex": "#363942"
+    },
+    "A7": {
+      "value": "#ff2e2e33",
+      "rgb": [
+        46,
+        46,
+        51
+      ],
+      "hex": "#2e2e33"
+    },
+    "A8": {
+      "value": "#ff202b36",
+      "rgb": [
+        32,
+        43,
+        54
+      ],
+      "hex": "#202b36"
+    },
+    "A9": {
+      "value": "#ff1c1c1f",
+      "rgb": [
+        28,
+        28,
+        31
+      ],
+      "hex": "#1c1c1f"
+    },
+    "A9_W5P": {
+      "value": "#ff262629",
+      "rgb": [
+        38,
+        38,
+        41
+      ],
+      "hex": "#262629"
+    },
+    "A9_a50": {
+      "value": "#7f1c1c1f",
+      "rgb": [
+        28,
+        28,
+        31
+      ],
+      "hex": "#1c1c1f"
+    },
+    "B1": {
+      "value": "#fff16586",
+      "rgb": [
+        241,
+        101,
+        134
+      ],
+      "hex": "#f16586"
+    },
+    "Bl1": {
+      "value": "#ff000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a05": {
+      "value": "#0d000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a10": {
+      "value": "#19000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "bjmgkkvr0uyo1efb": {
+      "value": "#33000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a30": {
+      "value": "#4c000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a40": {
+      "value": "#66000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a50": {
+      "value": "#80000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a65": {
+      "value": "#a6000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a70": {
+      "value": "#b2000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a80": {
+      "value": "#cc000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "Bl1_a90": {
+      "value": "#e6000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "C1": {
+      "value": "#ff69fc97",
+      "rgb": [
+        105,
+        252,
+        151
+      ],
+      "hex": "#69fc97"
+    },
+    "C2": {
+      "value": "#ff29e59c",
+      "rgb": [
+        41,
+        229,
+        156
+      ],
+      "hex": "#29e59c"
+    },
+    "C3": {
+      "value": "#ff52cc91",
+      "rgb": [
+        82,
+        204,
+        145
+      ],
+      "hex": "#52cc91"
+    },
+    "D1": {
+      "value": "#ffbdbdbd",
+      "rgb": [
+        189,
+        189,
+        189
+      ],
+      "hex": "#bdbdbd"
+    },
+    "D2": {
+      "value": "#ff64666b",
+      "rgb": [
+        100,
+        102,
+        107
+      ],
+      "hex": "#64666b"
+    },
+    "D2_a45": {
+      "value": "#73979797",
+      "rgb": [
+        151,
+        151,
+        151
+      ],
+      "hex": "#979797"
+    },
+    "E1": {
+      "value": "#ff29e59c",
+      "rgb": [
+        41,
+        229,
+        156
+      ],
+      "hex": "#29e59c"
+    },
+    "E2": {
+      "value": "#ff138366",
+      "rgb": [
+        19,
+        131,
+        102
+      ],
+      "hex": "#138366"
+    },
+    "E3": {
+      "value": "#fff9de66",
+      "rgb": [
+        249,
+        222,
+        102
+      ],
+      "hex": "#f9de66"
+    },
+    "q5lyopj3yuyyq5a3": {
+      "value": "#474a93",
+      "rgb": [
+        71,
+        74,
+        147
+      ],
+      "hex": "#474a93"
+    },
+    "fajsdh414r910myc": {
+      "value": "#253261",
+      "rgb": [
+        37,
+        50,
+        97
+      ],
+      "hex": "#253261"
+    },
+    "r5l3jdhkvobzyc67": {
+      "value": "#020439",
+      "rgb": [
+        2,
+        4,
+        57
+      ],
+      "hex": "#020439"
+    },
+    "bt7ib28ylaifpuyj": {
+      "value": "#7055b4",
+      "rgb": [
+        112,
+        85,
+        180
+      ],
+      "hex": "#7055b4"
+    },
+    "tj4e6rok6xgq1q6j": {
+      "value": "#2b4285",
+      "rgb": [
+        43,
+        66,
+        133
+      ],
+      "hex": "#2b4285"
+    },
+    "wtgggcygwxzsdgm7": {
+      "value": "#0b1431",
+      "rgb": [
+        11,
+        20,
+        49
+      ],
+      "hex": "#0b1431"
+    },
+    "hnkmna6e1h7hw2uj": {
+      "value": "#00fff0",
+      "rgb": [
+        0,
+        255,
+        240
+      ],
+      "hex": "#00fff0"
+    },
+    "t3ztiqddd6ui79ok": {
+      "value": "#533669",
+      "rgb": [
+        83,
+        54,
+        105
+      ],
+      "hex": "#533669"
+    },
+    "ds3m453l4ld5y1u3": {
+      "value": "#381b40",
+      "rgb": [
+        56,
+        27,
+        64
+      ],
+      "hex": "#381b40"
+    },
+    "j1walw7m0zt3goqr": {
+      "value": "#0f1c48",
+      "rgb": [
+        15,
+        28,
+        72
+      ],
+      "hex": "#0f1c48"
+    },
+    "bz6tpt9e2ek4osas": {
+      "value": "#8e5c82",
+      "rgb": [
+        142,
+        92,
+        130
+      ],
+      "hex": "#8e5c82"
+    },
+    "ybif0lm2q3qkbfy1": {
+      "value": "#4a2b54",
+      "rgb": [
+        74,
+        43,
+        84
+      ],
+      "hex": "#4a2b54"
+    },
+    "qq302zqgci20fguf": {
+      "value": "#281a3a",
+      "rgb": [
+        40,
+        26,
+        58
+      ],
+      "hex": "#281a3a"
+    },
+    "afv74q1fxf1wlcta": {
+      "value": "#ffe455",
+      "rgb": [
+        255,
+        228,
+        85
+      ],
+      "hex": "#ffe455"
+    },
+    "G0": {
+      "value": "#fffafafa",
+      "rgb": [
+        250,
+        250,
+        250
+      ],
+      "hex": "#fafafa"
+    },
+    "G1": {
+      "value": "#ffeaeaec",
+      "rgb": [
+        234,
+        234,
+        236
+      ],
+      "hex": "#eaeaec"
+    },
+    "G2": {
+      "value": "#ffe9e9e9",
+      "rgb": [
+        233,
+        233,
+        233
+      ],
+      "hex": "#e9e9e9"
+    },
+    "G3": {
+      "value": "#ffd8d8d8",
+      "rgb": [
+        216,
+        216,
+        216
+      ],
+      "hex": "#d8d8d8"
+    },
+    "G8": {
+      "value": "#ff3f3f3f",
+      "rgb": [
+        63,
+        63,
+        63
+      ],
+      "hex": "#3f3f3f"
+    },
+    "HT": {
+      "value": "#ff1c1c1f",
+      "rgb": [
+        28,
+        28,
+        31
+      ],
+      "hex": "#1c1c1f"
+    },
+    "I1": {
+      "value": "#ff9aa1af",
+      "rgb": [
+        154,
+        161,
+        175
+      ],
+      "hex": "#9aa1af"
+    },
+    "I2": {
+      "value": "#ff828a93",
+      "rgb": [
+        130,
+        138,
+        147
+      ],
+      "hex": "#828a93"
+    },
+    "K1": {
+      "value": "#ff191c29",
+      "rgb": [
+        25,
+        28,
+        41
+      ],
+      "hex": "#191c29"
+    },
+    "K2": {
+      "value": "#ff121215",
+      "rgb": [
+        18,
+        18,
+        21
+      ],
+      "hex": "#121215"
+    },
+    "K3": {
+      "value": "#ff1b202a",
+      "rgb": [
+        27,
+        32,
+        42
+      ],
+      "hex": "#1b202a"
+    },
+    "L1_A": {
+      "value": "#ff52ccbc",
+      "rgb": [
+        82,
+        204,
+        188
+      ],
+      "hex": "#52ccbc"
+    },
+    "L1_B": {
+      "value": "#ff46a8d6",
+      "rgb": [
+        70,
+        168,
+        214
+      ],
+      "hex": "#46a8d6"
+    },
+    "L2_A": {
+      "value": "#ff6f92d5",
+      "rgb": [
+        111,
+        146,
+        213
+      ],
+      "hex": "#6f92d5"
+    },
+    "L2_B": {
+      "value": "#ffa772d4",
+      "rgb": [
+        167,
+        114,
+        212
+      ],
+      "hex": "#a772d4"
+    },
+    "L3_A": {
+      "value": "#ff48c3f5",
+      "rgb": [
+        72,
+        195,
+        245
+      ],
+      "hex": "#48c3f5"
+    },
+    "L3_B": {
+      "value": "#ff156ae0",
+      "rgb": [
+        21,
+        106,
+        224
+      ],
+      "hex": "#156ae0"
+    },
+    "L4_A": {
+      "value": "#fff16586",
+      "rgb": [
+        241,
+        101,
+        134
+      ],
+      "hex": "#f16586"
+    },
+    "L4_B": {
+      "value": "#fff66a28",
+      "rgb": [
+        246,
+        106,
+        40
+      ],
+      "hex": "#f66a28"
+    },
+    "L5_A": {
+      "value": "#fffad961",
+      "rgb": [
+        250,
+        217,
+        97
+      ],
+      "hex": "#fad961"
+    },
+    "L5_B": {
+      "value": "#fff89436",
+      "rgb": [
+        248,
+        148,
+        54
+      ],
+      "hex": "#f89436"
+    },
+    "L6_A": {
+      "value": "#ff5236d1",
+      "rgb": [
+        82,
+        54,
+        209
+      ],
+      "hex": "#5236d1"
+    },
+    "L6_B": {
+      "value": "#ffaf62d6",
+      "rgb": [
+        175,
+        98,
+        214
+      ],
+      "hex": "#af62d6"
+    },
+    "L7_a10": {
+      "value": "#1ad13665",
+      "rgb": [
+        209,
+        54,
+        101
+      ],
+      "hex": "#d13665"
+    },
+    "M1": {
+      "value": "#ff63f2c6",
+      "rgb": [
+        99,
+        242,
+        198
+      ],
+      "hex": "#63f2c6"
+    },
+    "P1": {
+      "value": "#ffc4c5cb",
+      "rgb": [
+        196,
+        197,
+        203
+      ],
+      "hex": "#c4c5cb"
+    },
+    "P10": {
+      "value": "#ff44444b",
+      "rgb": [
+        68,
+        68,
+        75
+      ],
+      "hex": "#44444b"
+    },
+    "P11": {
+      "value": "#ff3a3a40",
+      "rgb": [
+        58,
+        58,
+        64
+      ],
+      "hex": "#3a3a40"
+    },
+    "P11_a30": {
+      "value": "#4d3a3a40",
+      "rgb": [
+        58,
+        58,
+        64
+      ],
+      "hex": "#3a3a40"
+    },
+    "P2": {
+      "value": "#ffbfc0c3",
+      "rgb": [
+        191,
+        192,
+        195
+      ],
+      "hex": "#bfc0c3"
+    },
+    "P3": {
+      "value": "#ffa9abb4",
+      "rgb": [
+        169,
+        171,
+        180
+      ],
+      "hex": "#a9abb4"
+    },
+    "P4": {
+      "value": "#ff9395a1",
+      "rgb": [
+        147,
+        149,
+        161
+      ],
+      "hex": "#9395a1"
+    },
+    "P5": {
+      "value": "#ff8c8e93",
+      "rgb": [
+        140,
+        142,
+        147
+      ],
+      "hex": "#8c8e93"
+    },
+    "P5_a60": {
+      "value": "#998c8e93",
+      "rgb": [
+        140,
+        142,
+        147
+      ],
+      "hex": "#8c8e93"
+    },
+    "P6": {
+      "value": "#ff9d9fa5",
+      "rgb": [
+        157,
+        159,
+        165
+      ],
+      "hex": "#9d9fa5"
+    },
+    "P7": {
+      "value": "#ff535766",
+      "rgb": [
+        83,
+        87,
+        102
+      ],
+      "hex": "#535766"
+    },
+    "P8": {
+      "value": "#ff3f4361",
+      "rgb": [
+        63,
+        67,
+        97
+      ],
+      "hex": "#3f4361"
+    },
+    "P9": {
+      "value": "#ff4a4a52",
+      "rgb": [
+        74,
+        74,
+        82
+      ],
+      "hex": "#4a4a52"
+    },
+    "R2": {
+      "value": "#ffe01445",
+      "rgb": [
+        224,
+        20,
+        69
+      ],
+      "hex": "#e01445"
+    },
+    "S1": {
+      "value": "#ff818390",
+      "rgb": [
+        129,
+        131,
+        144
+      ],
+      "hex": "#818390"
+    },
+    "S10": {
+      "value": "#ff262629",
+      "rgb": [
+        38,
+        38,
+        41
+      ],
+      "hex": "#262629"
+    },
+    "S2": {
+      "value": "#ff747479",
+      "rgb": [
+        116,
+        116,
+        121
+      ],
+      "hex": "#747479"
+    },
+    "S3": {
+      "value": "#ff626575",
+      "rgb": [
+        98,
+        101,
+        117
+      ],
+      "hex": "#626575"
+    },
+    "S4": {
+      "value": "#ff494c5a",
+      "rgb": [
+        73,
+        76,
+        90
+      ],
+      "hex": "#494c5a"
+    },
+    "S5": {
+      "value": "#ff53565e",
+      "rgb": [
+        83,
+        86,
+        94
+      ],
+      "hex": "#53565e"
+    },
+    "S6": {
+      "value": "#ff35353a",
+      "rgb": [
+        53,
+        53,
+        58
+      ],
+      "hex": "#35353a"
+    },
+    "S7": {
+      "value": "#ff35353a",
+      "rgb": [
+        53,
+        53,
+        58
+      ],
+      "hex": "#35353a"
+    },
+    "S8": {
+      "value": "#ff262629",
+      "rgb": [
+        38,
+        38,
+        41
+      ],
+      "hex": "#262629"
+    },
+    "S8_a30": {
+      "value": "#4d292d40",
+      "rgb": [
+        41,
+        45,
+        64
+      ],
+      "hex": "#292d40"
+    },
+    "S9": {
+      "value": "#ff2f2f33",
+      "rgb": [
+        47,
+        47,
+        51
+      ],
+      "hex": "#2f2f33"
+    },
+    "T1": {
+      "value": "#ff5ce5ff",
+      "rgb": [
+        92,
+        229,
+        255
+      ],
+      "hex": "#5ce5ff"
+    },
+    "T3": {
+      "value": "#ff4d9eb6",
+      "rgb": [
+        77,
+        158,
+        182
+      ],
+      "hex": "#4d9eb6"
+    },
+    "TG1_A": {
+      "value": "#ff66f9a8",
+      "rgb": [
+        102,
+        249,
+        168
+      ],
+      "hex": "#66f9a8"
+    },
+    "TG1_B": {
+      "value": "#ff2abbdd",
+      "rgb": [
+        42,
+        187,
+        221
+      ],
+      "hex": "#2abbdd"
+    },
+    "TG2_A": {
+      "value": "#ffb222ff",
+      "rgb": [
+        178,
+        34,
+        255
+      ],
+      "hex": "#b222ff"
+    },
+    "TG2_B": {
+      "value": "#ff52cefd",
+      "rgb": [
+        82,
+        206,
+        253
+      ],
+      "hex": "#52cefd"
+    },
+    "W1": {
+      "value": "#ffffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a10": {
+      "value": "#19ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a20": {
+      "value": "#33ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a30": {
+      "value": "#4cffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a5": {
+      "value": "#0cffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a50": {
+      "value": "#7fffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a60": {
+      "value": "#99ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W1_a80": {
+      "value": "#ccffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "W2": {
+      "value": "#fffbfbfc",
+      "rgb": [
+        251,
+        251,
+        252
+      ],
+      "hex": "#fbfbfc"
+    },
+    "W3": {
+      "value": "#fff2f3f5",
+      "rgb": [
+        242,
+        243,
+        245
+      ],
+      "hex": "#f2f3f5"
+    },
+    "W4": {
+      "value": "#ffedeef0",
+      "rgb": [
+        237,
+        238,
+        240
+      ],
+      "hex": "#edeef0"
+    },
+    "W5": {
+      "value": "#fff5f5f8",
+      "rgb": [
+        245,
+        245,
+        248
+      ],
+      "hex": "#f5f5f8"
+    },
+    "X1": {
+      "value": "#ffb32d72",
+      "rgb": [
+        179,
+        45,
+        114
+      ],
+      "hex": "#b32d72"
+    },
+    "X2": {
+      "value": "#ff356c7c",
+      "rgb": [
+        53,
+        108,
+        124
+      ],
+      "hex": "#356c7c"
+    },
+    "Y1": {
+      "value": "#ff00ffa8",
+      "rgb": [
+        0,
+        255,
+        168
+      ],
+      "hex": "#00ffa8"
+    },
+    "Y1_a50": {
+      "value": "#8000ffa8",
+      "rgb": [
+        0,
+        255,
+        168
+      ],
+      "hex": "#00ffa8"
+    },
+    "gsu7kag1nqtzzdg4": {
+      "value": "#ff000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    "yx1t8e05nf268rbe": {
+      "value": "#ffffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    "mglm664lne39oneq": {
+      "value": "#7fa87f",
+      "rgb": [
+        127,
+        168,
+        127
+      ],
+      "hex": "#7fa87f"
+    },
+    "o5z2tlrhop3nsrr4": {
+      "value": "#00ffa8",
+      "rgb": [
+        0,
+        255,
+        168
+      ],
+      "hex": "#00ffa8"
+    },
+    "l0b22b1unoxin93d": {
+      "value": "#52cc91",
+      "rgb": [
+        82,
+        204,
+        145
+      ],
+      "hex": "#52cc91"
+    },
+    "v222axizpxh01s45": {
+      "value": "#29e59c",
+      "rgb": [
+        41,
+        229,
+        156
+      ],
+      "hex": "#29e59c"
+    },
+    "g8f41rpn6ho03bsp": {
+      "value": "#69fc97",
+      "rgb": [
+        105,
+        252,
+        151
+      ],
+      "hex": "#69fc97"
+    },
+    "o7rzb04ih1cxo9cj": {
+      "value": "#63f2c6",
+      "rgb": [
+        99,
+        242,
+        198
+      ],
+      "hex": "#63f2c6"
+    },
+    "h1fdx9of43so5fa5": {
+      "value": "#5ce5ff",
+      "rgb": [
+        92,
+        229,
+        255
+      ],
+      "hex": "#5ce5ff"
+    },
+    "a5n6qlmc91mqkf3a": {
+      "value": "#7d07e79a",
+      "rgb": [
+        7,
+        231,
+        154
+      ],
+      "hex": "#07e79a"
+    },
+    "n1yk19f0thdgz0xa": {
+      "value": "#4d9eb6",
+      "rgb": [
+        77,
+        158,
+        182
+      ],
+      "hex": "#4d9eb6"
+    },
+    "s07orr672vumijy4": {
+      "value": "#201b1f32",
+      "rgb": [
+        27,
+        31,
+        50
+      ],
+      "hex": "#1b1f32"
+    },
+    "p2bmwedc01tj5n5f": {
+      "value": "#4c1b1f32",
+      "rgb": [
+        27,
+        31,
+        50
+      ],
+      "hex": "#1b1f32"
+    },
+    "prq0m6xyii4vvcgc": {
+      "value": "#b21b1f32",
+      "rgb": [
+        27,
+        31,
+        50
+      ],
+      "hex": "#1b1f32"
+    },
+    "zzgd0wa7ewdg9kmx": {
+      "value": "#01ffa8",
+      "rgb": [
+        1,
+        255,
+        168
+      ],
+      "hex": "#01ffa8"
+    },
+    "z9cxzfsns04fv7pk": {
+      "value": "#1f2238",
+      "rgb": [
+        31,
+        34,
+        56
+      ],
+      "hex": "#1f2238"
+    },
+    "yul8thwahf1b1lyx": {
+      "value": "#ff121215",
+      "rgb": [
+        18,
+        18,
+        21
+      ],
+      "hex": "#121215"
+    }
+  },
+  "palette_usage": [
+    {
+      "name": "W1",
+      "count": 125,
+      "value": "#ffffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    {
+      "name": "kor8gpoy58gcey87",
+      "count": 26,
+      "value": "#ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    {
+      "name": "A9",
+      "count": 22,
+      "value": "#ff1c1c1f",
+      "rgb": [
+        28,
+        28,
+        31
+      ],
+      "hex": "#1c1c1f"
+    },
+    {
+      "name": "mhu3imzng0tycrwj",
+      "count": 22,
+      "value": "#ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    {
+      "name": "Bl1",
+      "count": 18,
+      "value": "#ff000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    {
+      "name": "Y1",
+      "count": 17,
+      "value": "#ff00ffa8",
+      "rgb": [
+        0,
+        255,
+        168
+      ],
+      "hex": "#00ffa8"
+    },
+    {
+      "name": "evwyj0n0y7p2q0r6",
+      "count": 15,
+      "value": "#ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    {
+      "name": "A11",
+      "count": 14,
+      "value": "#ff101013",
+      "rgb": [
+        16,
+        16,
+        19
+      ],
+      "hex": "#101013"
+    },
+    {
+      "name": "P6",
+      "count": 11,
+      "value": "#ff9d9fa5",
+      "rgb": [
+        157,
+        159,
+        165
+      ],
+      "hex": "#9d9fa5"
+    },
+    {
+      "name": "mp5ymh124g45bmb5",
+      "count": 10,
+      "value": "#ffffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    {
+      "name": "P5",
+      "count": 8,
+      "value": "#ff8c8e93",
+      "rgb": [
+        140,
+        142,
+        147
+      ],
+      "hex": "#8c8e93"
+    },
+    {
+      "name": "S8",
+      "count": 7,
+      "value": "#ff262629",
+      "rgb": [
+        38,
+        38,
+        41
+      ],
+      "hex": "#262629"
+    },
+    {
+      "name": "ExportMain",
+      "count": 7,
+      "value": "#121215",
+      "rgb": [
+        18,
+        18,
+        21
+      ],
+      "hex": "#121215"
+    },
+    {
+      "name": "ipiu8bpi5cluwpag",
+      "count": 5,
+      "value": "#ff121215",
+      "rgb": [
+        18,
+        18,
+        21
+      ],
+      "hex": "#121215"
+    },
+    {
+      "name": "S9",
+      "count": 5,
+      "value": "#ff2f2f33",
+      "rgb": [
+        47,
+        47,
+        51
+      ],
+      "hex": "#2f2f33"
+    },
+    {
+      "name": "mewiv4x6eb9r9eko",
+      "count": 5,
+      "value": "#ff262629",
+      "rgb": [
+        38,
+        38,
+        41
+      ],
+      "hex": "#262629"
+    },
+    {
+      "name": "S10",
+      "count": 4,
+      "value": "#ff262629",
+      "rgb": [
+        38,
+        38,
+        41
+      ],
+      "hex": "#262629"
+    },
+    {
+      "name": "pwoxh51jwe5ungwd",
+      "count": 3,
+      "value": "#1affffff",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "hex": "#ffffff"
+    },
+    {
+      "name": "S1",
+      "count": 3,
+      "value": "#ff818390",
+      "rgb": [
+        129,
+        131,
+        144
+      ],
+      "hex": "#818390"
+    },
+    {
+      "name": "h2h8awhk2f27qbzt",
+      "count": 3,
+      "value": "#294447",
+      "rgb": [
+        41,
+        68,
+        71
+      ],
+      "hex": "#294447"
+    },
+    {
+      "name": "tfkd7s4eixu0kths",
+      "count": 3,
+      "value": "#2f4c4f",
+      "rgb": [
+        47,
+        76,
+        79
+      ],
+      "hex": "#2f4c4f"
+    },
+    {
+      "name": "yh854tb4fxg2bwxr",
+      "count": 3,
+      "value": "#17171a",
+      "rgb": [
+        23,
+        23,
+        26
+      ],
+      "hex": "#17171a"
+    },
+    {
+      "name": "P8",
+      "count": 3,
+      "value": "#ff3f4361",
+      "rgb": [
+        63,
+        67,
+        97
+      ],
+      "hex": "#3f4361"
+    },
+    {
+      "name": "Bl1_a30",
+      "count": 3,
+      "value": "#4c000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    },
+    {
+      "name": "HT",
+      "count": 3,
+      "value": "#ff1c1c1f",
+      "rgb": [
+        28,
+        28,
+        31
+      ],
+      "hex": "#1c1c1f"
+    },
+    {
+      "name": "A10",
+      "count": 3,
+      "value": "#ff121215",
+      "rgb": [
+        18,
+        18,
+        21
+      ],
+      "hex": "#121215"
+    },
+    {
+      "name": "qyjip3qleghsw8ju",
+      "count": 3,
+      "value": "#00ffa8",
+      "rgb": [
+        0,
+        255,
+        168
+      ],
+      "hex": "#00ffa8"
+    },
+    {
+      "name": "P3",
+      "count": 3,
+      "value": "#ffa9abb4",
+      "rgb": [
+        169,
+        171,
+        180
+      ],
+      "hex": "#a9abb4"
+    },
+    {
+      "name": "xnbswbkhmzboee39",
+      "count": 2,
+      "value": "#90949c",
+      "rgb": [
+        144,
+        148,
+        156
+      ],
+      "hex": "#90949c"
+    },
+    {
+      "name": "e02uq34psp30f95q",
+      "count": 2,
+      "value": "#efeff4",
+      "rgb": [
+        239,
+        239,
+        244
+      ],
+      "hex": "#efeff4"
+    },
+    {
+      "name": "L5_B",
+      "count": 2,
+      "value": "#fff89436",
+      "rgb": [
+        248,
+        148,
+        54
+      ],
+      "hex": "#f89436"
+    },
+    {
+      "name": "Bl1_a70",
+      "count": 2,
+      "value": "#b2000000",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#000000"
+    }
+  ],
+  "dimens": {
+    "count": 963,
+    "common_dp": [
+      {
+        "dp": 4.0,
+        "count": 73
+      },
+      {
+        "dp": 8.0,
+        "count": 63
+      },
+      {
+        "dp": 2.0,
+        "count": 61
+      },
+      {
+        "dp": 1.0,
+        "count": 51
+      },
+      {
+        "dp": 12.0,
+        "count": 49
+      },
+      {
+        "dp": 16.0,
+        "count": 45
+      },
+      {
+        "dp": 24.0,
+        "count": 45
+      },
+      {
+        "dp": 0.0,
+        "count": 36
+      },
+      {
+        "dp": 6.0,
+        "count": 34
+      },
+      {
+        "dp": 48.0,
+        "count": 27
+      },
+      {
+        "dp": 10.0,
+        "count": 24
+      },
+      {
+        "dp": 20.0,
+        "count": 23
+      },
+      {
+        "dp": 32.0,
+        "count": 23
+      },
+      {
+        "dp": 3.0,
+        "count": 21
+      },
+      {
+        "dp": 5.0,
+        "count": 20
+      },
+      {
+        "dp": 18.0,
+        "count": 19
+      },
+      {
+        "dp": 64.0,
+        "count": 17
+      },
+      {
+        "dp": 40.0,
+        "count": 14
+      },
+      {
+        "dp": 14.0,
+        "count": 12
+      },
+      {
+        "dp": 56.0,
+        "count": 12
+      },
+      {
+        "dp": 28.0,
+        "count": 11
+      },
+      {
+        "dp": 15.0,
+        "count": 10
+      },
+      {
+        "dp": 30.0,
+        "count": 10
+      },
+      {
+        "dp": 1.5,
+        "count": 9
+      },
+      {
+        "dp": 96.0,
+        "count": 9
+      },
+      {
+        "dp": 0.5,
+        "count": 8
+      },
+      {
+        "dp": 52.0,
+        "count": 8
+      },
+      {
+        "dp": 320.0,
+        "count": 8
+      },
+      {
+        "dp": 2.5,
+        "count": 7
+      },
+      {
+        "dp": 50.0,
+        "count": 7
+      }
+    ],
+    "text_sizes": [
+      {
+        "name": "timeline_cts_text_offset",
+        "dp": -2.0,
+        "raw": "-2.0dp"
+      },
+      {
+        "name": "mtrl_calendar_pre_l_text_clip_padding",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_shape_corner_size_large_component",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_textinput_box_corner_radius_small",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "panelbutton_autotext_gran",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "m3_btn_stroke_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_carousel_gone_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_text_field_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_searchview_divider_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_btn_stroke_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "labelFontSizeGranularity",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_badge_with_text_vertical_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_text_field_focus_outline_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "material_input_text_to_prefix_suffix_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "text_margin",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "keyframeMarkerSize",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "ia_video_text_padding",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "m3_badge_with_text_horizontal_offset",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "handleKeyframeSize",
+        "dp": 3.5,
+        "raw": "3.5dp"
+      },
+      {
+        "name": "abc_edit_text_inset_horizontal_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "com_facebook_auth_dialog_corner_radius_oversized",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "exo_error_message_text_padding_vertical",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "knotKeyframeSize",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_badge_with_text_vertical_offset",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_progress_indicator_stop_indicator_size",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_slider_stop_indicator_size",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_large_text_vertical_offset_adjustment",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "material_helper_text_default_padding_top",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_badge_long_text_horizontal_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_btn_text_btn_icon_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_shape_corner_size_medium_component",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_shape_corner_size_small_component",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_box_corner_radius_medium",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_box_label_cutout_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_end_icon_margin_start",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_start_icon_margin_end",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_tooltip_cornerSize",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "design_textinput_caption_translate_y",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "notification_top_pad_large_text",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "outlineScrollerPointSize",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "textBgCornerRadius",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "add_popup_tab_indicator_size",
+        "dp": 5.5,
+        "raw": "5.5dp"
+      },
+      {
+        "name": "project_preset_corner_size",
+        "dp": 5.5,
+        "raw": "5.5dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_text_padding",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_comp_badge_size",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_badge_text_horizontal_edge_offset",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "abc_edit_text_inset_bottom_material",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "element_edit_button_text_padding",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "panelbutton_autotext_min",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "abc_dropdownitem_text_padding_left",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_dropdownitem_text_padding_right",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "labelFontSizeMin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_chip_corner_size",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "material_filled_edittext_font_2_0_padding_bottom",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "material_helper_text_font_1_3_padding_top",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_badge_size",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_text_btn_padding_left",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_text_btn_padding_right",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "arrow_size_h",
+        "dp": 9.0,
+        "raw": "9.0dp"
+      },
+      {
+        "name": "exo_icon_text_size",
+        "dp": 9.0,
+        "raw": "9.0dp"
+      }
+    ],
+    "heights": [
+      {
+        "name": "abc_action_bar_subtitle_top_margin_material",
+        "dp": -3.0,
+        "raw": "-3.0dp"
+      },
+      {
+        "name": "design_snackbar_action_inline_max_width",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_cradle_vertical_offset",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "preference_seekbar_padding_horizontal",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "design_bottom_navigation_shadow_height",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_searchbar_outlined_stroke_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "try_cue_height",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "abc_seekbar_track_background_height_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "abc_seekbar_track_progress_height_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "audio_seekbar_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "design_snackbar_background_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "exo_styled_progress_bar_height",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "ia_progress_bar_height",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_comp_secondary_navigation_tab_active_indicator_height",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_caret_height",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "m3_comp_primary_navigation_tab_active_indicator_height",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "abc_action_bar_elevation_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "abc_progress_bar_height_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "design_appbar_elevation",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_fab_cradle_rounded_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_horizontal_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_sheet_bottom_docked_drag_handle_height",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_searchbar_padding_start",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_slider_track_height",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_snackbar_background_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "abc_action_bar_subtitle_bottom_margin_material",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_cradle_margin",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "abc_action_bar_overflow_padding_start_material",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "design_snackbar_elevation",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_fab_cradle_margin",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "seekbar_width",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "abc_action_bar_default_padding_end_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_action_bar_default_padding_start_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_snackbar_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_cradle_rounded_corner_radius",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_snackbar_margin_horizontal",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_navigation_bar_item_default_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_snackbar_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_snackbar_message_margin_horizontal",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_snackbar_padding_horizontal",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_action_bar_overflow_padding_end_material",
+        "dp": 10.0,
+        "raw": "10.0dp"
+      },
+      {
+        "name": "exo_styled_bottom_bar_margin_top",
+        "dp": 10.0,
+        "raw": "10.0dp"
+      },
+      {
+        "name": "exo_styled_bottom_bar_time_padding",
+        "dp": 10.0,
+        "raw": "10.0dp"
+      },
+      {
+        "name": "design_snackbar_padding_horizontal",
+        "dp": 12.0,
+        "raw": "12.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_fab_cradle_vertical_offset",
+        "dp": 12.0,
+        "raw": "12.0dp"
+      },
+      {
+        "name": "mtrl_badge_toolbar_action_menu_item_horizontal_offset",
+        "dp": 12.0,
+        "raw": "12.0dp"
+      },
+      {
+        "name": "mtrl_badge_toolbar_action_menu_item_vertical_offset",
+        "dp": 12.0,
+        "raw": "12.0dp"
+      },
+      {
+        "name": "try_rect_height",
+        "dp": 12.0,
+        "raw": "12.0dp"
+      },
+      {
+        "name": "design_snackbar_padding_vertical",
+        "dp": 14.0,
+        "raw": "14.0dp"
+      },
+      {
+        "name": "preference_seekbar_padding_vertical",
+        "dp": 15.0,
+        "raw": "15.0dp"
+      },
+      {
+        "name": "abc_action_bar_icon_vertical_padding_material",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "abc_text_size_subtitle_material_toolbar",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_appbar_expanded_title_margin_bottom",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_appbar_expanded_title_margin_horizontal",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_fab_end_margin",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_comp_slider_inactive_track_height",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_searchbar_margin_horizontal",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_searchbar_margin_vertical",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "m3_searchbar_text_margin_start_no_navigation_icon",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_bottom_margin",
+        "dp": 16.0,
+        "raw": "16.0dp"
+      }
+    ],
+    "all": [
+      {
+        "name": "material_cursor_inset",
+        "dp": -4.0,
+        "raw": "-4.0dp"
+      },
+      {
+        "name": "abc_action_bar_subtitle_top_margin_material",
+        "dp": -3.0,
+        "raw": "-3.0dp"
+      },
+      {
+        "name": "timeline_cts_text_offset",
+        "dp": -2.0,
+        "raw": "-2.0dp"
+      },
+      {
+        "name": "m3_chip_disabled_translation_z",
+        "dp": -1.0,
+        "raw": "-1.0dp"
+      },
+      {
+        "name": "design_snackbar_action_inline_max_width",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "fastscroll_margin",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "fui_button_inset_top",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_btn_disabled_elevation",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_btn_disabled_translation_z",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_btn_elevation",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_btn_icon_only_icon_padding",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_btn_translation_z_base",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_card_disabled_z",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_card_elevated_disabled_z",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_fab_border_width",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_navigation_item_shape_inset_bottom",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_navigation_item_shape_inset_top",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "m3_sys_elevation_level0",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_cradle_vertical_offset",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_btn_disabled_elevation",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_btn_disabled_z",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_btn_z",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_calendar_bottom_padding",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_calendar_header_toggle_margin_bottom",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_calendar_header_toggle_margin_top",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_calendar_month_horizontal_padding",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_calendar_month_vertical_padding",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_calendar_pre_l_text_clip_padding",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_extended_fab_disabled_elevation",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_extended_fab_disabled_translation_z",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_extended_fab_translation_z_base",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_navigation_elevation",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_shape_corner_size_large_component",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "mtrl_textinput_box_corner_radius_small",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "notification_content_margin_start",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "notification_main_column_padding_top",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "preference_icon_minWidth",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "preference_seekbar_padding_horizontal",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "qrcode_bi_margin_top",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "tooltip_y_offset_non_touch",
+        "dp": 0.0,
+        "raw": "0.0dp"
+      },
+      {
+        "name": "cameraBoundsStrokeFgWidth",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "design_fab_border_width",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "easingEditorGridlineWidth",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "editPointsKeyframeStrokeWidth",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "nullObjectBoundsStrokeFgWidth",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "panelbutton_autotext_gran",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "pendingAddSegmentStrokeWidth",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "snapGuideWidth",
+        "dp": 0.5,
+        "raw": "0.5dp"
+      },
+      {
+        "name": "panel_divider_width",
+        "dp": 0.70000005,
+        "raw": "0.70000005dp"
+      },
+      {
+        "name": "am_1dp",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "audiowave_max_w",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "cameraBoundsStrokeBgWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "cardview_compat_inset_shadow",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "color_view_inset",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_border_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "curve_control_line_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "design_bottom_navigation_shadow_height",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "easingEditorGridlineWidthMajor",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "editPointsStrokeFgWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "fui_button_inset_left",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "hueDiscLineWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "ia_overlay_stroke_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "keyframeStrokeWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_btn_stroke_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_btn_translation_z_hovered",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_card_hovered_z",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_card_stroke_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_carousel_gone_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_chip_checked_hovered_translation_z",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_chip_elevated_elevation",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_assist_chip_flat_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_date_picker_modal_date_today_container_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_divider_thickness",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_filter_chip_flat_unselected_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_input_chip_unselected_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_button_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_card_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_icon_button_unselected_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_text_field_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_suggestion_chip_flat_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_comp_time_picker_period_selector_outline_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_searchbar_outlined_stroke_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_searchview_divider_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "m3_sys_elevation_level1",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "material_divider_thickness",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "motionPathStrokeFgWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_btn_stroke_size",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_calendar_day_today_stroke",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_calendar_header_divider_thickness",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_card_elevation",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_exposed_dropdown_menu_popup_vertical_offset",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_slider_thumb_elevation",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "mtrl_slider_tick_radius",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "nullObjectBoundsStrokeBgWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "outlineScrollerStrokeWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "pendingAddPointStrokeWidth",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "project_preset_border_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "purchaseOptionAutoScrolIncrement",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "rotate_view_tick_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "timeline_tick_width",
+        "dp": 1.0,
+        "raw": "1.0dp"
+      },
+      {
+        "name": "color_item_spacing_left",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "color_item_spacing_right",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "m3_badge_horizontal_offset",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "m3_badge_vertical_offset",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "motionPathStrokeBgWidth",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "multiSelectionStrokeFgWidth",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "playhead_width",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "timeline_item_corner_rad",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "try_cue_height",
+        "dp": 1.5,
+        "raw": "1.5dp"
+      },
+      {
+        "name": "abc_control_corner_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "abc_dialog_corner_radius_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "abc_seekbar_track_background_height_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "abc_seekbar_track_progress_height_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "audio_seekbar_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "border_2dp",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "cardview_default_elevation",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "cardview_default_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "color_item_spacing_left_large",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "color_item_spacing_right_large",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "color_view_round",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "com_facebook_auth_dialog_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "com_facebook_likeview_edge_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "compat_control_corner_material",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "design_snackbar_background_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "editPointsPointFgRadius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "editPointsStrokeBgWidth",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "exo_icon_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "exo_small_icon_horizontal_margin",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "exo_styled_progress_bar_height",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "fui_button_inset_right",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "ia_progress_bar_height",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "labelFontSizeGranularity",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_badge_with_text_vertical_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_card_elevated_hovered_z",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_carousel_debug_keyline_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_chip_hovered_translation_z",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_comp_outlined_text_field_focus_outline_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_comp_secondary_navigation_tab_active_indicator_height",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_comp_time_input_time_input_field_focus_outline_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_fab_translation_z_hovered_focused",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_navigation_rail_label_padding_horizontal",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_slider_thumb_elevation",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "m3_timepicker_display_stroke_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "margin_2dp",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "material_clock_hand_stroke_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "material_cursor_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "material_input_text_to_prefix_suffix_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "motionPathPointFgRadius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_btn_elevation",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_btn_focused_z",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_btn_hovered_z",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_calendar_day_horizontal_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_calendar_day_vertical_padding",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_extended_fab_translation_z_hovered_focused",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_fab_translation_z_hovered_focused",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_progress_circular_inset_extra_small",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "mtrl_progress_indicator_full_rounded_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "padding_2dp",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "project_preset_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "rotateGripShadowOffset",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "rotateMargin",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "singleSelectionStrokeFgWidth",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "subtitle_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "subtitle_outline_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "subtitle_shadow_offset",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "subtitle_shadow_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "tagCornerRadius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "text_margin",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "tooltip_corner_radius",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "try_cue_width",
+        "dp": 2.0,
+        "raw": "2.0dp"
+      },
+      {
+        "name": "keyframeMarkerSize",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "margin_2point5dp",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "motionPathPointBgRadius",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "mtrl_progress_circular_track_thickness_extra_small",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "multiSelectionStrokeBgWidth",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "rotateStrokeWidth",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "singleSelectionStrokeBgWidth",
+        "dp": 2.5,
+        "raw": "2.5dp"
+      },
+      {
+        "name": "addableKnotRadius",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "color_item_spacing_top",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "com_facebook_button_login_corner_radius",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_border_radius",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_caret_height",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "easingEditorCurveWidth",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "editPointsPointBgRadius",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "fui_button_inset_bottom",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "ia_bg_corner_radius",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "ia_video_text_padding",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "m3_badge_with_text_horizontal_offset",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "m3_comp_primary_navigation_tab_active_indicator_height",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "m3_sys_elevation_level2",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "margin_3dp",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "mtrl_chip_pressed_translation_z",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "mtrl_progress_circular_track_thickness_small",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "multiSelectionStrokeShadeWidth",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "notification_small_icon_background_padding",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "padding_3dp",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "qrcode_img_round",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "radius_3dp",
+        "dp": 3.0,
+        "raw": "3.0dp"
+      },
+      {
+        "name": "handleKeyframeSize",
+        "dp": 3.5,
+        "raw": "3.5dp"
+      },
+      {
+        "name": "curveHandleRadius",
+        "dp": 3.75,
+        "raw": "3.75dp"
+      },
+      {
+        "name": "abc_action_bar_elevation_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "abc_control_inset_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "abc_control_padding_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "abc_edit_text_inset_horizontal_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "abc_progress_bar_height_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "color_item_spacing_top_large",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "color_view_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "com_facebook_auth_dialog_corner_radius_oversized",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "com_facebook_button_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "compat_button_inset_horizontal_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "compat_button_padding_vertical_material",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "design_appbar_elevation",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "design_navigation_item_vertical_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "exo_error_message_text_padding_vertical",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "exo_styled_minimal_controls_margin_bottom",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "hueDiscIndicatorRadius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "ia_inner_drawable_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "knotKeyframeSize",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_badge_with_text_vertical_offset",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_bottom_nav_item_active_indicator_margin_horizontal",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_fab_cradle_rounded_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_horizontal_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_btn_inset",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_progress_indicator_active_indicator_track_space",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_progress_indicator_stop_indicator_size",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_progress_indicator_track_thickness",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_sheet_bottom_docked_drag_handle_height",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_slider_active_handle_width",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_comp_slider_stop_indicator_size",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_large_text_vertical_offset_adjustment",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_navigation_item_active_indicator_label_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_navigation_item_vertical_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_navigation_rail_item_active_indicator_margin_horizontal",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_navigation_rail_item_padding_top",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "m3_searchbar_padding_start",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "margin_4dp",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "material_clock_hand_center_dot_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "material_clock_hand_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "material_font_1_3_box_collapsed_padding_top",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "material_helper_text_default_padding_top",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_badge_horizontal_edge_offset",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_badge_long_text_horizontal_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_btn_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_btn_padding_bottom",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_btn_padding_top",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_btn_text_btn_icon_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_calendar_header_content_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_calendar_header_content_padding_fullscreen",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_calendar_navigation_bottom_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_calendar_navigation_top_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_card_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_navigation_item_shape_vertical_margin",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_progress_circular_inset",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_progress_circular_inset_medium",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_progress_circular_inset_small",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_progress_circular_track_thickness_medium",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_progress_track_thickness",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_shape_corner_size_medium_component",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_shape_corner_size_small_component",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_slider_label_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_slider_track_height",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_snackbar_background_corner_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_switch_thumb_elevation",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_box_corner_radius_medium",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_box_label_cutout_padding",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_end_icon_margin_start",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_textinput_start_icon_margin_end",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "mtrl_tooltip_cornerSize",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "notification_right_side_padding_top",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "radius_4dp",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "rotateGripShadowRadius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "rotate_color_grip_shadow_radius",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "timeline_tick_min_space",
+        "dp": 4.0,
+        "raw": "4.0dp"
+      },
+      {
+        "name": "knotRadius",
+        "dp": 4.5,
+        "raw": "4.5dp"
+      },
+      {
+        "name": "pendingAddPointInsideRad",
+        "dp": 4.5,
+        "raw": "4.5dp"
+      },
+      {
+        "name": "project_list_add_popup_leftmargin",
+        "dp": 4.5,
+        "raw": "4.5dp"
+      },
+      {
+        "name": "selectedCurveHandleRadius",
+        "dp": 4.5,
+        "raw": "4.5dp"
+      },
+      {
+        "name": "abc_action_bar_subtitle_bottom_margin_material",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "ac_blend_corner",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "color_item_round",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "design_textinput_caption_translate_y",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "drawablelist_spacing",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "exo_icon_horizontal_margin",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "export_list_padding",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "feed_button_margin_5",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "ia_image_control_padding",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "margin_5dp",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_cradle_margin",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "mtrl_card_dragged_z",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "notification_top_pad_large_text",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "outlineScrollerPointSize",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "padding_5dp",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "project_preset_inset",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "radius_5dp",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "shapeHandleRadius",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "textBgCornerRadius",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "timeline_tick_frame",
+        "dp": 5.0,
+        "raw": "5.0dp"
+      },
+      {
+        "name": "selectedKnotRadius",
+        "dp": 5.25,
+        "raw": "5.25dp"
+      },
+      {
+        "name": "add_popup_tab_indicator_size",
+        "dp": 5.5,
+        "raw": "5.5dp"
+      },
+      {
+        "name": "project_preset_corner_size",
+        "dp": 5.5,
+        "raw": "5.5dp"
+      },
+      {
+        "name": "abc_action_bar_overflow_padding_start_material",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "abc_button_inset_vertical_material",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "add_button_inset",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_caret_width",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "com_facebook_likeboxcountview_text_padding",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "com_facebook_likeview_internal_padding",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "compat_button_inset_vertical_material",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "design_fab_elevation",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "design_fab_translation_z_hovered_focused",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "design_fab_translation_z_pressed",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "design_snackbar_elevation",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "ia_identifier_overlay_margin_bottom",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_badge_offset",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_bottomappbar_fab_cradle_margin",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_btn_padding_bottom",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_btn_padding_top",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_card_dragged_z",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_comp_badge_size",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_comp_slider_active_handle_leading_space",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_fab_translation_z_pressed",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "m3_sys_elevation_level3",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_badge_text_horizontal_edge_offset",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_btn_inset",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_btn_pressed_z",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_extended_fab_elevation",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_extended_fab_translation_z_pressed",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_fab_elevation",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "mtrl_fab_translation_z_pressed",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "padding_6dp",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "qrcode_draw_link_marginleft",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "qrcode_draw_title_topmargin",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "radius_6dp",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "seekbar_width",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "selectedShapeHandleRadius",
+        "dp": 6.0,
+        "raw": "6.0dp"
+      },
+      {
+        "name": "gradientGripColorRadius",
+        "dp": 6.5,
+        "raw": "6.5dp"
+      },
+      {
+        "name": "list_panel_padding",
+        "dp": 6.5,
+        "raw": "6.5dp"
+      },
+      {
+        "name": "tooltip_vertical_padding",
+        "dp": 6.5,
+        "raw": "6.5dp"
+      },
+      {
+        "name": "abc_edit_text_inset_bottom_material",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "color_view_edge",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "element_edit_button_text_padding",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "m3_card_elevated_dragged_z",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "m3_chip_dragged_translation_z",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "panelbutton_autotext_min",
+        "dp": 7.0,
+        "raw": "7.0dp"
+      },
+      {
+        "name": "pendingAddPointOutsideRad",
+        "dp": 7.5,
+        "raw": "7.5dp"
+      },
+      {
+        "name": "abc_action_bar_default_padding_end_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_action_bar_default_padding_start_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_button_padding_horizontal_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_dialog_list_padding_bottom_no_buttons",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_dialog_list_padding_top_no_title",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_dialog_title_divider_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_dropdownitem_text_padding_left",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "abc_dropdownitem_text_padding_right",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "compat_button_padding_horizontal_material",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "default_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "design_bottom_navigation_elevation",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "design_bottom_navigation_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "design_bottom_sheet_elevation",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "design_navigation_padding_bottom",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "design_navigation_separator_vertical_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "exo_settings_offset",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "fastscroll_default_thickness",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "gradientGripFgRadius",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "ia_endcard_button_padding_vertical",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "ia_identifier_overlay_margin_left",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "ia_identifier_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "ia_round_control_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "ia_video_control_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "icon_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "labelFontSizeMin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_back_progress_main_container_min_edge_gap",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_btn_dialog_btn_spacing",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_chip_corner_size",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_divider_heavy_thickness",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_extended_fab_bottom_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_extended_fab_top_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_snackbar_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "m3_sys_elevation_level4",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "margin_8dp",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "material_filled_edittext_font_2_0_padding_bottom",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "material_font_2_0_box_collapsed_padding_top",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "material_helper_text_font_1_3_padding_top",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_badge_size",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_bottomappbar_fab_cradle_rounded_corner_radius",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_icon_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_snackbar_margin_horizontal",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_text_btn_padding_left",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_btn_text_btn_padding_right",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_calendar_action_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_calendar_year_horizontal_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_calendar_year_vertical_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_card_checked_icon_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_card_spacing",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_exposed_dropdown_menu_popup_elevation",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_exposed_dropdown_menu_popup_vertical_padding",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_navigation_bar_item_default_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_navigation_item_shape_horizontal_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_navigation_rail_elevation",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_navigation_rail_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_slider_tick_min_spacing",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      },
+      {
+        "name": "mtrl_snackbar_margin",
+        "dp": 8.0,
+        "raw": "8.0dp"
+      }
+    ]
+  },
+  "geometry": {
+    "layout_height": [
+      [
+        "wrap_content",
+        669
+      ],
+      [
+        "match_parent",
+        405
+      ],
+      [
+        "0.0dp",
+        289
+      ],
+      [
+        "40.0dp",
+        35
+      ],
+      [
+        "1.0dp",
+        21
+      ],
+      [
+        "37.0dp",
+        21
+      ],
+      [
+        "42.0dp",
+        16
+      ],
+      [
+        "38.0dp",
+        15
+      ],
+      [
+        "44.0dp",
+        15
+      ],
+      [
+        "23.0dp",
+        14
+      ],
+      [
+        "50.0dp",
+        14
+      ],
+      [
+        "20.0dp",
+        12
+      ],
+      [
+        "30.0dp",
+        12
+      ],
+      [
+        "25.0dp",
+        12
+      ],
+      [
+        "45.0dp",
+        11
+      ],
+      [
+        "27.5dp",
+        10
+      ],
+      [
+        "12.0dp",
+        9
+      ],
+      [
+        "18.0dp",
+        9
+      ],
+      [
+        "48.0dp",
+        9
+      ],
+      [
+        "57.0dp",
+        9
+      ],
+      [
+        "24.0dp",
+        8
+      ],
+      [
+        "@dimen/applovin_sdk_adControlButton_height",
+        7
+      ],
+      [
+        "15.0dp",
+        7
+      ],
+      [
+        "75.0dp",
+        6
+      ],
+      [
+        "@dimen/list_panel_item_height",
+        6
+      ],
+      [
+        "64.0dp",
+        5
+      ],
+      [
+        "0.5dp",
+        5
+      ],
+      [
+        "36.0dp",
+        5
+      ]
+    ],
+    "layout_width": [
+      [
+        "match_parent",
+        565
+      ],
+      [
+        "0.0dp",
+        475
+      ],
+      [
+        "wrap_content",
+        461
+      ],
+      [
+        "40.0dp",
+        47
+      ],
+      [
+        "@dimen/newProjectFieldWidth",
+        18
+      ],
+      [
+        "20.0dp",
+        13
+      ],
+      [
+        "44.0dp",
+        11
+      ],
+      [
+        "75.0dp",
+        9
+      ],
+      [
+        "18.0dp",
+        9
+      ],
+      [
+        "24.0dp",
+        9
+      ],
+      [
+        "30.0dp",
+        8
+      ],
+      [
+        "50.0dp",
+        8
+      ],
+      [
+        "@dimen/applovin_sdk_adControlButton_width",
+        7
+      ],
+      [
+        "63.0dp",
+        7
+      ],
+      [
+        "64.0dp",
+        6
+      ],
+      [
+        "23.0dp",
+        6
+      ],
+      [
+        "56.0dp",
+        6
+      ],
+      [
+        "55.0dp",
+        6
+      ],
+      [
+        "60.0dp",
+        6
+      ],
+      [
+        "62.0dp",
+        6
+      ]
+    ],
+    "textSize": [
+      [
+        "12.0dp",
+        32
+      ],
+      [
+        "15.0dp",
+        31
+      ],
+      [
+        "17.0sp",
+        26
+      ],
+      [
+        "14.0dp",
+        20
+      ],
+      [
+        "10.0dp",
+        17
+      ],
+      [
+        "12.0sp",
+        16
+      ],
+      [
+        "10.0sp",
+        14
+      ],
+      [
+        "9.0dp",
+        14
+      ],
+      [
+        "18.0dp",
+        13
+      ],
+      [
+        "16.0sp",
+        11
+      ],
+      [
+        "11.0dp",
+        11
+      ],
+      [
+        "15.0sp",
+        10
+      ],
+      [
+        "14.0sp",
+        9
+      ],
+      [
+        "16.0dp",
+        9
+      ],
+      [
+        "13.0dp",
+        8
+      ],
+      [
+        "6.0dp",
+        7
+      ],
+      [
+        "13.0sp",
+        6
+      ],
+      [
+        "20.0dp",
+        5
+      ],
+      [
+        "9.0sp",
+        4
+      ],
+      [
+        "7.0sp",
+        4
+      ]
+    ],
+    "gravity": [
+      [
+        "center",
+        29
+      ],
+      [
+        "center_vertical",
+        28
+      ],
+      [
+        "center_horizontal",
+        17
+      ],
+      [
+        "end",
+        12
+      ],
+      [
+        "center|top",
+        9
+      ],
+      [
+        "bottom",
+        7
+      ],
+      [
+        "center|bottom",
+        7
+      ],
+      [
+        "end|top",
+        6
+      ],
+      [
+        "start",
+        6
+      ],
+      [
+        "top",
+        5
+      ],
+      [
+        "right|bottom",
+        4
+      ],
+      [
+        "end|center",
+        4
+      ]
+    ],
+    "widgets": [
+      [
+        "TextView",
+        342
+      ],
+      [
+        "LinearLayout",
+        190
+      ],
+      [
+        "ImageButton",
+        168
+      ],
+      [
+        "androidx.constraintlayout.widget.ConstraintLayout",
+        147
+      ],
+      [
+        "ImageView",
+        134
+      ],
+      [
+        "View",
+        115
+      ],
+      [
+        "FrameLayout",
+        99
+      ],
+      [
+        "androidx.appcompat.widget.AppCompatTextView",
+        86
+      ],
+      [
+        "androidx.appcompat.widget.AppCompatImageView",
+        76
+      ],
+      [
+        "Button",
+        56
+      ],
+      [
+        "RelativeLayout",
+        53
+      ],
+      [
+        "include",
+        38
+      ],
+      [
+        "androidx.recyclerview.widget.RecyclerView",
+        35
+      ],
+      [
+        "androidx.cardview.widget.CardView",
+        29
+      ],
+      [
+        "androidx.appcompat.widget.AppCompatImageButton",
+        27
+      ],
+      [
+        "com.facebook.drawee.view.SimpleDraweeView",
+        20
+      ],
+      [
+        "androidx.appcompat.widget.AppCompatButton",
+        18
+      ],
+      [
+        "androidx.constraintlayout.widget.Guideline",
+        17
+      ],
+      [
+        "Space",
+        12
+      ],
+      [
+        "EditText",
+        11
+      ]
+    ]
+  },
+  "screen_layout_candidates": [
+    {
+      "name": "layout/esaat79kxlpmhhft.xml",
+      "nodes": 38,
+      "score": 38
+    },
+    {
+      "name": "layout/edm9zkjx9kf7p7wl.xml",
+      "nodes": 38,
+      "score": 38
+    },
+    {
+      "name": "layout/kzchwnnkhyjkdg1n.xml",
+      "nodes": 36,
+      "score": 36
+    },
+    {
+      "name": "layout/bhmdgkzzxh7ivkck.xml",
+      "nodes": 36,
+      "score": 36
+    },
+    {
+      "name": "layout/ka04h67e6u93wb70.xml",
+      "nodes": 33,
+      "score": 33
+    },
+    {
+      "name": "layout/ktpbsx2rfscvhuhp.xml",
+      "nodes": 32,
+      "score": 31
+    },
+    {
+      "name": "layout/h2e7mj5bmathe73i.xml",
+      "nodes": 36,
+      "score": 31
+    },
+    {
+      "name": "layout/krr4ntph1wohi6re.xml",
+      "nodes": 32,
+      "score": 30
+    },
+    {
+      "name": "layout/myo73xrxckrpav24.xml",
+      "nodes": 31,
+      "score": 29
+    },
+    {
+      "name": "layout/b8zvqykbekz9d3fl.xml",
+      "nodes": 31,
+      "score": 28
+    },
+    {
+      "name": "layout/b28u1xc0ow1ynkqb.xml",
+      "nodes": 28,
+      "score": 25
+    },
+    {
+      "name": "layout/lj3bwu9qev57e7xf.xml",
+      "nodes": 21,
+      "score": 21
+    },
+    {
+      "name": "layout/c45tbt0l9uht5gt3.xml",
+      "nodes": 22,
+      "score": 21
+    },
+    {
+      "name": "layout/lxbuvvx9qx3vbo3m.xml",
+      "nodes": 19,
+      "score": 19
+    },
+    {
+      "name": "layout/lp5hresay0ihpytv.xml",
+      "nodes": 19,
+      "score": 19
+    },
+    {
+      "name": "layout/k83ijh9e47832bpy.xml",
+      "nodes": 20,
+      "score": 19
+    },
+    {
+      "name": "layout/m1xevmtisb9tz2yl.xml",
+      "nodes": 25,
+      "score": 18
+    },
+    {
+      "name": "layout/mjm9hd09dc5td8mn.xml",
+      "nodes": 17,
+      "score": 17
+    },
+    {
+      "name": "layout/j6s0xwhbzzxg2lr7.xml",
+      "nodes": 18,
+      "score": 15
+    },
+    {
+      "name": "layout/fuc2cjg3jq2f1lbs.xml",
+      "nodes": 18,
+      "score": 15
+    },
+    {
+      "name": "layout/caw4smo80obm2lbx.xml",
+      "nodes": 15,
+      "score": 15
+    },
+    {
+      "name": "layout/g1f3k7yuy2p48r8q.xml",
+      "nodes": 15,
+      "score": 13
+    },
+    {
+      "name": "layout/afj7xuzqey7xiqr3.xml",
+      "nodes": 14,
+      "score": 13
+    },
+    {
+      "name": "layout/m3p2irx0cvqov85y.xml",
+      "nodes": 13,
+      "score": 11
+    }
+  ],
+  "labels": [
+    "\"Connection was lost\ncannot play video\"",
+    "\"This project's data is damaged or missing.\"",
+    "' at element:",
+    "' should be quoted at element:",
+    "' was closed",
+    "'waitForPendingWrites' task is cancelled due to User change.",
+    "(video export,",
+    ") must be greater than or equal to the audio fragment duration (",
+    ") to supported FelliniAudioEncoding.",
+    "+ Reflection.getOrCreateKotlinClass(ml.getClass()).getSimpleName() +",
+    "+ blendingMode +",
+    "+ keyableVisualEffectRef.getInstanceId() +",
+    ", CmcdData.OBJECT_TYPE_AUDIO_ONLY,",
+    ", ForceRecaptchav2Flow from firebaseSettings =",
+    ", InneractiveMediationDefs.GENDER_FEMALE,",
+    ", InneractiveMediationNameConsts.OTHER,",
+    ", V8ValueBuiltInObject.FUNCTION_CREATE,",
+    ", appliedPreset=",
+    ", applyTint=",
+    ", audioFragment=",
+    ", audioPeak=",
+    ", backgroundColor=",
+    ", blendingMode=",
+    ", cacheCamera=",
+    ", cacheDuration=",
+    ", cancelCause=",
+    ", cancelHandler=",
+    ", categorySectionBackgroundColor=",
+    ", categorySectionBackgroundShape=",
+    ", categorySectionDividerColor=",
+    ", closeButtonStyle=",
+    ", closeIconTint=",
+    ", colorFormat=",
+    ", currentTemplateIndex=",
+    ", currentTemplateTags=",
+    ", currentTemplateVideoUri=",
+    ", currentTiktokUsername=",
+    ", descriptionDialogBackgroundColor=",
+    ", descriptionDialogCloseButtonStyle=",
+    ", descriptionDialogCloseButtonTextStyle=",
+    ", disabledBackgroundColor=",
+    ", disabledContentColor=",
+    ", durationInSeconds=",
+    ", exportDate=",
+    ", exportElapsedMs=",
+    ", exportHash=",
+    ", exportInfo=",
+    ", exportParams=",
+    ", exportSize=",
+    ", exportSnapshot=",
+    ", headerImageShape=",
+    ", importance=",
+    ", importedProjects=",
+    ", indexMedia=",
+    ", isDeletingPresets=",
+    ", isLoadingMoreTemplates=",
+    ", isPlaying=",
+    ", isRenamingPreset=",
+    ", isSavePresetNewTagVisible=",
+    ", layerLabel=",
+    ", loadingIndicatorColor=",
+    ", loadingOverlayColor=",
+    ", maxExportRes=",
+    ", mediaFormat=",
+    ", needleColor=",
+    ", number of audio track creations:",
+    ", onCancellation=",
+    ", playIntegrityToken=",
+    ", playbackState=",
+    ", pressedBackgroundColor=",
+    ", pressedContentColor=",
+    ", previewTimelineRowState=",
+    ", projectHash=",
+    ", projectId=",
+    ", projectPackageId=",
+    ", projectType=",
+    ", resolution=",
+    ", resources.getDisplayMetrics().widthPixels +",
+    ", resources.getDisplayMetrics().xdpi +",
+    ", retentionDuration=",
+    ", saveCompleteMessage=",
+    ", saveToStorageTarget=",
+    ", savedData=",
+    ", savedDataInset=",
+    ", savedFrames=",
+    ", savedTemplateIds=",
+    ", sceneElement=",
+    ", seenTemplateIds=",
+    ", selectedMediaIndex=",
+    ", selectedPresets=",
+    ", shareDates=",
+    ", showReplaceMediaTooltip=",
+    ", showResolutionDropdown=",
+    ", socialMediaAccounts=",
+    ", switchColors=",
+    ", templateTimelineRowState=",
+    ", templateVersion=",
+    ", templates=",
+    ", templatesCount=",
+    ", templatesTagCarouselItems=",
+    ", tiktokUsernameError=",
+    ", transformation=",
+    ", transformer=",
+    ".immediate",
+    "3D Layer & Depth",
+    "3D Shapes & Solids",
+    ": an export is rendering, not trimmed",
+    "A project exists for the given project ID but it is not a preset.",
+    "AMFontInfo(family=",
+    "AboutToFinish(hasUserCompletedFlow=",
+    "Abra o TikTok",
+    "Abra uma fonte para baixá-la",
+    "Abrir TikTok",
+    "AddElement(projectId=",
+    "AddTemplateAsGroup(projectId=",
+    "AdvancedEasing(projectId=",
+    "Alight Motion 無法確認你的會員狀態。請確認網路連線，並確保你已登入 Play 商店，或者稍後重試。",
+    "AlightMotion::Export",
+    "Allalaadimiseks ava font",
+    "Already imported",
+    "App Quality Sessions session changed:",
+    "Apply remote event",
+    "Apri TikTok",
+    "Apri un font per scaricarlo",
+    "Aqui só abre o dafont.com",
+    "Aquí solo se abre dafont.com",
+    "Aruanne kopeeritud — kleebi see TikTokki",
+    "Attempted overwrite of a registered key template",
+    "Attempted to register a new key template",
+    "Audio codec init failed",
+    "Audio ini tidak dapat dikonversi. File asli digunakan sebagai gantinya.",
+    "Audio ini tidak dapat ditukar. Fail asal digunakan sebagai ganti.",
+    "Audio is still being prepared. Please wait.",
+    "Audio masih disiapkan. Harap tunggu.",
+    "Audio masih sedang disediakan. Sila tunggu.",
+    "Audio track",
+    "Audio voorbereiden…",
+    "Audio wird vorbereitet…",
+    "Audio(index=",
+    "Audio(stream16BitProperties=",
+    "AudioDataWithPosition(composition=",
+    "AudioDecoder cannot be used after release",
+    "AudioDecoder must be initialized before usage",
+    "AudioParams(bitRate=",
+    "AudioPlayerThread",
+    "AudioRenderer does not support playback parameters different than default.",
+    "AudioStreamProperties(channelCount=",
+    "Automatic data collection is enabled. Allowing upload.",
+    "Ava TikTok",
+    "Avaa TikTok",
+    "Avaa fontti ladataksesi sen",
+    "Background execution failure.",
+    "Backgrounds & Textures",
+    "Baixar e importar",
+    "Baixe uma fonte e ela é adicionada aqui",
+    "Bara dafont.com öppnas här",
+    "BaseKeyframeAnimation#getCurrentKeyframe",
+    "BaseKeyframeAnimation#notifyListeners",
+    "BaseKeyframeAnimation#setProgress",
+    "Bereits importiert",
+    "Bericht kopiert – in TikTok einfügen",
+    "Betűtípusok importálva",
+    "Betűtípusok importálása",
+    "BitrateTable(resolution=",
+    "BlendModeEntry(category=",
+    "Blocking call was interrupted due to parent cancellation",
+    "Blur, Focus & Sharpen",
+    "Bläddra i DaFont",
+    "Browse DaFont",
+    "BrowsingProjects(selectedSceneType=",
+    "BrowsingTemplates(selectedSortOption=",
+    "Build.DISPLAY",
+    "BuildMediaResult(data=",
+    "Buka TikTok",
+    "Buka font untuk mengunduhnya",
+    "Bukan font",
+    "Burada yalnızca dafont.com açılır",
+    "ButtonColorSchema(idleContentColor=",
+    "Báo cáo đã được sao chép — hãy dán vào TikTok.",
+    "CANCELLED",
+    "CHANNEL_CLOSED",
+    "CLOSE",
+    "CLOSED",
+    "CLOSED_EMPTY",
+    "CLOSE_HANDLER_CLOSED",
+    "CLOSE_HANDLER_INVOKED",
+    "COLOR_LENS",
+    "CREATE TABLE data_migrations (migration_name TEXT, PRIMARY KEY (migration_name))",
+    "CREATE TABLE globals (name TEXT PRIMARY KEY, value BLOB)",
+    "CREATE TABLE remote_documents (path TEXT PRIMARY KEY, contents BLOB)",
+    "CURRENT_COLOR",
+    "Called endLayer() but should have called restore()",
+    "Called restore() but should have called endLayer()",
+    "Camera object",
+    "CameraObject(projectId=",
+    "Can't begin reading element, unexpected token",
+    "Cancel",
+    "Cancelar",
+    "Canceled",
+    "CancellableContinuation",
+    "Cancelled",
+    "Cancelled.",
+    "Cancelling",
+    "Cannot accumulate fragments before receiver AudioLevelMeter is configured.",
+    "Cannot apply changes that need a refill",
+    "Cannot be cancelling child in this state:",
+    "Cannot change Player!",
+    "Cannot change the audio data while playing",
+    "Cannot clear the cache while playing",
+    "Cannot combine UCanvas layer alpha with effect",
+    "Cannot convert ExoPlayer encoding (",
+    "Cannot create MediaEvents for JavaScript AdSession",
+    "Cannot create a mutable Bitmap with config:",
+    "Cannot create a primitive for Void",
+    "Cannot create key with ID requirement with parameters without ID requirement",
+    "Cannot create key without ID requirement with parameters with ID requirement",
+    "Cannot delete field for empty path on ObjectValue",
+    "Cannot read Json element because of unexpected",
+    "Cannot release the cache while the previewer is playing",
+    "Cannot send reports. Timed out while fetching settings.",
+    "Channel was cancelled",
+    "Channel was closed",
+    "Close",
+    "Close Video?",
+    "Close(shouldDismissBanner=",
+    "CloseableImage",
+    "Closed all previously open sessions.",
+    "Closed(",
+    "Closed(exception=",
+    "Closed(token=",
+    "CodecInfo: maxImportSize=",
+    "Collection contains more than one matching element.",
+    "Collection contains no element matching the predicate.",
+    "Collection of crash reports disabled in Crashlytics settings.",
+    "Color Grading",
+    "Color Looks & Tone Maps",
+    "Compatibility shadow requested but can't be drawn for all operations in this shape.",
+    "Connect to the internet and open the project again.",
+    "Connection closed",
+    "Content(templates=",
+    "Could not close sound file",
+    "Could not convert this audio. Trying the original file instead.",
+    "Could not create Crashlytics-specific directory:",
+    "Could not create app exception marker file.",
+    "Could not create hashing algorithm:",
+    "Could not read settings hash",
+    "Could not save (storage full?)",
+    "Couldn't create directory to store native session files, aborting.",
+    "Crash log saved:",
+    "Crashlytics could not delete report file:",
+    "Crashlytics did not finish previous background initialization. Initializing synchronously.",
+    "Create context",
+    "Create new file failed.",
+    "Created new Crashlytics installation ID:",
+    "Created(composition=",
+    "Csatlakozz a Telegram-csatornához",
+    "Csatlakozz a Telegram-csoportcsevegéshez",
+    "DELETE",
+    "DELETE FROM data_migrations WHERE migration_name = ?",
+    "DELETE FROM document_mutations WHERE uid = ? AND batch_id = ?",
+    "DELETE FROM document_mutations WHERE uid = ? AND path = ? AND batch_id = ?",
+    "DELETE FROM document_overlays WHERE uid = ? AND largest_batch_id = ?",
+    "DELETE FROM events WHERE _id in",
+    "DELETE FROM log_event_dropped",
+    "DELETE FROM mutations WHERE uid = ? AND batch_id = ?",
+    "DELETE FROM pico_events WHERE committed = 0",
+    "DELETE FROM pico_events WHERE id IN (",
+    "DELETE FROM picox_events WHERE id IN (",
+    "DELETE FROM remote_documents WHERE path IN (",
+    "DELETE FROM spidersense_complete_debug_events WHERE id IN (",
+    "DELETE FROM target_documents WHERE path = ? AND target_id = 0",
+    "DELETE FROM target_documents WHERE target_id = ?",
+    "DELETE FROM target_documents WHERE target_id = ? AND path = ?",
+    "DELETE FROM targets WHERE target_id = ?",
+    "DONE_RCV",
+    "DaFont",
+    "DaFont bekijken",
+    "DaFont böngészése",
+    "DaFont durchsuchen",
+    "DaFont を見る",
+    "DaFont 둘러보기",
+    "DaFont'a göz at",
+    "Das Audio wird noch vorbereitet. Bitte warten.",
+    "Data to large for user specified layer",
+    "De audio wordt nog voorbereid. Even geduld.",
+    "DefaultCloseableReference",
+    "DefaultCloseableStaticBitmap",
+    "Delete",
+    "Delete user IDs",
+    "Delete 鍵",
+    "Deleted corrupt file:",
+    "Deleted previous Crashlytics file system:",
+    "Deleted report file:",
+    "Descargar e importar",
+    "Descriptor for type `kotlin.Nothing` does not have elements",
+    "Deserialization of project file content failed.",
+    "Developer Settings",
+    "DeviceCaps(maxImportRes=",
+    "Deze audio kon niet worden omgezet. Het originele bestand wordt gebruikt.",
+    "Dispatchers.Default cannot be closed",
+    "Dispatchers.Main.immediate",
+    "Displays more info about the list item.",
+    "Done",
+    "Download & import",
+    "Download a font, it is added here",
+    "Download app settings",
+    "Downloaden en importeren",
+    "Dołącz do czatu grupowego Telegram",
+    "Dołącz do kanału Telegram",
+    "Duration(nanos=",
+    "Duyệt DaFont",
+    "Déjà importée",
+    "EXPORT PROGRESS UPDATE:",
+    "EditViewModelState(isAddTemplateVisited=",
+    "EffectDetail",
+    "EffectTrialItem(id=",
+    "Ei fontti",
+    "El audio aún se está preparando. Espera un momento.",
+    "Element 'first' is missing",
+    "Element 'key' is missing",
+    "Element 'second' is missing",
+    "Element 'third' is missing",
+    "Element 'value' is missing",
+    "Element with name '",
+    "Enable the Creative Debugger SDK settings in order to view recent ads.",
+    "EncryptionSettings(encryptionPublicKey=",
+    "Entre no canal do Telegram",
+    "Entre no chat em grupo do Telegram",
+    "Error converting settings JSON to target class:",
+    "Error parsing settings JSON:",
+    "Error parsing settings string as JSON:",
+    "Este celular não consegue ler esta fonte",
+    "Exceeds maximum peak media usage.",
+    "Exception in invokeOnCancellation handler for",
+    "Exception in resume onCancellation handler for",
+    "Exception in undelivered element handler for",
+    "Exception parsing rollouts metadata to create RolloutsState.",
+    "Expected at least one element",
+    "Expected at least one element matching the predicate",
+    "Expected to have allocated a shadow mask bitmap",
+    "Explorar DaFont",
+    "Explorar o DaFont",
+    "Export",
+    "Export directory does not exist",
+    "ExportCache : removeAll newSize=",
+    "ExportMain",
+    "ExportMetadata(projectID=",
+    "ExportModeItem(type=",
+    "ExportResult(outcome=",
+    "ExportTertiary",
+    "Exporter handler",
+    "External export context shouldn't be used for format",
+    "FELLINI_AUDIO_TRACK",
+    "FIREBASE_APPQUALITY_SESSION",
+    "FMAudioCompositionSlice(composition=",
+    "FMExportSettings(video=",
+    "FMRenderRequest(media=",
+    "Fail to create AshmemMemory",
+    "Failed to build a Google Play billing library wrapper for in-app purchase auto-logging",
+    "Failed to close rollouts state file.",
+    "Failed to close user metadata file.",
+    "Failed to create",
+    "Failed to create Google Play billing library wrapper for in-app purchase auto-logging",
+    "Failed to create frame bitmap",
+    "Failed to delete debug events.",
+    "Failed to delete temp font file",
+    "Failed to fetch settings:",
+    "Failed to get resource info for scene element:",
+    "Failed to import any XML from the zip file.",
+    "Failed to persist App Quality Sessions session id.",
+    "Failed to write to SharedPreferences",
+    "FelliniAudioFormat(encoderDelay=",
+    "Fetching settings from server.",
+    "FinalizerCloseableReference",
+    "Fon diimport",
+    "Font",
+    "Font diimpor",
+    "Font format not supported",
+    "Font importati",
+    "FontSourceGoogle",
+    "FontSourceLocal(filename=",
+    "FontVariant(weight=",
+    "Fontes importadas",
+    "Fontide importimine",
+    "Fontit tuotu",
+    "Fonts imported",
+    "Fonttimuotoa ei tueta",
+    "Force GIF export",
+    "Force export",
+    "Format Error Reading Color Table",
+    "Format font tidak didukung",
+    "Formato de fonte não compatível",
+    "Formato del font non supportato",
+    "Fuentes importadas",
+    "Gabung ke obrolan grup Telegram",
+    "Gabung ke saluran Telegram",
+    "Generating Effect Documentation Templates",
+    "Given audio fragment",
+    "Già importato",
+    "Google Play Services API Error",
+    "Google Play Services Acknowledge Failure",
+    "Google Play Services Interface Error",
+    "Google Play Services Item Unavailable",
+    "Google Play Services Missing Feature",
+    "Google Play Services Unavailable",
+    "Google Play Services Unexpected Code",
+    "Google Play Services Unexpected Ownership State",
+    "Google Play Services Unexpected Purchase State",
+    "Google Play Services Unexpected State",
+    "Google Play Services Unknown Response",
+    "Google Play cannot connect to the Internet",
+    "Google Play 服務可用性",
+    "Google Play 服務發生錯誤",
+    "Gå med i Telegram-gruppchatten",
+    "Gå med i Telegram-kanalen",
+    "Had to manually delete texture!",
+    "Hanya dafont.com dibuka di sini",
+    "Hanya dafont.com yang terbuka di sini",
+    "Hier opent alleen dafont.com",
+    "Hier öffnet sich nur dafont.com",
+    "IOException thrown while closing Closeable.",
+    "If you wish to display this",
+    "Impor font",
+    "Impordi fonte",
+    "Import Pakej Projek",
+    "Import Project Package",
+    "Import fon",
+    "Import fonts",
+    "Import(linkUri=",
+    "ImportTemplate(template=",
+    "Importa font",
+    "Importa pacchetto progetto",
+    "Importando fontes",
+    "Importando fuentes",
+    "Importar fontes",
+    "Importar fuentes",
+    "Importar pacote de projeto",
+    "Importar paquete de proyecto",
+    "Importation des polices",
+    "Importazione dei font",
+    "Importer des polices",
+    "Importer un pack de projet",
+    "Importera projektpaket",
+    "Importera typsnitt",
+    "Importerar typsnitt",
+    "Importing fonts",
+    "Importowanie czcionek",
+    "Importuj czcionki",
+    "Importuj pakiet projektu",
+    "Impossibile convertire questo audio. Verrà usato il file originale.",
+    "Impossible de convertir cet audio. Le fichier d’origine est utilisé à la place.",
+    "Informe copiado: péguelo en TikTok.",
+    "Inget importerades",
+    "Initialization marker file was created.",
+    "InternalListener exception in onIntermediateChunkStart",
+    "InternalListener exception in onProducerFinishWithCancellation",
+    "InternalListener exception in onRequestCancellation",
+    "Interrupted while waiting for background task",
+    "Invalid Media duration",
+    "Invalid Media volume",
+    "Invalid audio mime:",
+    "Invalid mask pattern",
+    "Invalid mask pattern:",
+    "Invalid media dimensions: width:",
+    "Invalid media format for a video track:",
+    "Invalid media format for an audio track:",
+    "Invalid media orientation:",
+    "Invalid render strategy for OffscreenLayer",
+    "Invalid shadow bounds. Check that the treatments result in a valid path.",
+    "Is-App-Running-In-Background",
+    "Itt csak a dafont.com nyílik meg",
+    "Jelajahi DaFont",
+    "Jelentés másolva — illessze be a TikTokba",
+    "Job was cancelled",
+    "Join Telegram channel",
+    "Join Telegram group chat",
+    "Już zaimportowana",
+    "Já importada",
+    "Kasutamiseks puuduta fonti",
+    "Ketuk font untuk memakainya",
+    "Laadi font alla, see lisatakse siia",
+    "Ladda ner och importera",
+    "Laden & importieren",
+    "Laporan disalin — tampalkannya dalam TikTok",
+    "Laporan disalin — tempelkan di TikTok",
+    "Last-Settings-Hash",
+    "Lataa fontti, se lisätään tänne",
+    "Layari DaFont",
+    "Layer parenting",
+    "LayerParenting(projectId=",
+    "Lettertypen importeren",
+    "Letöltés és importálás",
+    "Liitu Telegrami grupivestlusega",
+    "Liitu Telegrami kanaliga",
+    "Liity Telegram-kanavalle",
+    "Liity Telegram-ryhmächattiin",
+    "Limbo resolution for single document contains multiple changes.",
+    "LottieAnimator does not support setDuration.",
+    "LottieFetchResult close failed",
+    "L’audio est encore en préparation. Veuillez patienter.",
+    "L’audio è ancora in preparazione. Attendi.",
+    "MPEG audio, bad header",
+    "MPEG audio, empty",
+    "MPEG layer",
+    "MediaCodecList(MediaCode…EGULAR_CODECS).codecInfos",
+    "MediaEvents already exists for AdSession",
+    "MediaFillMode",
+    "Mengimpor font",
+    "Mengimport fon",
+    "Menyediakan audio…",
+    "Menyiapkan audio…",
+    "Missing Fonts",
+    "Missing values for keyframe.",
+    "Muat turun & import",
+    "Must call startBackProgress() and updateBackProgress() before cancelBackProgress()",
+    "Must initialize shadowRenderNode when we have shadow",
+    "Must not be invoked while audio track is paused",
+    "Must not be invoked while audio track is playing",
+    "Must not be invoked while audio track is stopped",
+    "Must not start playback while already playing",
+    "Must release clip before applying new clip",
+    "Must release clip before calling beginLayer()",
+    "Must release clip before calling endLayer()",
+    "Must release clip before calling save()",
+    "MutableStateFlow.resetReplayCache is not supported",
+    "Már importálva",
+    "Mở TikTok",
+    "NEW_COLOR",
+    "NO_CLOSE_CAUSE",
+    "NO_THREAD_ELEMENTS",
+    "Nada foi importado",
+    "Napauta fonttia käyttääksesi sitä",
+    "NavigateToReelView(selectedTemplateId=",
+    "NavigateToSavedTemplates",
+    "NavigateToYourTemplates",
+    "New Element Recommendations - Reset Complete",
+    "Nic nie zaimportowano",
+    "Nichts importiert",
+    "No Google Play Services Connection",
+    "No element with key:",
+    "No open sessions to be closed.",
+    "No recently displayed ads found.",
+    "No se importó nada",
+    "No se pudo convertir este audio. Se usará el archivo original.",
+    "No settings found in Oracle response",
+    "No settings in Oracle response.",
+    "No settings in merged response.",
+    "No tag in stack for requested element",
+    "No valid color table found for frame #",
+    "Non è un font",
+    "NonCancellable",
+    "Shake & Transform",
+    "Share Zipped XML",
+    "Show Watermark on Projects",
+    "Strokes, Bevels & Shadows",
+    "Tap *** next to any effect to add it to your favorites.",
+    "Telegram",
+    "TikTok",
+    "Unsaved Change",
+    "Your presets",
+    "com.google.android.material.transformation.FabTransformationScrimBehavior",
+    "com.google.android.material.transformation.FabTransformationSheetBehavior",
+    "取得 Google Play 服務",
+    "啟用 Google Play 服務",
+    "必須使用新版 Google Play 服務。該服務稍後就會自動更新。",
+    "您已通過Google Play商店購買訂閱。",
+    "更新 Google Play 服務",
+    "此包使用的功能需要更新版本的Alight Motion。請在Google Play更新至最新版本，然後重試。",
+    "無效的 TikTok 使用者名稱",
+    "訂閱將在免費試用期到期後自動續訂。您可以隨時從Google Play設置中取消。",
+    "購買由Google處理。訂閱會自動續訂，直到在Google Play商店中取消為止。詳細資訊請參見"
+  ],
+  "ghidra": {
+    "function_count": 43,
+    "entry_points": [
+      "00011010",
+      "00011020",
+      "00011024",
+      "00011054",
+      "00011088",
+      "00011140",
+      "000111b4",
+      "000115bc",
+      "000115ec",
+      "00011660",
+      "00011672",
+      "00011688",
+      "00011790",
+      "00011b38",
+      "000121b8",
+      "000121e8",
+      "00012500",
+      "00012510",
+      "000125f0",
+      "00012670"
+    ],
+    "notes": [
+      "# program=smallest.so functions=43"
+    ]
+  }
+}

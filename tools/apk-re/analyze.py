@@ -227,6 +227,25 @@ def main() -> None:
         tools[name] = path.read_text(errors="ignore")[:20000] if path.exists() else "unavailable"
     write("tools.json", tools)
 
+    # ---- Ghidra detail file (function sizes / defined strings), if present ----
+    gd = Path("/tmp/ghidra-details.json")
+    if gd.exists():
+        try:
+            native["ghidra_details"] = json.loads(gd.read_text())
+            write("native.json", native)
+        except Exception as e:
+            print(f"ghidra details unavailable: {e}", flush=True)
+
+    # ---- derived measurements used by the implementation ----
+    try:
+        import measure
+        data = measure.build(values, layouts, ordered, native, manifest_facts, drawables)
+        write("measurements.json", data)
+        print(f"measurements: {len(data['palette'])} colours, "
+              f"{len(data['labels'])} UI labels", flush=True)
+    except Exception as e:
+        print(f"measurement derivation failed: {e}", flush=True)
+
     summary = [
         "# Reference APK reverse-engineering evidence",
         "",
