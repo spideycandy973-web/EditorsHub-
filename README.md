@@ -1,9 +1,20 @@
-# EditorsHub v4.3.0
+# EditorsHub v4.4.0
 
 A **real, working mobile video & motion-graphics editor** that runs entirely in
 the browser, packaged as an Android app (`com.editorshub`). Layers, keyframes,
-44 effects, blending, masks, media, XML project import/export, six real export
+47 effects, blending, masks, media, XML project import/export, six real export
 encoders — all backed by a canvas compositor that draws every frame for real.
+
+**v4.4.0 — screenshot pass and reliable APK updates.** An installed APK could
+keep showing the previous build because v4.3.0 registered a cache-first service
+worker inside the WebView; native builds no longer register it, stale caches are
+cleared at launch, and **About → Clear cached UI & reload** performs a real
+reset. The launcher wordmark/domain, card glyphs, effect browser, guide card,
+presets dialog, create sheet, shape picker and FAB states were rebuilt from the
+28 reference JPGs. Three new real effects (Fade In/Out, Crystal, Hot Color)
+back the quick-pick tiles. See [`docs/VISUAL_AUDIT.md`](docs/VISUAL_AUDIT.md)
+for measured before/after differences. Headless checks: **95/95**, zero console
+errors.
 
 **v4.3.0 — APK features + editor rebuild.** The editor canvas was wrong (a
 small landscape rectangle); it is now the reference's **9:16 portrait canvas at
@@ -52,7 +63,8 @@ npm ci
 npm run typecheck
 npm run build
 node tools/verify-gif.mjs              # 7/7 GIF89a encoder checks
-node tools/smoke.mjs --shots          # 58+ headless UI checks
+node tools/smoke.mjs --shots          # 95 headless UI checks
+node tools/capture-states.mjs           # 430x956 comparison frames
 ```
 
 `tools/smoke.mjs` needs optional tooling:
@@ -62,9 +74,9 @@ then `node tools/frames-libs.mjs` and run against `npm run preview`.
 ## Android
 
 `EditorsHub-Motion.apk` (Capacitor, installable) is committed at the repository
-root and attached to `apk-latest`, `v4.3.0` and `editorshub-latest`, together
+root and attached to `apk-latest`, `v4.4.0` and `editorshub-latest`, together
 with `EditorsHub-debug.apk`, `EditorsHub-release-unsigned.apk`,
-`EditorsHub-release.aab` and `EditorsHub-source-v4.3.0.zip`. Release APK/AAB are
+`EditorsHub-release.aab` and `EditorsHub-source-v4.4.0.zip`. Release APK/AAB are
 unsigned by design; see `EditorsHub/docs/RELEASE_SIGNING.md` for the keystore
 workflow. All Android builds run in GitHub Actions.
 
@@ -73,5 +85,8 @@ workflow. All Android builds run in GitHub Actions.
 EditorsHub is an **original, clean-room implementation**. Its layout, colours,
 interaction and behaviour are matched to the reference with original TypeScript,
 original SVG glyphs and original CSS artwork. It contains no code, bitmap,
-vector, font or audio assets from any other application, and no third-party
-trademark. All assets and code here are yours to customise.
+vector, font or audio assets from any other application. The on-screen wordmark
+and subtitle are plain text labels taken from the reference screenshots the user
+supplied; they are editable in-app (one-tap reference / EditorsHub presets), and
+the Android package remains `com.editorshub`. All assets and code here are yours
+to customise.

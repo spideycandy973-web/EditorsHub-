@@ -64,6 +64,10 @@ export function AboutPage() {
             <button type="button" onClick={() => { setMenu(false); ui.setSheet('brand'); }}>
               Customise app
             </button>
+            <button type="button" onClick={() => {
+              setMenu(false);
+              void (window as unknown as { __clearUiCache: () => Promise<void> }).__clearUiCache?.();
+            }}>Clear cached UI & reload</button>
             <button type="button" onClick={() => { setMenu(false); ui.setSheet('fonts'); }}>
               Font browser
             </button>

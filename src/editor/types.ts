@@ -82,7 +82,9 @@ export type EffectType =
   | 'emboss' | 'edgeDetect' | 'halftone' | 'scanlines' | 'glitchBlocks'
   | 'ripple' | 'bulge' | 'twirl' | 'colorBalance' | 'levels'
   | 'lensFlare' | 'starfield' | 'bokeh' | 'rain'
-  | 'mirror' | 'kaleidoscope' | 'motionBlur' | 'directionalBlur';
+  | 'mirror' | 'kaleidoscope' | 'motionBlur' | 'directionalBlur'
+  /* v4.4.0: quick-pick effects named exactly as in the reference JPGs */
+  | 'fadeInOut' | 'crystal' | 'hotColor';
 
 export interface EffectParamDef {
   key: string;
@@ -307,6 +309,17 @@ export const EFFECT_DEFS: EffectDef[] = [
   { type: 'kaleidoscope', label: 'Kaleidoscope', group: 'Distort', description: 'Radial mirrored segments.', params: [{ key: 'segments', label: 'Segments', min: 3, max: 12, step: 1, default: 6, unit: '' }] },
   { type: 'motionBlur', label: 'Motion Blur', group: 'Blur & Sharpen', description: 'Stacked offset copies along an angle.', params: [{ key: 'angle', label: 'Angle', min: 0, max: 360, step: 1, default: 0, unit: '°' }, { key: 'distance', label: 'Distance', min: 0, max: 120, step: 1, default: 24, unit: 'px' }] },
   { type: 'directionalBlur', label: 'Directional Blur', group: 'Blur & Sharpen', description: 'Soft linear smear along an angle.', params: [{ key: 'angle', label: 'Angle', min: 0, max: 360, step: 1, default: 45, unit: '°' }, { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 35, unit: '%' }] },
+  { type: 'fadeInOut', label: 'Fade In/Out', group: 'Opacity/Visibility', description: 'Ramps the layer opacity up at the start and down at the end of its duration.', params: [
+    { key: 'fadeIn', label: 'Fade in', min: 0, max: 100, step: 1, default: 15, unit: '%' },
+    { key: 'fadeOut', label: 'Fade out', min: 0, max: 100, step: 1, default: 15, unit: '%' },
+  ] },
+  { type: 'crystal', label: 'Crystal', group: 'Distort', description: 'Refracts the layer into mirrored prism facets.', params: [
+    { key: 'facets', label: 'Facets', min: 3, max: 16, step: 1, default: 6, unit: '' },
+  ] },
+  { type: 'hotColor', label: 'Hot Color', group: 'Color', description: 'Maps luminance onto a warm-to-cool gradient.', params: [
+    { key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, default: 24, unit: '°' },
+    { key: 'amount', label: 'Amount', min: 0, max: 100, step: 1, default: 70, unit: '%' },
+  ] },
   { type: 'lensFlare', label: 'Lens Flare', group: 'Light', description: 'Procedural flare and streaks.', params: [{ key: 'intensity', label: 'Intensity', min: 0, max: 100, step: 1, default: 60, unit: '%' }, { key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, default: 35, unit: '°' }] },
   { type: 'starfield', label: 'Starfield', group: 'Procedural', description: 'Deterministic procedural stars.', params: [{ key: 'density', label: 'Density', min: 0, max: 100, step: 1, default: 45, unit: '%' }, { key: 'size', label: 'Size', min: 1, max: 12, step: 1, default: 3, unit: 'px' }] },
   { type: 'bokeh', label: 'Bokeh', group: 'Procedural', description: 'Soft procedural light circles.', params: [{ key: 'count', label: 'Count', min: 0, max: 80, step: 1, default: 24, unit: '' }, { key: 'hue', label: 'Hue', min: 0, max: 360, step: 1, default: 190, unit: '°' }] },

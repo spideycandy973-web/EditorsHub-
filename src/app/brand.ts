@@ -1,10 +1,11 @@
 /**
  * SINGLE CUSTOMISATION POINT — "master base" configuration.
  *
- * This is an original, clean-room implementation. All branding is fully
- * editable from inside the app (About → Customise app) and persists in
- * localStorage, so the base can be renamed/recoloured without touching code.
- * No third-party trademark or asset is baked in.
+ * The on-screen identity below is a plain text label taken from the reference
+ * screenshots the user supplied; every glyph and pixel of artwork in this
+ * repository is drawn from scratch. All branding stays editable in-app
+ * (About → Customise app) and persists in localStorage. No decompiled code,
+ * third-party bitmap/font/audio asset or re-signed package is included.
  */
 export interface BrandLink { label: string; url: string; icon: 'globe' | 'send' | 'music' }
 
@@ -25,12 +26,23 @@ export interface Brand {
 
 const KEY = 'editorshub.brand.v1';
 
+/** Visible identity from the 28 reference JPGs supplied by the user. The
+ *  package id stays `com.editorshub` as requested; this only changes what is
+ *  drawn on screen. Everything is editable in About → Customise app. */
+export const REFERENCE_LOOK: BrandOverride = {
+  wordmark: 'ULTRA MOTION',
+  domain: 'ultramotionofficial.com',
+  accent: '#01ffa7',
+  lavender: '#d8dcff',
+  home: '#121214',
+};
+
 export const BASE_BRAND: Brand = {
   appName: 'EditorsHub',
-  wordmark: 'EDITORS HUB',
-  domain: 'editorshub.app',
+  wordmark: 'ULTRA MOTION',
+  domain: 'ultramotionofficial.com',
   packageName: 'com.editorshub',
-  version: '4.3.0',
+  version: '4.4.0',
   website: 'https://github.com/spideycandy973-web/EditorsHub-',
   links: [
     { label: 'Website', url: 'https://github.com/spideycandy973-web/EditorsHub-', icon: 'globe' },

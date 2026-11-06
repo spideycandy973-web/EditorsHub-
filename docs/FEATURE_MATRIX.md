@@ -1,4 +1,4 @@
-# Reference APK feature matrix — v4.3.0
+# Reference APK feature matrix — v4.4.0
 
 This table was derived from the reverse-engineering evidence committed in
 [`apk-analysis/`](../apk-analysis/): `manifest.json` (72 activities, from

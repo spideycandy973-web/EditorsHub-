@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   ArrowLeft, ArrowLeftToLine, ArrowRightToLine, ChevronDown, ChevronLeft, Copy,
   ExternalLink, Grid2X2, ImagePlus, Layers3, Minus, MoreHorizontal, Pause, Play, Plus,
-  Redo2, ScanLine, Settings2, Trash2, Undo2, VideoOff, Volume2,
+  Redo2, ScanLine, Settings2, Trash2, Undo2, VideoOff, Volume2, X,
 } from 'lucide-react';
 import { useEditor, usePlayhead } from '../editor/store';
 import type { Renderer } from '../editor/renderer';
@@ -477,7 +477,7 @@ function Fab() {
     <button type="button" className={`um-fab ${open ? 'close' : ''}`}
       title={open ? 'Close panel' : 'Add layer'} onClick={() => open ? ui.setSheet('none') : ui.openAdd()}>
       {open
-        ? <ChevronDown size={28} strokeWidth={2.1} style={{ transform: 'rotate(-45deg)' }} />
+        ? <X size={26} strokeWidth={2.2} />
         : <Plus size={27} strokeWidth={2.1} />}
     </button>
   );

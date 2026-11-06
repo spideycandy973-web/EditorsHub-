@@ -1,3 +1,40 @@
+# Measured visual audit — v4.4.0
+
+This pass stopped guessing and **measured** the 28 reference JPGs
+(1220 × 2712) against headless screenshots of the app at the same aspect ratio
+(430 × 956). The measuring tool is
+[`tools/visual-audit.py`](../tools/visual-audit.py); it reports card/lavender
+row bounds and exact palette samples. Run it with
+`python3 tools/visual-audit.py --mine /tmp/audit` after capturing your own
+screens at 430 × 956. [`tools/capture-states.mjs`](../tools/capture-states.mjs)
+captures the state frames used below with settled animations.
+
+## v4.4.0 state-by-state comparison
+
+Mean absolute per-channel difference at 215 × 478 (0 = identical,
+255 = maximally different). Reference index is 1-based, from the sorted set of
+28 JPGs supplied by the user. Values include real device-status-bar differences
+(clock, battery, signal), which are expected and intentionally not faked.
+
+| State | Reference | v4.3.0 | v4.4.0 | Change |
+| --- | --- | --- | --- | --- |
+| Home / launcher | 01 | 6.56 | **6.64** | ~flat; wordmark and card glyphs now match |
+| Settings | 03 | 11.49 | **10.97** | −0.52 |
+| Create project | 04 | 19.14 | **19.86** | single Background pill; differences are mostly status bar + dim level |
+| Blank editor | 05 | 8.93 | **8.94** | ~flat |
+| Add sheet | 08 | 32.60 | **10.09** | −22.51 (earlier number was captured with a loaded demo project) |
+| Shape picker | 09 | 36.71 | **14.36** | 5-column grid, 15 shapes, larger glyphs |
+| Effect Browser | 23 | 44.26 | **31.26** | −13.00: original vector quick tiles, muted plates, rounded top, 77px gap |
+| Presets dialog | 22 | 26.70 | **27.64** | wider card + centred close; net ~flat |
+
+The remaining Effect Browser and Presets difference is dominated by the
+reference's photographic tile artwork and its dimmed editor backdrop. Those are
+original graphics in the reference app; this build draws its own vector artwork
+and keeps every tile wired to a real, working canvas effect. Numbers are
+measurements, not a claim of pixel identity.
+
+---
+
 # Measured visual audit — v4.3.0
 
 This pass stopped guessing and **measured** the 28 reference JPGs

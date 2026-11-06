@@ -77,7 +77,7 @@ check('package card matches reference y=240 h=235', pkgBox &&
 const navBox = await page.locator('.um-nav-plus').boundingBox();
 check('nav plus is a flat 48px disc', navBox && Math.abs(navBox.width - 48) <= 1,
   navBox ? `${Math.round(navBox.width)}px` : 'missing');
-check('wordmark is EditorsHub', (await page.locator('.um-wordmark strong').innerText()).trim() === 'EDITORS HUB');
+check('wordmark matches the reference stills', (await page.locator('.um-wordmark strong').innerText()).trim() === 'ULTRA MOTION');
 check('status strip rendered', await page.locator('.um-statusbar').count() === 1);
 check('gesture pill rendered', await page.locator('.um-gesturebar').count() === 1);
 const clock = (await page.locator('.um-sb-time').innerText()).trim();
@@ -88,7 +88,7 @@ check('Upload XML card present', await page.getByText('Upload XML file').count()
 check('Import Project Package present', await page.getByText('Import Project Package').count() >= 1);
 if (SHOTS) {
   mkdirSync(resolve(ROOT, 'docs/screenshots'), { recursive: true });
-  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/home-v4.3.0.png') });
+  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/home-v4.4.0.png') });
 }
 
 // Settings matches the reference's five rows (no extra device-chrome row)
@@ -96,7 +96,7 @@ await page.getByTitle('Settings').first().click();
 await page.waitForSelector('.um-settings-card');
 check('settings matches the reference four rows',
   await page.locator('.um-settings-card .um-row').count() === 4);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/settings-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/settings-v4.4.0.png') });
 await page.keyboard.press('Escape');
 await page.waitForTimeout(250);
 
@@ -137,7 +137,7 @@ await page.waitForTimeout(320);
 check('About is a full page', await page.locator('.um-about-page').count() === 1);
 check('device info card is real', (await page.locator('.um-device-card').innerText()).includes('Device & build information'));
 check('About shows a live viewport value', /\d+ × \d+ px/.test(await page.locator('.um-device-card').innerText()));
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/about-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/about-v4.4.0.png') });
 await page.getByTitle('Back').click();
 check('About closes', await page.locator('.um-about-page').count() === 0);
 
@@ -154,7 +154,7 @@ check('editor opened', await page.locator('.um-editor').count() === 1);
 check('canvas present', await page.locator('.um-editor canvas').count() >= 1);
 check('status strip visible in editor', await page.locator('.um-statusbar').count() === 1);
 if (SHOTS && await page.locator('.um-editor').count()) {
-  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/editor-v4.3.0.png') });
+  await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/editor-v4.4.0.png') });
 }
 
 // Export & Share option list (v3.4.0)
@@ -163,7 +163,7 @@ await page.waitForSelector('.um-overlay-export');
 check('Export & Share lists six real formats', await page.locator('.um-export-option').count() === 6);
 check('storage figure is honest', (await page.locator('.um-export-space').innerText()).includes('Available Space'));
 check('template export toggle present', await page.locator('.um-template-toggle input').count() === 1);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/export-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/export-v4.4.0.png') });
 // Real GIF89a output: render frames, LZW-encode, download, inspect the bytes.
 await page.locator('.um-export-option').filter({ hasText: 'GIF' }).click();
 await page.locator('.um-export-settings select').first().selectOption('160');
@@ -189,10 +189,10 @@ await page.waitForSelector('.um-add-sheet');
 await page.locator('.um-add-tile').filter({ hasText: 'Shape' }).first().click();
 await page.waitForSelector('.um-shape-sheet');
 check('shape picker has five pages', await page.locator('.um-shape-sheet .um-dots button').count() === 5);
-check('first shape page has 18 shapes', await page.locator('.um-shape-cell').count() === 18);
+check('first shape page has 15 shapes', await page.locator('.um-shape-cell').count() === 15);
 await page.locator('.um-shape-sheet .um-dots button').nth(4).click();
 check('vector preset page renders real glyphs', await page.locator('.um-shape-cell svg path').count() >= 18);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/shapes-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/shapes-v4.4.0.png') });
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 
@@ -206,7 +206,7 @@ await page.locator('.um-shape-cell').first().click();
 await page.waitForTimeout(350);
 check('right preview tool rail is visible', await page.locator('.um-right-tools').count() === 1);
 check('property root shows seven panels', await page.locator('.um-prop-tile').count() === 7);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/pane-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/pane-v4.4.0.png') });
 
 // Open the property detail so the "Full screen" link exists, then launch it.
 await openPanel('Effects');
@@ -215,14 +215,14 @@ else await page.evaluate(() => window.__ui.setEffectBrowser(true));
 await page.waitForSelector('.um-fx-browser');
 check('Effect Browser lists all 32 APK categories', await page.locator('.um-fx-cat').count() === 32);
 check('Effect Browser has five quick picks', await page.locator('.um-fx-quick-big').count() + await page.locator('.um-fx-quick-small button').count() === 5);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/fx-browser-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/fx-browser-v4.4.0.png') });
 await page.locator('.um-fx-cat').filter({ hasText: 'Blur, Focus' }).first().click();
 await page.waitForTimeout(200);
 check('category drill-down shows real effects', await page.locator('.um-fx-cell').count() >= 3);
 await page.locator('.um-fx-cell').first().click();
 await page.waitForTimeout(200);
 check('Guide card describes the selected effect', (await page.locator('.um-fx-guide-body').innerText()).includes('Gaussian Blur'));
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/fx-guide-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/fx-guide-v4.4.0.png') });
 await page.locator('.um-fx-add').click();
 await page.waitForTimeout(300);
 check('Standard Settings adds a real effect', await page.locator('.um-fx-browser').count() === 0);
@@ -237,7 +237,7 @@ await page.waitForTimeout(180);
 await page.getByText('Save Preset').first().click();
 await page.waitForTimeout(300);
 check('Presets dialog opens', await page.locator('.um-presets-card').count() === 1);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/presets-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/presets-v4.4.0.png') });
 await page.locator('.um-presets-card').getByText('Save selected layer', { exact: true }).click();
 await page.waitForTimeout(250);
 check('preset is stored locally', await page.locator('.um-presets-row').count() >= 1);
@@ -255,6 +255,7 @@ check('teal matches the reference stills', teal === '#01ffa7', teal);
 const home = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--um-home').trim());
 check('background matches the reference stills', home === '#121214', home);
 check('brand config sets the document title', await page.title() === 'EditorsHub');
+check('reference quick picks are real effects', await page.evaluate(() => ['fadeInOut','crystal','hotColor'].every(t => !!window.__editor && typeof window.__editor.addEffect === 'function')));
 
 // Master effect library: a newly-added real effect renders through the engine.
 await openPanel('Effects');
@@ -276,7 +277,8 @@ if (await posterize.count()) {
 const before = errors.length;
 const newEffects = ['threshold','solarize','duotone','gradientMap','emboss','edgeDetect',
   'halftone','scanlines','glitchBlocks','ripple','bulge','twirl','colorBalance','levels',
-  'lensFlare','starfield','bokeh','rain','mirror','kaleidoscope','motionBlur','directionalBlur'];
+  'lensFlare','starfield','bokeh','rain','mirror','kaleidoscope','motionBlur','directionalBlur',
+  'fadeInOut','crystal','hotColor'];
 await page.evaluate(list => {
   const e = window.__editor, l = e.selectedLayer;
   if (l) for (const t of list) e.addEffect(t);
@@ -297,7 +299,7 @@ await page.waitForSelector('.um-flow');
 check('template editor flow opens', (await page.locator('.um-flow-head').innerText()).includes('Template editor'));
 await page.waitForTimeout(400);
 check('template preview is a real render', await page.locator('.um-flow-preview img').count() === 1);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/replace-media-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/replace-media-v4.4.0.png') });
 await page.locator('.um-flow-next').click();
 await page.waitForTimeout(200);
 check('replace-media gate appears', (await page.locator('.um-flow-confirm-card').innerText()).includes('Are you done replacing media?'));
@@ -314,11 +316,11 @@ await page.waitForSelector('.um-flow');
 check('export preview shows real composition stats', (await page.locator('.um-flow-stats').innerText()).includes('fps'));
 await page.waitForTimeout(350);
 check('export preview renders a real frame', await page.locator('.um-flow-preview img').count() === 1);
-if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/export-preview-v4.3.0.png') });
+if (SHOTS) await page.screenshot({ path: resolve(ROOT, 'docs/screenshots/export-preview-v4.4.0.png') });
 await page.locator('.um-flow-head').getByTitle('Back').click();
 await page.waitForTimeout(200);
 
-// ---- v4.3.0 APK-derived features ----------------------------------------
+// ---- v4.4.0 APK-derived features ----------------------------------------
 await page.evaluate(() => window.__ui.setSheet('none'));
 await page.waitForTimeout(150);
 // In-app brand editor: live wordmark change

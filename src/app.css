@@ -1127,3 +1127,76 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-brand-links { margin-top: 10px; }
 .um-brand-links > div { display: flex; gap: 8px; font-size: 10px; color: var(--um-muted); padding: 3px 0; }
 .um-brand-links b { width: 70px; color: #ddd; }
+
+/* ========================================================================== *
+ * v4.4.0 — reference stills: quick-pick artwork, muted category plates and
+ * the teal separator dot. All artwork here is original SVG/CSS.
+ * ========================================================================== */
+.um-fx-art { display: block; width: 100%; height: auto; border-radius: 12px; }
+.um-fx-quick-small .um-fx-art { width: 56px; height: 56px; border-radius: 10px; }
+.um-fx-quick-big > span.um-fx-art, .um-fx-quick-small button > span.um-fx-art { aspect-ratio: 1; }
+.um-fx-dot { display: flex; justify-content: center; align-items: center; height: 18px; margin: 2px 0 8px; }
+.um-fx-dot i { width: 5px; height: 5px; border-radius: 50%; background: var(--um-teal); box-shadow: 0 0 6px rgba(1,255,167,.55); }
+.um-fx-cat { background-color: #17171a; }
+.um-fx-cat::after { background: linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.42)); }
+.um-fx-cat strong { font-size: 13px; letter-spacing: .2px; }
+
+/* v4.4.0 — create sheet: one Background pill (swatch + label + chevron). */
+.um-bg-control { position: relative; display: inline-flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 10px; border-radius: 10px; background: var(--um-input); overflow: hidden; }
+.um-bg-control .um-bg-swatch { width: 22px; height: 22px; border-radius: 6px; flex: none;
+  border: 1px solid rgba(255,255,255,.25); }
+.um-bg-control select { appearance: none; border: 0; outline: 0; background: transparent;
+  color: #f0f0f5; font-size: 13px; font-weight: 600; width: 62px; }
+.um-bg-control input[type=color] { position: absolute; right: 0; top: 0; width: 30px; height: 100%;
+  opacity: 0; cursor: pointer; }
+.um-bg-control > svg { color: #c9c9d1; pointer-events: none; }
+.um-settings-brand .um-gem { font-style: normal; font-size: 10px; color: #d8dcff; }
+.um-nav-plus.close-nav { background: var(--um-teal) !important; color: #063a26 !important; }
+
+/* v4.4.0 — shape picker: reference 5-column grid. */
+.um-shape-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.um-shape-cell svg { width: 30px; height: 30px; }
+
+/* v4.4.0 — presets dialog: taller card, centred close, three real mini actions. */
+.um-presets-card { width: min(376px, 92vw); padding: 18px 20px 14px; }
+.um-presets-x { left: 50%; top: 14px; transform: translateX(-50%); }
+.um-preset-illustration { height: 172px; margin: 38px 0 8px; }
+.um-pi-bar { gap: 16px; }
+.um-pi-time { top: 62px; left: 12px; }
+.um-pi-clip { top: 96px; left: 44px; right: 12px; height: 24px; line-height: 24px; }
+.um-pi-playhead { top: 88px; }
+.um-presets-discover { margin-top: 10px; padding: 15px; }
+.um-presets-mini { gap: 6px; }
+.um-presets-mini button { padding: 6px 8px; font-size: 10px; }
+.um-brand-quick { display: flex; gap: 6px; margin-bottom: 10px; }
+.um-brand-quick button { flex: 1; min-width: 0; padding: 8px 4px; border-radius: 8px;
+  background: var(--um-card); color: #e9e9f0; font-size: 10px; font-weight: 700; }
+.um-brand-quick button:hover { background: #303038; }
+
+/* v4.4.0 — guide card: reference shows a half-screen artwork panel with the
+   title and description over it, then a fixed Standard Settings bar. */
+.um-fx-guide { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  height: 47%; min-height: 400px; margin: 0; border-radius: 18px 18px 0 0;
+  display: flex; flex-direction: column; background-color: #12202b;
+  box-shadow: 0 -12px 44px rgba(0,0,0,.68); }
+.um-fx-guide::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.12) 42%, rgba(0,0,0,.74) 100%); }
+.um-fx-guide-top { position: relative; z-index: 1; flex: none; background: transparent; padding: 10px 16px; }
+.um-fx-guide-body { position: relative; z-index: 1; flex: 1; min-height: 0; background: transparent;
+  display: flex; flex-direction: column; justify-content: flex-end; padding: 0 18px 14px; }
+.um-fx-guide-body h2 { font-size: 25px; font-weight: 900; margin: 0 0 6px; text-shadow: 0 2px 8px rgba(0,0,0,.7); }
+.um-fx-guide-body p { font-size: 13px; line-height: 1.5; margin: 0 0 10px; }
+.um-fx-guide-bar { position: relative; z-index: 1; flex: none; background: #2c2c31; }
+
+/* v4.4.0 — full-screen panels in the reference JPGs begin below a dark
+   ~43px gap under the status strip, and have rounded top corners. */
+@media (min-width: 400px) {
+  .um-fx-browser, .um-brand-sheet, .um-flow {
+    top: 77px; border-radius: 22px 22px 0 0; overflow: hidden;
+  }
+}
+.um-fx-browser { background: #17171a; }
+.um-fx-head { height: 56px; }
+.um-sb-speed { font-size: 7.5px; font-weight: 700; line-height: 1.05; color: #f2f2f5;
+  text-align: right; max-width: 34px; font-variant-numeric: tabular-nums; white-space: nowrap; }

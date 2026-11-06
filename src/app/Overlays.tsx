@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ChevronRight, Copy, Diamond, Download, FileCode2, FilePlus2, Film, FolderOpen,
+  ChevronDown, ChevronRight, Copy, Diamond, Download, FileCode2, FilePlus2, Film, FolderOpen,
   HelpCircle, Info, Layers, Palette, Plus, Save, Sparkles, Trash2, Upload, X,
 } from 'lucide-react';
 import { editor, useEditor } from '../editor/store';
@@ -108,13 +108,16 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
           options={[24, 25, 30, 50, 60].map(n => ({ value: String(n), label: `${n} fps` }))} />
       </Row>
       <Row label="Background">
-        <div className="um-bg-control">
-          <ColorInput value={bg} onChange={setBg} label={bg === '#000000' ? 'Black' : bg === '#ffffff' ? 'White' : bg} />
-          <Select value={bg} onChange={setBg} title="Background colour" options={[
-            { value: '#000000', label: 'Black' }, { value: '#ffffff', label: 'White' },
-            { value: '#121214', label: 'Charcoal' }, { value: '#0b1d3a', label: 'Navy' },
-          ]} />
-        </div>
+        <label className="um-bg-control" title="Background colour">
+          <span className="um-bg-swatch" style={{ background: bg }} />
+          <select value={bg} onChange={ev => setBg(ev.target.value)} aria-label="Background colour">
+            <option value="#000000">Black</option><option value="#ffffff">White</option>
+            <option value="#121214">Charcoal</option><option value="#0b1d3a">Navy</option>
+          </select>
+          <ChevronDown size={14} />
+          <input type="color" value={/^#[0-9a-f]{6}$/i.test(bg) ? bg : '#000000'}
+            aria-label="Custom background colour" onChange={ev => setBg(ev.target.value)} />
+        </label>
       </Row>
       <button type="button" className="um-lavender create" onClick={create}>
         {tab === 'element' ? 'Create Element' : 'Create Project'}
