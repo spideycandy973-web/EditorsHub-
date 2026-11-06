@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useUI } from './context';
 import {
-  BASE_BRAND, BRAND_CHANGED, clearBrandOverride, getBrand, loadBrandOverride,
+  BASE_BRAND, BRAND_CHANGED, REFERENCE_LOOK, clearBrandOverride, getBrand, loadBrandOverride,
   saveBrandOverride, applyBrand, type BrandOverride,
 } from './brand';
 
@@ -47,6 +47,11 @@ export function BrandSheet() {
         <button type="button" className="um-flow-next" onClick={reset}>Reset</button>
       </header>
       <div className="um-brand-body">
+        <div className="um-brand-quick">
+          <button type="button" onClick={() => commit(REFERENCE_LOOK)}>Use reference look</button>
+          <button type="button" onClick={() => commit({ wordmark: 'EDITORS HUB', domain: 'editorshub.app' })}>EditorsHub identity</button>
+          <button type="button" onClick={() => { void (window as unknown as { __clearUiCache: () => Promise<void> }).__clearUiCache?.(); }}>Clear cached UI</button>
+        </div>
         <div className="um-brand-preview" style={{ background: current.palette.home }}>
           <strong style={{ color: current.palette.text }}>{current.wordmark}</strong>
           <span style={{ color: current.palette.accent }}>{current.domain}</span>

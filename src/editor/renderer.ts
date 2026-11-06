@@ -30,20 +30,21 @@ interface FxState {
   tint: { amount: number; hue: number } | null;
   shake: { x: number; y: number };
   pulse: number;
+  fade: { inPct: number; outPct: number; duration: number } | null;
 }
 
 const emptyFx = (): FxState => ({
   pixelOps: [], procedurals: [], mirror: 0, kaleidoscope: 0, motionBlur: null,
   baseFilter: '', dropShadows: [], pixelate: 0, sharpen: 0, noise: 0, chromatic: 0, chromaKey: null,
   vignette: null, wave: null, zoomBlur: null, tint: null,
-  shake: { x: 0, y: 0 }, pulse: 1,
+  shake: { x: 0, y: 0 }, pulse: 1, fade: null,
 });
 
 function p(fx: Effect, key: string, t: number, def = 0): number {
   return valueAt(fx.params[key], t, EFFECT_MAP[fx.type]?.params.find(x => x.key === key)?.default ?? def);
 }
 
-function buildFx(effects: Effect[], localTime: number, globalTime: number): FxState {
+function buildFx(effects: Effect[], localTime: number, globalTime: number, duration = 5): FxState {
   const s = emptyFx();
   const filters: string[] = [];
   for (const fx of effects) {
@@ -135,6 +136,11 @@ function buildFx(effects: Effect[], localTime: number, globalTime: number): FxSt
       case 'kaleidoscope': s.kaleidoscope = Math.round(p(fx, 'segments', localTime, 6)); break;
       case 'motionBlur': s.motionBlur = { angle: p(fx, 'angle', localTime, 0), distance: p(fx, 'distance', localTime, 24) }; break;
       case 'directionalBlur': s.motionBlur = { angle: p(fx, 'angle', localTime, 45), distance: p(fx, 'amount', localTime, 35) * 0.5 }; break;
+      case 'fadeInOut': s.fade = {
+        inPct: p(fx, 'fadeIn', localTime, 15), outPct: p(fx, 'fadeOut', localTime, 15), duration,
+      }; break;
+      case 'crystal': s.kaleidoscope = Math.round(clamp(p(fx, 'facets', localTime, 6), 3, 16)); break;
+      case 'hotColor': s.pixelOps.push({ kind: 'gradientMap', a: p(fx, 'hue', localTime, 24), b: p(fx, 'amount', localTime, 70), c: 0 }); break;
       case 'lensFlare': s.procedurals.push({ kind: 'lensFlare', amount: p(fx, 'intensity', localTime, 60), hue: p(fx, 'hue', localTime, 35), speed: 0 }); break;
       case 'starfield': s.procedurals.push({ kind: 'starfield', amount: p(fx, 'density', localTime, 45), hue: p(fx, 'size', localTime, 3), speed: 0 }); break;
       case 'bokeh': s.procedurals.push({ kind: 'bokeh', amount: p(fx, 'count', localTime, 24), hue: p(fx, 'hue', localTime, 190), speed: 0 }); break;
@@ -1050,7 +1056,7 @@ export class Renderer {
       if (layer.type === 'group' || layer.type === 'audio' || layer.type === 'camera') continue;
 
       const t = clamp(time - layer.start, 0, layer.duration);
-      const fx = buildFx(layer.effects, t, time);
+      const fx = buildFx(layer.effects, t, time, layer.duration);
 
       // measure text before computing the transform
       let lines: string[] = [];
@@ -1102,7 +1108,13 @@ export class Renderer {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       camTransform(ctx);
       ctx.globalCompositeOperation = layer.blend || 'source-over';
-      ctx.globalAlpha = alpha;
+      let finalAlpha = alpha;
+      if (fx.fade) {
+        const d = Math.max(0.001, fx.fade.duration);
+        const fi = d * fx.fade.inPct / 100, fo = d * fx.fade.outPct / 100;
+        finalAlpha *= (fi > 0 ? clamp(t / fi, 0, 1) : 1) * (fo > 0 ? clamp((d - t) / fo, 0, 1) : 1);
+      }
+      ctx.globalAlpha = finalAlpha;
       const fb = Math.max(prop(layer, 'forceBlur', t, 0), this.forceBlur);
       const blurFilter = fb > 0 ? `blur(${(fb * size.w / 100).toFixed(1)}px)` : '';
       ctx.filter = [fx.dropShadows.join(' '), blurFilter].filter(Boolean).join(' ') || 'none';
@@ -1112,12 +1124,12 @@ export class Renderer {
         for (let s = steps; s >= 1; s--) {
           const k = 1 + (s / steps) * (fx.zoomBlur.amount / 100);
           ctx.setTransform(k, 0, 0, k, cx * (1 - k), cy * (1 - k));
-          ctx.globalAlpha = alpha / (steps + 1);
+          ctx.globalAlpha = finalAlpha / (steps + 1);
           ctx.drawImage(scratch, 0, 0);
         }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         camTransform(ctx);
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = finalAlpha;
       }
       if (fx.motionBlur && fx.motionBlur.distance > 0) {
         const steps = 6;
@@ -1125,10 +1137,10 @@ export class Renderer {
         const dx = Math.cos(rad) * fx.motionBlur.distance;
         const dy = Math.sin(rad) * fx.motionBlur.distance;
         for (let s = 1; s <= steps; s++) {
-          ctx.globalAlpha = alpha / (steps + 1);
+          ctx.globalAlpha = finalAlpha / (steps + 1);
           ctx.drawImage(scratch, dx * s / steps, dy * s / steps);
         }
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = finalAlpha;
       }
       ctx.drawImage(scratch, 0, 0);
       ctx.restore();

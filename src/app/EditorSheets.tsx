@@ -142,7 +142,7 @@ function ShapeSheet() {
   };
 
   const pageItems: { shape: ShapeKind; label: string; n?: number; path?: string }[] = page === 0
-    ? SHAPE_PICKER.map(x => ({ shape: x.kind, label: x.label }))
+    ? SHAPE_PICKER.slice(0, 15).map(x => ({ shape: x.kind, label: x.label }))
     : page === 1
       ? EXTRA_SHAPES.filter(s => s !== 'customPath').map(s => ({ shape: s, label: s }))
       : page === 2

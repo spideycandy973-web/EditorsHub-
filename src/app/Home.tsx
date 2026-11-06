@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
-  Box, Check, ChevronDown, ChevronRight, Copy, Download, FileUp, Globe2, House,
+  Check, ChevronDown, ChevronRight, Copy, Download, Globe2, House,
   MoreHorizontal, Music2, Plus, QrCode, Search, Send, Settings, Sparkles,
   SquarePlay, Trash2, UserRound, Wrench, X,
 } from 'lucide-react';
@@ -26,9 +26,13 @@ function Nav() {
         onClick={() => { ui.setHomeTab('home'); ui.setSheet('none'); }}>
         <House size={19} strokeWidth={1.9} fill="currentColor" /><span>Home</span>
       </button>
-      <button type="button" className="um-nav-plus" title="Create project or element"
-        onClick={() => { ui.setCreateTab('project'); ui.setSheet('create'); }}>
-        <Plus size={26} strokeWidth={2.2} />
+      <button type="button" className={`um-nav-plus ${ui.sheet !== 'none' ? 'close-nav' : ''}`}
+        title={ui.sheet !== 'none' ? 'Close panel' : 'Create project or element'}
+        onClick={() => {
+          if (ui.sheet !== 'none') { ui.setSheet('none'); return; }
+          ui.setCreateTab('project'); ui.setSheet('create');
+        }}>
+        {ui.sheet !== 'none' ? <X size={24} strokeWidth={2.2} /> : <Plus size={26} strokeWidth={2.2} />}
       </button>
       <button type="button" className={ui.homeTab === 'projects' ? 'on' : ''}
         onClick={() => { ui.setHomeTab('projects'); ui.setSheet('none'); }}>
@@ -53,6 +57,31 @@ function Header() {
         <UserRound size={20} strokeWidth={1.8} />
       </IBtn>
     </header>
+  );
+}
+
+/* Original SVG glyphs drawn to match the shapes in the 28 reference JPGs:
+ * a stack of picture frames with a gold upload arrow, and a hexagon enclosing
+ * an isometric cube. All paths are authored here — no bitmap is copied. */
+function StackedImagesArrow() {
+  return (
+    <svg width="34" height="32" viewBox="0 0 34 32" fill="none" aria-hidden="true">
+      <rect x="9" y="2.5" width="21" height="17" rx="1" stroke="#f2f2f5" strokeWidth="1.8" />
+      <path d="M11 17l5-5 3.5 3.5 4-4 5 5.5" stroke="#f2f2f5" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="24.5" cy="8" r="1.7" fill="#f2f2f5" />
+      <path d="M4 9.5h3M4 9.5v15.5a2 2 0 0 0 2 2h18" stroke="#f2f2f5" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16 30V15.5m0 0-5 5m5-5 5 5" stroke="#ffce5c" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HexCube() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+      <path d="M15 1.6 26.5 8.3v13.4L15 28.4 3.5 21.7V8.3L15 1.6Z" stroke="#f2f2f5" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M15 8.2 21 11.6v6.8L15 21.8 9 18.4v-6.8l6-3.4Z" fill="#f2f2f5" fillOpacity=".18" stroke="#f2f2f5" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M15 8.2v6.8m0 0 6-3.4m-6 3.4-6-3.4" stroke="#f2f2f5" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -110,7 +139,7 @@ function ImportCard() {
   return (
     <>
       <div className="um-card um-upload-card">
-        <span className="um-card-icon um-icon-plain um-icon-xml"><FileUp size={31} strokeWidth={1.7} /></span>
+        <span className="um-card-icon um-icon-plain um-icon-xml"><StackedImagesArrow /></span>
         <div className="um-card-copy"><strong>Upload XML file</strong></div>
         <button type="button" className="um-lavender small" disabled={busy}
           onClick={() => fileRef.current?.click()}>Upload</button>
@@ -118,7 +147,7 @@ function ImportCard() {
 
       <div className="um-card um-package-card">
         <div className="um-package-title">
-          <span className="um-card-icon um-icon-plain"><Box size={26} strokeWidth={1.6} /></span>
+          <span className="um-card-icon um-icon-plain"><HexCube /></span>
           <div><strong>Import Project Package</strong><small>Paste a link or scan the QR code.</small></div>
         </div>
         <input className="um-input" placeholder="https://alight..." aria-label="Project package link"
@@ -488,7 +517,7 @@ function SettingsBody() {
       <div className="um-settings-label">Audio Resampling</div>
       <Seg value={prefs.audioResampling} onChange={v => setPrefs({ ...prefs, audioResampling: v })}
         options={[{ id: 'low', label: 'Low' }, { id: 'high', label: 'High' }, { id: 'ultra', label: 'Ultra' }]} />
-      <div className="um-settings-brand"><span />✦ {BRAND.wordmark} ✦<span /></div>
+      <div className="um-settings-brand"><span /><i className="um-gem">✦</i> {BRAND.wordmark} <i className="um-gem">✦</i><span /></div>
       <div className="um-settings-divider" />
       {BRAND.links.map(link => (
         <button type="button" key={link.label} className="um-link-row"

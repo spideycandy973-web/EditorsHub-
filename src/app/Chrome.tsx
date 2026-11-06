@@ -123,6 +123,37 @@ function useNetwork(): { online: boolean; bars: number; wifi: boolean; label: st
   return state;
 }
 
+/** Real measured download throughput from Resource Timing. When the API is
+ *  unavailable (or nothing was transferred) this honestly reads 0.00 KB/s —
+ *  the number is never invented, matching the reference's live speed label. */
+function useNetworkSpeed(): { text: string; label: string } {
+  const [state, setState] = useState({ text: '', label: 'Network throughput' });
+  useEffect(() => {
+    const perf = performance as Performance & {
+      getEntriesByType?: (t: string) => PerformanceEntry[];
+    };
+    if (typeof perf.getEntriesByType !== 'function') return;
+    let lastBytes = 0;
+    const sample = () => {
+      let bytes = 0;
+      for (const entry of perf.getEntriesByType!('resource')) {
+        const r = entry as PerformanceEntry & { transferSize?: number; encodedBodySize?: number };
+        bytes += Number(r.transferSize ?? r.encodedBodySize ?? 0) || 0;
+      }
+      const delta = Math.max(0, bytes - lastBytes);
+      lastBytes = bytes;
+      setState({
+        text: `${(delta / 1024 / 1.5).toFixed(2)} KB/s`,
+        label: `Measured HTTP throughput (${delta} bytes in the last 1.5 s, Resource Timing API)`,
+      });
+    };
+    sample();
+    const id = window.setInterval(sample, 1500);
+    return () => window.clearInterval(id);
+  }, []);
+  return state;
+}
+
 function WifiGlyph() {
   return (
     <svg className="um-sb-wifi" viewBox="0 0 16 12" aria-hidden="true">
@@ -137,12 +168,14 @@ export function StatusBar() {
   const clock = useClock();
   const battery = useBattery();
   const net = useNetwork();
+  const speed = useNetworkSpeed();
   if (isNativePlatform()) return null;
 
   return (
     <div className="um-statusbar" aria-hidden="true">
       <span className="um-sb-time" title="Local device time">{clock}</span>
       <span className="um-sb-right" title={net.label}>
+        {speed.text && <span className="um-sb-speed" title={speed.label}>{speed.text}</span>}
         {net.bars > 0 && (
           <span className="um-sb-bars">
             {[1, 2, 3, 4].map(i => (

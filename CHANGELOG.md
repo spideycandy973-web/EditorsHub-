@@ -1,5 +1,48 @@
 # Changelog
 
+## 4.4.0 — screenshot pass and reliable APK updates (2026-11-06)
+
+- **Fixed the reason an installed APK can look unchanged after an update.**
+  v4.3.0 registered a cache-first service worker inside the Capacitor WebView.
+  Its cached `index.html` pins the previous build's hashed JS/CSS, so a new APK
+  could keep drawing the old UI. Native builds no longer register the worker;
+  existing registrations and caches are cleared on launch. Hosted-web builds use
+  network-first navigation with a versioned cache (`editorshub-v18`). Added
+  **About → Clear cached UI & reload** and a **Clear cached UI** button in the
+  customise sheet, both wired to a real `window.__clearUiCache()` reset.
+- **On-screen identity now matches the reference stills.** Default wordmark
+  `ULTRA MOTION` / subtitle `ultramotionofficial.com`, with one-tap
+  `Use reference look` and `EditorsHub identity` presets. Package stays
+  `com.editorshub`; every field remains editable in-app.
+- **Launcher glyphs redrawn** as original SVGs from the reference shapes: a
+  stack of picture frames with a gold upload arrow, and a hexagon enclosing an
+  isometric cube. No bitmap assets are copied.
+- **Effect Browser rebuilt** from screenshot 23/24: five hand-drawn SVG quick
+  tiles (Chroma Key, Directional Blur, Fade In/Out, Crystal, Hot Color), the
+  teal separator dot, muted dark category plates, rounded panel top and the
+  77px status gap. Mean per-pixel difference against that frame dropped from
+  44.26/255 to 31.26/255.
+- **Three new real effects** so those quick-pick labels are honest controls:
+  `fadeInOut` (opacity ramp across the layer duration), `crystal` (mirrored
+  prism facets) and `hotColor` (luminance-to-warm-gradient map). All three run
+  through the canvas compositor and are exercised by the smoke suite.
+- **Guide card** is now a half-screen artwork panel with the title/description
+  over it and a fixed `Standard Settings` bar, as in screenshot 27.
+- **Presets dialog**: wider card, centred close, taller transport illustration,
+  and a real **Import elements** action that validates XML through the parser
+  and stores it in the element library.
+- **Create sheet**: the Background row is now the single swatch + label +
+  chevron pill from screenshot 4, with a real colour input and real options.
+- **Shape picker**: 5-column grid, 15 shapes on the first page (three dots in
+  the reference), larger glyphs.
+- **Editor FAB** uses a real X when a panel is open; the launcher nav plus now
+  closes the open sheet instead of stacking another one.
+- **Settings** brand badge uses the diamond glyph; status bar shows measured
+  HTTP throughput from Resource Timing (never an invented number).
+- `tools/capture-states.mjs` reproduces all audit frames at 430x956 with
+  settled animations; `docs/screenshots/*-v4.4.0.png` regenerated.
+- 95/95 headless checks pass with zero console errors/warnings.
+
 ## 4.3.0 — APK features and editor rebuild (2026-11-06)
 
 - **Fixed the editor canvas.** All 20 reference editor JPGs show a 9:16

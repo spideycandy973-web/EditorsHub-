@@ -29,7 +29,7 @@ const PRIMARY: Category[] = [
   { name: 'Matte/Mask/Key', hue: 200, effects: C(200, 'chromaKey', 'vignette', 'outline', 'invert') },
   { name: 'Opacity/Visibility', hue: 215, effects: C(215, 'vignette', 'invert', 'grayscale', 'tint') },
   { name: 'Text', hue: 20, effects: C(20, 'outline', 'dropShadow', 'glow', 'colorAdjust') },
-  { name: 'Other', hue: 240, effects: C(240, ...ALL.slice(0, 8)) },
+  { name: 'Other', hue: 240, effects: C(240, ...ALL.slice(0, 8), 'fadeInOut', 'crystal', 'hotColor') },
 ];
 
 const SECONDARY: Category[] = [
@@ -98,10 +98,10 @@ for (const cat of [...PRIMARY, ...SECONDARY]) {
 
 const QUICK: { name: string; type: EffectType; hue: number }[] = [
   { name: 'Chroma Key', type: 'chromaKey', hue: 152 },
-  { name: 'Gaussian Blur', type: 'blur', hue: 210 },
-  { name: 'Vignette', type: 'vignette', hue: 40 },
-  { name: 'Film Grain', type: 'noise', hue: 292 },
-  { name: 'Colorize / Tint', type: 'tint', hue: 330 },
+  { name: 'Directional Blur', type: 'directionalBlur', hue: 210 },
+  { name: 'Fade In/Out', type: 'fadeInOut', hue: 40 },
+  { name: 'Crystal', type: 'crystal', hue: 292 },
+  { name: 'Hot Color', type: 'hotColor', hue: 330 },
 ];
 
 const FAV_KEY = 'editorshub.ultra.effectFavorites.v1';
@@ -110,9 +110,71 @@ function readFavorites(): string[] {
 }
 function art(hue: number, seed = 0): string {
   const h2 = (hue + 55 + seed * 13) % 360;
-  return `radial-gradient(circle at 28% 32%, hsl(${hue} 80% 58% / .92), transparent 55%), ` +
-    `radial-gradient(circle at 78% 72%, hsl(${h2} 70% 42% / .9), transparent 60%), ` +
-    `linear-gradient(145deg, hsl(${hue} 35% 16%), hsl(${h2} 40% 9%))`;
+  /* Dark, lightly textured backdrops: the reference category tiles are muted
+     photographic plates with white centred labels, not saturated gradients. */
+  return `radial-gradient(ellipse at 28% 30%, hsl(${hue} 34% 30% / .78), transparent 58%), ` +
+    `radial-gradient(ellipse at 76% 74%, hsl(${h2} 30% 21% / .82), transparent 62%), ` +
+    `repeating-linear-gradient(${118 + seed * 23}deg, rgba(255,255,255,.035) 0 1px, transparent 1px 6px), ` +
+    `linear-gradient(145deg, hsl(${hue} 18% 12%), hsl(${h2} 16% 8%))`;
+}
+
+/** Original hand-drawn vector tiles for the five quick picks. These are SVG
+ *  approximations of the shapes in the reference JPGs — no bitmap is copied. */
+/** Original abstract artwork behind the effect guide — no photograph is used. */
+function guideArt(hue: number): string {
+  const h2 = (hue + 118) % 360;
+  return `radial-gradient(ellipse at 30% 40%, hsl(${hue} 86% 60% / .92), transparent 46%), ` +
+    `radial-gradient(ellipse at 74% 26%, hsl(${h2} 70% 44% / .82), transparent 54%), ` +
+    `radial-gradient(ellipse at 54% 84%, hsl(${(hue + 28) % 360} 88% 56% / .85), transparent 50%), ` +
+    `linear-gradient(160deg, #10222e, #1b3141 45%, #0a1119)`;
+}
+
+function QuickArt({ name }: { name: string }) {
+  const common = { className: 'um-fx-art', viewBox: '0 0 100 100', 'aria-hidden': 'true' } as const;
+  if (name === 'Chroma Key') return (
+    <svg {...common}>
+      <defs><pattern id="qck" width="10" height="10" patternUnits="userSpaceOnUse">
+        <rect width="10" height="10" fill="#e7e7ea" />
+        <rect width="5" height="5" fill="#b6b6be" /><rect x="5" y="5" width="5" height="5" fill="#b6b6be" />
+      </pattern></defs>
+      <rect width="100" height="100" fill="url(#qck)" /><rect x="50" width="50" height="100" fill="#00a862" />
+      <circle cx="57" cy="27" r="7" fill="#101014" />
+      <path d="M49 39c7-5 15-4 19 2l6 16-8 3-3-11-2 14 8 20-9 4-8-20-9 17-8-5 11-22-4-12z" fill="#101014" />
+    </svg>
+  );
+  if (name === 'Directional Blur') return (
+    <svg {...common}>
+      <defs><radialGradient id="qdb">
+        <stop offset="0" stopColor="#1f63ff" /><stop offset="42%" stopColor="#4284ff" />
+        <stop offset="72%" stopColor="#9ec2ff" stopOpacity=".8" /><stop offset="100%" stopColor="#fff" stopOpacity="0" />
+      </radialGradient></defs>
+      <rect width="100" height="100" fill="#f4f5f8" /><circle cx="50" cy="50" r="31" fill="url(#qdb)" />
+    </svg>
+  );
+  if (name === 'Fade In/Out') return (
+    <svg {...common}>
+      <defs><linearGradient id="qfo" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#d9dfe3" /><stop offset="48%" stopColor="#eef0ec" />
+        <stop offset="52%" stopColor="#7e8d88" /><stop offset="100%" stopColor="#cfd6d2" />
+      </linearGradient></defs>
+      <rect width="100" height="100" fill="url(#qfo)" />
+      <path d="M0 52h100M12 58h30M44 63h42M20 69h52" stroke="#6f7c77" strokeWidth="1.4" opacity=".55" />
+    </svg>
+  );
+  if (name === 'Crystal') return (
+    <svg {...common}>
+      <rect width="100" height="100" fill="#19191d" />
+      <path d="M50 18 82 76H50Z" fill="#8d8d96" /><path d="M50 18 18 76h32Z" fill="#d7d7de" />
+      <path d="M50 18 50 76 18 76Z" fill="#b1b1bb" opacity=".55" />
+    </svg>
+  );
+  return (
+    <svg {...common}>
+      <rect width="100" height="100" fill="#101014" />
+      {['#e8453c','#f59b21','#f4dd3f','#43c97a','#2f8bff','#9a52e0'].map((c, i) =>
+        <rect key={c} x={8 + i * 14} y="12" width="11" height="76" rx="2" fill={c} />)}
+    </svg>
+  );
 }
 
 export function EffectBrowser() {
@@ -177,7 +239,7 @@ export function EffectBrowser() {
               {QUICK.slice(0, 3).map((item, i) => (
                 <button type="button" key={item.name} className="um-fx-quick-big"
                   onClick={() => setPicked(item.type)}>
-                  <span style={{ background: art(item.hue, i) }} />
+                  <QuickArt name={item.name} />
                   <small>{item.name}</small>
                 </button>
               ))}
@@ -185,10 +247,11 @@ export function EffectBrowser() {
             <div className="um-fx-quick-small">
               {QUICK.slice(3).map((item, i) => (
                 <button type="button" key={item.name} onClick={() => setPicked(item.type)}>
-                  <span style={{ background: art(item.hue, i + 3) }} /><small>{item.name}</small>
+                  <QuickArt name={item.name} /><small>{item.name}</small>
                 </button>
               ))}
             </div>
+            <div className="um-fx-dot" aria-hidden="true"><i /></div>
             <div className="um-fx-cats">
               {cats.map((c, i) => (
                 <button type="button" key={c.name} className="um-fx-cat"
@@ -220,7 +283,7 @@ export function EffectBrowser() {
       </div>
 
       {def && picked && (
-        <div className="um-fx-guide" style={{ background: art(QUICK.find(x => x.type === picked)?.hue ?? 205, 2) }}>
+        <div className="um-fx-guide" style={{ background: guideArt(QUICK.find(x => x.type === picked)?.hue ?? category?.hue ?? 205) }}>
           <div className="um-fx-guide-top">
             <button type="button" title="Close guide" onClick={() => setPicked(null)}><X size={19} /></button>
             <strong>Guide</strong>

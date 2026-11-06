@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { X, Copy, Play, SkipBack, SkipForward, Star, Trash2, Upload } from 'lucide-react';
 import { useEditor } from '../editor/store';
+import { importElementFile } from './lib';
 import { MOTION_PRESETS } from '../editor/defaults';
 import { useUI } from './context';
 import { applyPreset, deletePreset, listPresets, savePreset } from './lib';
@@ -16,6 +17,7 @@ export function PresetsDialog() {
   const e = useEditor();
   const [tab, setTab] = useState<'home' | 'discover'>('home');
   const [, force] = useState(0);
+  const elementFile = useRef<HTMLInputElement>(null);
   const presets = listPresets();
   const layer = e.selectedLayer;
   const close = () => ui.setPresetsDialog(false);
@@ -73,7 +75,16 @@ export function PresetsDialog() {
             <div className="um-presets-mini">
               <button type="button" disabled={!layer} onClick={save}>Save selected layer</button>
               <button type="button" onClick={() => { close(); ui.setSheet('xml'); }}><Upload size={13} /> Import</button>
+              <button type="button" onClick={() => elementFile.current?.click()}>Import elements</button>
             </div>
+            <input ref={elementFile} type="file" hidden accept=".xml,.txt,text/xml,application/xml"
+              onChange={ev => {
+                const f = ev.target.files?.[0];
+                if (f) void importElementFile(f)
+                  .then(el => e.notify(`Element “${el.name}” imported`, 'ok'))
+                  .catch(err => e.notify((err as Error).message, 'warn'));
+                ev.target.value = '';
+              }} />
             <button type="button" className="um-presets-close" onClick={close}>Close</button>
           </>
         ) : (

@@ -77,6 +77,25 @@ export async function saveCurrentAsElement(name: string): Promise<SavedElement> 
   return rec;
 }
 
+export async function importElementFile(file: File): Promise<SavedElement> {
+  const xml = await file.text();
+  /* Validate through the real parser before storing anything. */
+  const result = await parseMotionXml(xml);
+  if (!result.project && result.layers.length === 0) {
+    throw new Error('No layers found in that XML file.');
+  }
+  const items = listElements();
+  const rec: SavedElement = {
+    id: uid('elem'), name: file.name.replace(/\.(xml|txt)$/i, '') || 'Imported element',
+    xml, createdAt: Date.now(),
+    width: result.project?.width ?? editor.project.width,
+    height: result.project?.height ?? editor.project.height,
+  };
+  try { localStorage.setItem(ELEMENT_KEY, JSON.stringify([rec, ...items])); }
+  catch { throw new Error('Local storage is full — delete an element and try again.'); }
+  return rec;
+}
+
 export function deleteElement(id: string): void {
   try { localStorage.setItem(ELEMENT_KEY, JSON.stringify(listElements().filter(e => e.id !== id))); }
   catch { /* ignore */ }
