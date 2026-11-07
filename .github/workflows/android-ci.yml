@@ -11,7 +11,7 @@ on:
       - '.github/workflows/android-ci.yml'
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 jobs:
@@ -50,24 +50,13 @@ jobs:
           ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:bundleRelease --stacktrace 2>&1 | tee ../android-build.log
           exit ${PIPESTATUS[0]}
 
-      - name: Publish build log on failure
+      - name: Upload build log on failure
         if: failure()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          mkdir -p ci-logs
-          cp android-build.log ci-logs/android-build.log 2>/dev/null || true
-          git add -f ci-logs/ || true
-          git commit -m "ci: android build diagnostics [skip ci]" || echo "no diagnostic changes"
-          pushed=0
-          for attempt in 1 2 3; do
-            if git push origin HEAD:arena/be31b8e1-editorshub; then pushed=1; break; fi
-            echo "push attempt $attempt failed; retrying"
-            sleep 10
-            git fetch origin arena/be31b8e1-editorshub
-            git pull origin arena/be31b8e1-editorshub --no-rebase || true
-          done
-          [ "$pushed" = "1" ] || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-diagnostics
+          path: android-build.log
+          if-no-files-found: ignore
 
       - name: Collect artifacts
         if: success()
@@ -142,27 +131,10 @@ jobs:
             cd EditorsHub && ./gradlew :app:connectedDebugAndroidTest --stacktrace
             sh ci/smoke.sh
 
-      - name: Publish smoke diagnostics
+      - name: Upload smoke diagnostics on failure
         if: failure()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          mkdir -p ci-logs
-          if [ -f smoke-diagnostics.txt ]; then
-            cp smoke-diagnostics.txt ci-logs/smoke-diagnostics.txt
-          else
-            echo "no diagnostics file was produced" > ci-logs/smoke-diagnostics.txt
-          fi
-          git fetch origin arena/be31b8e1-editorshub
-          git reset --hard origin/arena/be31b8e1-editorshub
-          git add -f ci-logs/
-          git commit -m "ci: smoke diagnostics [skip ci]" || echo "no diagnostic changes"
-          pushed=0
-          for attempt in 1 2 3; do
-            if git push origin HEAD:arena/be31b8e1-editorshub; then pushed=1; break; fi
-            echo "push attempt $attempt failed; retrying"
-            sleep 10
-            git fetch origin arena/be31b8e1-editorshub
-            git pull origin arena/be31b8e1-editorshub --no-rebase || true
-          done
-          [ "$pushed" = "1" ] || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-smoke-diagnostics
+          path: smoke-diagnostics.txt
+          if-no-files-found: ignore

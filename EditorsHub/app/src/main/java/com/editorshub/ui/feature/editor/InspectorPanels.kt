@@ -193,9 +193,9 @@ private fun BorderPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?
                     Switch(checked = spec.strokeEnabled,
                         onCheckedChange = { enabled -> vm.updateShape { it.copy(strokeEnabled = enabled) } })
                 }
-                SliderRow("Width", spec.strokeWidth, 0f..100f) { value ->
+                SliderRow("Width", spec.strokeWidth, 0f..100f, onChange = { value ->
                     vm.updateShape { shape -> shape.copy(strokeWidth = value) }
-                }
+                })
             }
         }
         "shadow" -> {
@@ -204,18 +204,18 @@ private fun BorderPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?
                 Switch(checked = spec.shadowEnabled,
                     onCheckedChange = { enabled -> vm.updateShape { it.copy(shadowEnabled = enabled) } })
             }
-            SliderRow("Size", spec.shadowSize, 0f..80f) { value ->
+            SliderRow("Size", spec.shadowSize, 0f..80f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(shadowSize = value) }
-            }
-            SliderRow("Alpha", spec.shadowAlpha, 0f..1f) { value ->
+            })
+            SliderRow("Alpha", spec.shadowAlpha, 0f..1f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(shadowAlpha = value) }
-            }
-            SliderRow("Position X", spec.shadowX, -100f..100f) { value ->
+            })
+            SliderRow("Position X", spec.shadowX, -100f..100f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(shadowX = value) }
-            }
-            SliderRow("Position Y", spec.shadowY, -100f..100f) { value ->
+            })
+            SliderRow("Position Y", spec.shadowY, -100f..100f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(shadowY = value) }
-            }
+            })
             ColorSwatchRow("Shadow color", spec.shadowColor) { value ->
                 vm.updateShape { shape -> shape.copy(shadowColor = value) }
             }
@@ -227,9 +227,9 @@ private fun BorderPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?
                 Switch(checked = spec.strokeEnabled,
                     onCheckedChange = { enabled -> vm.updateShape { it.copy(strokeEnabled = enabled) } })
             }
-            SliderRow("Width", spec.strokeWidth, 0f..100f) { value ->
+            SliderRow("Width", spec.strokeWidth, 0f..100f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(strokeWidth = value) }
-            }
+            })
             Text("Line cap", fontSize = 9.sp, color = EditorPalette.TextMuted)
             ChoiceStrip(listOf("Butt", "Round", "Square"), spec.strokeCap) { value ->
                 vm.updateShape { it.copy(strokeCap = value) }
@@ -238,12 +238,12 @@ private fun BorderPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?
             ChoiceStrip(listOf("Miter", "Round", "Bevel"), spec.strokeJoin) { value ->
                 vm.updateShape { it.copy(strokeJoin = value) }
             }
-            SliderRow("Start", spec.strokeStart, 0f..100f) { value ->
+            SliderRow("Start", spec.strokeStart, 0f..100f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(strokeStart = value) }
-            }
-            SliderRow("End", spec.strokeEnd, 0f..100f) { value ->
+            })
+            SliderRow("End", spec.strokeEnd, 0f..100f, onChange = { value ->
                 vm.updateShape { shape -> shape.copy(strokeEnd = value) }
-            }
+            })
         }
     }
 }
@@ -294,9 +294,9 @@ private fun ColorPanel(vm: EditorViewModel, layer: Layer?) {
     }
     ColorSwatchRow("Primary", spec.fillColor) { value -> vm.updateShape { it.copy(fillColor = value) } }
     ColorSwatchRow("Gradient end", spec.fillColor2) { value -> vm.updateShape { it.copy(fillColor2 = value) } }
-    SliderRow("Gradient angle", spec.gradientAngle, 0f..360f) { value ->
+    SliderRow("Gradient angle", spec.gradientAngle, 0f..360f, onChange = { value ->
         vm.updateShape { shape -> shape.copy(gradientAngle = value) }
-    }
+    })
 }
 
 @Composable

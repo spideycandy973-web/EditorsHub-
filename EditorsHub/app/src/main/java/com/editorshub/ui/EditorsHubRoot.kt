@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -110,7 +112,9 @@ private fun MainShell(rootNav: androidx.navigation.NavHostController) {
     if (wide) {
         Row(Modifier.fillMaxSize()) {
             AnimatedNavigationRail(tabNav, tab)
-            Box(Modifier.weight(1f)) { TabHost(tabNav, openProject, goImport, rootNav, createRequest) }
+            Box(Modifier.weight(1f)) {
+                TabHost(tabNav, openProject, goImport, rootNav, createRequest, requestCreate)
+            }
         }
     } else {
         Scaffold(
@@ -118,7 +122,7 @@ private fun MainShell(rootNav: androidx.navigation.NavHostController) {
             bottomBar = { AnimatedNavigationBar(tabNav, tab, requestCreate) }
         ) { padding ->
             Box(Modifier.padding(padding).fillMaxSize()) {
-                TabHost(tabNav, openProject, goImport, rootNav, createRequest)
+                TabHost(tabNav, openProject, goImport, rootNav, createRequest, requestCreate)
             }
         }
     }
@@ -131,7 +135,8 @@ private fun TabHost(
     openProject: (String) -> Unit,
     goImport: () -> Unit,
     rootNav: androidx.navigation.NavHostController,
-    createRequest: Int
+    createRequest: Int,
+    onCreate: () -> Unit
 ) {
     NavHost(
         navController = tabNav,
@@ -169,7 +174,7 @@ private fun TabHost(
             ProjectsScreen(
                 onOpenProject = openProject,
                 onImport = goImport,
-                onNew = requestCreate,
+                onNew = onCreate,
                 onTemplates = { tabNav.navigate(MainTab.TEMPLATES.route) },
                 onEffects = { tabNav.navigate(MainTab.EFFECTS.route) },
                 onSettings = { tabNav.navigate(MainTab.SETTINGS.route) }
