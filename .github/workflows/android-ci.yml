@@ -12,7 +12,7 @@ on:
       - '.github/workflows/android-ci.yml'
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 jobs:
@@ -137,3 +137,27 @@ jobs:
             android-test.log
             smoke-diagnostics.txt
           if-no-files-found: ignore
+
+      - name: Mirror failure details to the branch for diagnosis
+        if: failure()
+        run: |
+          set -e
+          mkdir -p ci-logs
+          {
+            echo "Workflow run $GITHUB_RUN_ID"
+            if [ -f android-test.log ]; then
+              echo '--- instrumentation ---'
+              tail -n 300 android-test.log
+            fi
+            if [ -f smoke-diagnostics.txt ]; then
+              echo '--- launch smoke ---'
+              tail -n 120 smoke-diagnostics.txt
+            fi
+          } > ci-logs/android-emulator-debug.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ci-logs/android-emulator-debug.txt
+          git commit -m "ci: capture Android emulator failure details [skip ci]"
+          git fetch origin arena/be31b8e1-editorshub
+          git rebase origin/arena/be31b8e1-editorshub
+          git push origin HEAD:arena/be31b8e1-editorshub
