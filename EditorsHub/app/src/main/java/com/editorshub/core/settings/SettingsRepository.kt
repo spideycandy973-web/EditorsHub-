@@ -30,6 +30,8 @@ data class AppSettings(
     val dynamicColor: Boolean = false,
     val uiScale: Float = 1f,
     val language: String = "system",
+    val brandName: String = "ULTRA MOTION",
+    val brandSubtitle: String = "ultramotionofficial.com",
     val defaultProjectLocation: String = "internal",
     val autosaveIntervalMs: Long = 700L,
     val confirmBeforeDelete: Boolean = true,
@@ -72,6 +74,8 @@ class SettingsRepository @Inject constructor(
         val DYNAMIC = booleanPreferencesKey("dynamic_color")
         val UI_SCALE = floatPreferencesKey("ui_scale")
         val LANGUAGE = stringPreferencesKey("language")
+        val BRAND_NAME = stringPreferencesKey("brand_name")
+        val BRAND_SUBTITLE = stringPreferencesKey("brand_subtitle")
         val PROJECT_LOCATION = stringPreferencesKey("default_project_location")
         val AUTOSAVE = longPreferencesKey("autosave_interval_ms")
         val CONFIRM_DELETE = booleanPreferencesKey("confirm_before_delete")
@@ -113,6 +117,8 @@ class SettingsRepository @Inject constructor(
         dynamicColor = this[K.DYNAMIC] ?: false,
         uiScale = (this[K.UI_SCALE] ?: 1f).coerceIn(0.8f, 1.4f),
         language = this[K.LANGUAGE] ?: "system",
+        brandName = this[K.BRAND_NAME] ?: "ULTRA MOTION",
+        brandSubtitle = this[K.BRAND_SUBTITLE] ?: "ultramotionofficial.com",
         defaultProjectLocation = this[K.PROJECT_LOCATION] ?: "internal",
         autosaveIntervalMs = (this[K.AUTOSAVE] ?: 700L).coerceIn(200L, 10_000L),
         confirmBeforeDelete = this[K.CONFIRM_DELETE] ?: true,
@@ -152,7 +158,8 @@ class SettingsRepository @Inject constructor(
         val n = transform(current)
         context.dataStore.edit { p ->
             p[K.DARK] = n.darkTheme; p[K.DYNAMIC] = n.dynamicColor; p[K.UI_SCALE] = n.uiScale
-            p[K.LANGUAGE] = n.language; p[K.PROJECT_LOCATION] = n.defaultProjectLocation
+            p[K.LANGUAGE] = n.language; p[K.BRAND_NAME] = n.brandName.take(40)
+            p[K.BRAND_SUBTITLE] = n.brandSubtitle.take(60); p[K.PROJECT_LOCATION] = n.defaultProjectLocation
             p[K.AUTOSAVE] = n.autosaveIntervalMs; p[K.CONFIRM_DELETE] = n.confirmBeforeDelete
             p[K.QUALITY] = n.previewQuality; p[K.CACHE] = n.cacheLimitMb
             p[K.HW] = n.hardwareAcceleration; p[K.BG_RENDER] = n.backgroundRendering

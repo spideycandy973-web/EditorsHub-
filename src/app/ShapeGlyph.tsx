@@ -11,7 +11,7 @@ const D: Record<ShapeKind, string> = {
   callout: 'M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8.5l-2.2 4-.8-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z',
   pie: 'M12 12V3a9 9 0 1 1-9 9h9Z',
   hexagon: 'M12 2.5 20.5 7v10L12 21.5 3.5 17V7L12 2.5Z',
-  flower: 'M12 2c2.5 0 3 3 4.8 3.6 1.8.6 4.2-1.4 5.1.3.9 1.7-1 4-.9 5.9.1 1.9 2.8 3.2 2.2 5.1-.6 1.9-3.4 1.5-5 2.7-1.6 1.2-1.2 4.1-3.2 4.4-2 .3-3-2.4-5-2.4s-3 2.7-5 2.4c-2-.3-1.6-3.2-3.2-4.4-1.6-1.2-4.4-.8-5-2.7-.6-1.9 2.1-3.2 2.2-5.1.1-1.9-1.8-4.2-.9-5.9.9-1.7 3.3.3 5.1-.3C9 5 9.5 2 12 2Z',
+  flower: 'M12 2.5c2.7 0 4.2 2.1 4.2 4.4 2.2-1.8 4.7-1.6 6.1.2 1.7 2.2.4 4.8-1.8 6 2.3.6 3.7 2.9 2.6 5.1-1.1 2.3-3.8 2.5-5.8 1.1-.1 2.5-1.7 4.2-4 4.2s-3.9-1.7-4-4.2c-2 1.4-4.7 1.2-5.8-1.1-1.1-2.2.3-4.5 2.6-5.1-2.2-1.2-3.5-3.8-1.8-6 1.4-1.8 3.9-2 6.1-.2 0-2.3 1.5-4.4 4.2-4.4Z',
   arrow: 'M3 10h11V5l7 7-7 7v-5H3v-4Z',
   trapezoid: 'M6 3h12l3 17H3L6 3Zm0 0L3 20m15-17 3 17M3 20h18',
   crescent: 'M15.5 3A9 9 0 1 0 21 14.5 7.4 7.4 0 0 1 15.5 3Z',
@@ -20,7 +20,7 @@ const D: Record<ShapeKind, string> = {
   line: 'M4 17.5 19.5 3l1.5 1.6L5.5 19.1 4 17.5Z',
   beam: 'M3.5 16.8 15.5 4.8l3.7 3.7-12 12-3.7-3.7Zm0 0-1.2 1.2m14.4-14.4 1.2 1.2',
   flag: 'M4 3h10c0 6-2 9-6 18H4V3Zm10 0c-1 5-2 8-4 11',
-  seal: 'M12 1.5 13.8 4l2.9-.7.7 2.9 2.8 1.2-1.3 2.7 2.1 2.1-2.1 2.1 1.3 2.7-2.8 1.2-.7 2.9-2.9-.7L12 22.5l-1.8-2.5-2.9.7-.7-2.9-2.8-1.2 1.3-2.7L3 11.8l2.1-2.1L3.8 7l2.8-1.2.7-2.9 2.9.7L12 1.5Z',
+  seal: 'M3 3h2v2h2V3h2v2h2V3h2v2h2V3h2v2h2V3h2v2h-2v2h2v2h-2v2h2v2h-2v2h2v2h-2v2h-2v-2h-2v2h-2v-2h-2v2h-2v-2H7v2H5v-2H3v-2h2v-2H3v-2h2v-2H3V9h2V7H3V5h2V3H3Z',
   diamond: 'M12 2 22 12 12 22 2 12 12 2Z',
   pentagon: 'M12 2 21 9l-3.5 11h-11L3 9 12 2Z',
   sparkle: 'M12 1.5c1 5.5 2.5 7 8 9.5-5.5 2.5-7 4-8 9.5-1-5.5-2.5-7-8-9.5 5.5-2.5 7-4 8-9.5Z',
@@ -32,16 +32,51 @@ const D: Record<ShapeKind, string> = {
   customPath: 'M3 18 9 6l4 9 3-5 5 8H3Z',
 };
 
-export function ShapeGlyph({ kind, size = 30, color = '#b9b9be' }: {
-  kind: ShapeKind; size?: number; color?: string;
+const ANCHORS: Partial<Record<ShapeKind, [number, number][]>> = {
+  triangle: [[12, 3], [3, 20], [21, 20]],
+  callout: [[6.3, 21]],
+  arrow: [[4.2, 17], [18.4, 5.6]],
+  trapezoid: [[6, 3], [18, 3], [21, 20], [3, 20]],
+  beam: [[3.5, 16.8], [15.5, 4.8]],
+  flag: [[4, 3], [14, 3], [4, 21]],
+};
+
+export function ShapeGlyph({ kind, size = 30, color = '#b9b9be', editPoints = false }: {
+  kind: ShapeKind; size?: number; color?: string; editPoints?: boolean;
 }) {
-  if (kind === 'seal') {
-    // Perforated stamp: a filled square with a dashed dark edge.
+  if (kind === 'arc') {
+    const points = ANCHORS.arc ?? [];
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 4h16v16H4Z" fill={color} />
-        <rect x="3.2" y="3.2" width="17.6" height="17.6" fill="none"
-          stroke="#1c1c1e" strokeWidth="1.7" strokeDasharray="1.3 1.3" />
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+        <path d="M18 5 A9 9 0 1 0 18 19 M16.4 8.2 A5.8 5.8 0 1 0 16.4 15.8"
+          stroke={color} strokeWidth="1.25" strokeLinecap="round" />
+        {editPoints && points.map(([cx, cy], i) => <circle key={i} cx={cx} cy={cy} r="1.45"
+          fill="#fff" stroke="#72727a" strokeWidth=".55" />)}
+      </svg>
+    );
+  }
+  if (kind === 'flower') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill={color}>
+        <ellipse cx="12" cy="6.6" rx="3.5" ry="4.4" />
+        <ellipse cx="17.4" cy="12" rx="4.4" ry="3.5" />
+        <ellipse cx="12" cy="17.4" rx="3.5" ry="4.4" />
+        <ellipse cx="6.6" cy="12" rx="4.4" ry="3.5" />
+        <circle cx="12" cy="12" r="2.8" />
+      </svg>
+    );
+  }
+  if (kind === 'seal') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill={color}>
+        <path d={D.seal} />
+      </svg>
+    );
+  }
+  if (kind === 'line') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+        <path d="M4 19 20 4" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
       </svg>
     );
   }
@@ -50,6 +85,8 @@ export function ShapeGlyph({ kind, size = 30, color = '#b9b9be' }: {
       fill={color} fillRule="evenodd" stroke={color} strokeWidth="0.45" strokeLinejoin="round">
       <path d={D[kind] ?? D.rectangle}
         transform={kind === 'arrow' ? 'rotate(-45 12 12)' : undefined} />
+      {editPoints && ANCHORS[kind]?.map(([cx, cy], i) => <circle key={i} cx={cx} cy={cy} r="1.45"
+        fill="#fff" stroke="#72727a" strokeWidth=".55" />)}
     </svg>
   );
 }

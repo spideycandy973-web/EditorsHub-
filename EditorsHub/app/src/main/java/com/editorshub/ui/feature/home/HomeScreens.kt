@@ -46,131 +46,113 @@ import kotlin.math.roundToInt
 fun HomeScreen(
     vm: HomeViewModel = hiltViewModel(),
     onOpenProject: (String) -> Unit,
-    onProjects: () -> Unit,
-    onTemplates: () -> Unit,
-    onEffects: () -> Unit,
-    onAi: () -> Unit,
     onSettings: () -> Unit,
-    onTutorials: () -> Unit,
     onImport: () -> Unit,
-    onNodeEditor: () -> Unit
+    createRequest: Int = 0
 ) {
-    val context = LocalContext.current
-    val recent by vm.projects.collectAsState()
     val settings by vm.appSettings.collectAsState()
     var showCreate by remember { mutableStateOf(false) }
-    var actionTarget by remember { mutableStateOf<ProjectSummary?>(null) }
-    var infoTarget by remember { mutableStateOf<ProjectSummary?>(null) }
-    var deleteTarget by remember { mutableStateOf<ProjectSummary?>(null) }
-    var renameTarget by remember { mutableStateOf<ProjectSummary?>(null) }
-    var exportTarget by remember { mutableStateOf<ProjectSummary?>(null) }
-    val mediaPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        if (uris.isNotEmpty()) vm.importMedia(uris, uris.map { null })
-    }
+    var packageUrl by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { vm.openProject.collect { onOpenProject(it) } }
-    LaunchedEffect(Unit) { vm.info.collect { if (it != null) infoTarget = it } }
+    LaunchedEffect(createRequest) { if (createRequest > 0) showCreate = true }
 
-    Scaffold(
-        containerColor = EditorPalette.Black,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreate = true },
-                containerColor = EditorPalette.Purple,
-                contentColor = EditorPalette.Black
-            ) {
-                Icon(Icons.Default.Add, null, Modifier.size(EditorDimens.IconSmall))
-                Spacer(Modifier.width(EditorDimens.Space1))
-                Text("New project", style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    ) { padding ->
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(170.dp),
-            contentPadding = PaddingValues(EditorDimens.Space3),
-            horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2),
-            verticalArrangement = Arrangement.spacedBy(EditorDimens.Space2),
-            modifier = Modifier.padding(padding).fillMaxSize()
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) { vm.message.collect { snackbar.showSnackbar(it) } }
+
+    Scaffold(containerColor = EditorPalette.Black, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+        Column(
+            Modifier.padding(padding).fillMaxSize().background(EditorPalette.Black)
+                .verticalScroll(rememberScrollState())
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                HeroCard(onNew = { showCreate = true }, onImport = onImport,
-                    onMedia = { mediaPicker.launch(arrayOf("video/*", "image/*", "audio/*")) })
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2),
-                    modifier = Modifier.fillMaxWidth()) {
-                    QuickAction("Open", Icons.Default.FolderOpen) { onProjects() }
-                    QuickAction("Templates", Icons.Default.Dashboard) { onTemplates() }
-                    QuickAction("Effects", Icons.Default.AutoAwesome) { onEffects() }
-                    QuickAction("AI Studio", Icons.Default.Bolt) { onAi() }
-                }
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2),
-                    modifier = Modifier.fillMaxWidth()) {
-                    QuickAction("Import", Icons.Default.Upload) { onImport() }
-                    QuickAction("Nodes", Icons.Default.DeviceHub) { onNodeEditor() }
-                    QuickAction("Docs", Icons.Default.School) { onTutorials() }
-                    QuickAction("Settings", Icons.Default.Settings) { onSettings() }
-                }
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text("Recent projects (${recent.size})", style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.weight(1f))
-                    TextButton(onClick = onProjects) { Text("See all", style = MaterialTheme.typography.labelMedium) }
-                }
-            }
-            if (recent.isEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Card(Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
-                        Column(Modifier.padding(EditorDimens.Space5).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.MovieCreation, null, Modifier.size(36.dp),
-                                tint = EditorPalette.Purple)
-                            Spacer(Modifier.height(EditorDimens.Space2))
-                            Text("No projects yet", style = MaterialTheme.typography.titleMedium)
-                            Text("Create a project, pick a template or import a project file.",
-                                style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextMuted)
+            Spacer(Modifier.height(42.dp))
+            HomeBrandHeader(settings.brandName, settings.brandSubtitle, onSettings)
+            Spacer(Modifier.height(16.dp))
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Card(shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
+                    Row(Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.FolderOpen, null, Modifier.size(34.dp), tint = EditorPalette.TextPrimary)
+                        Spacer(Modifier.width(12.dp))
+                        Text("Upload XML file", Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium, color = EditorPalette.TextPrimary)
+                        Button(onClick = onImport, shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = EditorPalette.Cyan,
+                                contentColor = EditorPalette.Black), modifier = Modifier.height(48.dp)) {
+                            Text("Upload", fontSize = 14.sp)
                         }
                     }
                 }
-            } else {
-                items(recent.take(6), key = { it.id }) { p ->
-                    ProjectCard(p, vm, onClick = { onOpenProject(p.id) },
-                        onAction = { actionTarget = p })
+                Card(shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Layers, null, Modifier.size(30.dp), tint = EditorPalette.TextPrimary)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("Import Project Package", style = MaterialTheme.typography.titleMedium,
+                                    color = EditorPalette.TextPrimary)
+                                Text("Paste a link to a shared project package.",
+                                    style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextMuted)
+                            }
+                        }
+                        OutlinedTextField(
+                            value = packageUrl,
+                            onValueChange = { packageUrl = it },
+                            placeholder = { Text("https://…") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = EditorPalette.SurfaceRaised,
+                                focusedContainerColor = EditorPalette.SurfaceRaised
+                            )
+                        )
+                        Button(onClick = { vm.importPackageLink(packageUrl) },
+                            enabled = packageUrl.isNotBlank(), shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = EditorPalette.Cyan,
+                                contentColor = EditorPalette.Black), modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                            Text("Import", fontSize = 14.sp)
+                        }
+                        OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth().height(46.dp),
+                            shape = RoundedCornerShape(14.dp)) {
+                            Icon(Icons.Default.Upload, null, Modifier.size(17.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Choose a package file instead", color = EditorPalette.TextPrimary)
+                        }
+                    }
                 }
             }
+            Spacer(Modifier.height(24.dp))
         }
     }
 
     if (showCreate) ProjectCreationSheet(vm, onDismiss = { showCreate = false },
         onCreated = { showCreate = false })
+}
 
-    actionTarget?.let { p ->
-        ProjectActionsDialog(
-            summary = p, vm = vm, confirmDelete = settings.confirmBeforeDelete,
-            onDismiss = { actionTarget = null },
-            onOpen = { onOpenProject(p.id); actionTarget = null },
-            onRename = { renameTarget = p; actionTarget = null },
-            onDelete = { if (settings.confirmBeforeDelete) deleteTarget = p else { vm.delete(p.id); actionTarget = null } },
-            onInfo = { infoTarget = p; actionTarget = null },
-            onExport = { exportTarget = p; actionTarget = null }
-        )
+@Composable
+private fun HomeBrandHeader(brand: String, subtitle: String, onSettings: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(54.dp).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onSettings, modifier = Modifier.size(44.dp)) {
+            Icon(Icons.Default.Settings, "Settings", Modifier.size(24.dp), tint = EditorPalette.TextPrimary)
+        }
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(brand.ifBlank { "EditorsHub" }, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold,
+                color = EditorPalette.TextPrimary, letterSpacing = 0.8.sp, maxLines = 1)
+            if (subtitle.isNotBlank()) Text(subtitle, fontSize = 8.sp, fontWeight = FontWeight.SemiBold,
+                color = EditorPalette.TextPrimary, maxLines = 1)
+        }
+        IconButton(onClick = onSettings, modifier = Modifier.size(42.dp)
+            .clip(CircleShape).background(Color(0xFF60616B))) {
+            Icon(Icons.Default.Person, "Identity and account settings", Modifier.size(23.dp), tint = Color.White)
+        }
     }
-    deleteTarget?.let { p ->
-        ConfirmDialog("Delete “${p.name}”?", "This removes the project and its version history.",
-            onConfirm = { vm.delete(p.id); deleteTarget = null }, onDismiss = { deleteTarget = null })
-    }
-    renameTarget?.let { p ->
-        var name by remember { mutableStateOf(p.name) }
-        AlertDialog(onDismissRequest = { renameTarget = null }, title = { Text("Rename project") },
-            text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
-            confirmButton = { TextButton(onClick = { vm.rename(p.id, name); renameTarget = null }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = { renameTarget = null }) { Text("Cancel") } })
-    }
-    infoTarget?.let { p -> ProjectInfoDialog(p, vm) { infoTarget = null } }
-    exportTarget?.let { p -> QuickExportDialog(p, vm) { exportTarget = null } }
 }
 
 @Composable
@@ -259,6 +241,19 @@ private fun ProjectCard(summary: ProjectSummary, vm: HomeViewModel,
     }
 }
 
+@Composable
+private fun ProjectSectionButton(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.fillMaxHeight().clip(CircleShape)
+            .background(if (selected) EditorPalette.SurfaceVariant else Color.Transparent)
+            .then(if (selected) Modifier else Modifier.clickable(onClick = onClick)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, fontSize = 11.sp, maxLines = 1,
+            color = if (selected) EditorPalette.TextPrimary else EditorPalette.TextMuted)
+    }
+}
+
 // --------------------------------------------------------------- PROJECTS
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
@@ -266,7 +261,10 @@ fun ProjectsScreen(
     vm: HomeViewModel = hiltViewModel(),
     onOpenProject: (String) -> Unit,
     onImport: () -> Unit,
-    onNew: () -> Unit
+    onNew: () -> Unit,
+    onTemplates: () -> Unit,
+    onEffects: () -> Unit,
+    onSettings: () -> Unit
 ) {
     val visible by vm.visible.collectAsState()
     val query by vm.query.collectAsState()
@@ -279,18 +277,17 @@ fun ProjectsScreen(
     var infoTarget by remember { mutableStateOf<ProjectSummary?>(null) }
     var exportTarget by remember { mutableStateOf<ProjectSummary?>(null) }
     var renameTarget by remember { mutableStateOf<ProjectSummary?>(null) }
-    var showCreate by remember { mutableStateOf(false) }
-
-    Scaffold(
-        containerColor = EditorPalette.Black,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = { showCreate = true },
-                containerColor = EditorPalette.Purple, contentColor = EditorPalette.Black) {
-                Icon(Icons.Default.Add, null); Spacer(Modifier.width(4.dp)); Text("New")
-            }
-        }
-    ) { padding ->
+    Scaffold(containerColor = EditorPalette.Black) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+            Spacer(Modifier.height(42.dp))
+            HomeBrandHeader(settings.brandName, settings.brandSubtitle, onSettings)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(44.dp).clip(CircleShape).background(EditorPalette.Surface),
+                verticalAlignment = Alignment.CenterVertically) {
+                ProjectSectionButton("Projects", true, Modifier.weight(1f)) { }
+                ProjectSectionButton("Your Templates", false, Modifier.weight(1.2f), onTemplates)
+                ProjectSectionButton("Elements", false, Modifier.weight(1f), onEffects)
+            }
             OutlinedTextField(value = query, onValueChange = { vm.setQuery(it) },
                 placeholder = { Text("Search projects") },
                 leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(EditorDimens.IconSmall)) },
@@ -361,7 +358,6 @@ fun ProjectsScreen(
         }
     }
 
-    if (showCreate) ProjectCreationSheet(vm, { showCreate = false }, { showCreate = false })
     actionTarget?.let { p ->
         ProjectActionsDialog(p, vm, settings.confirmBeforeDelete,
             { actionTarget = null }, { onOpenProject(p.id); actionTarget = null },
@@ -510,7 +506,7 @@ private val ASPECTS = listOf("1:1", "4:5", "9:16", "16:9", "3:4", "4:3", "21:9",
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectCreationSheet(vm: HomeViewModel, onDismiss: () -> Unit, onCreated: () -> Unit) {
-    var name by remember { mutableStateOf("Untitled project") }
+    var name by remember { mutableStateOf("New Project 1") }
     var res by remember { mutableStateOf(RES_PRESETS[5]) }
     var aspect by remember { mutableStateOf("9:16") }
     var customW by remember { mutableStateOf("1080") }

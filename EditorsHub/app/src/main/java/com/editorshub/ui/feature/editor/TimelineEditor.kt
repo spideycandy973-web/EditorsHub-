@@ -2,6 +2,7 @@ package com.editorshub.ui.feature.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -37,67 +38,75 @@ fun TimelineEditor(
     val project = state.project ?: return
     val density = LocalDensity.current.density
     val zoom = state.zoomPxPerSecond
-    val contentWidth: Dp = ((project.durationMs / 1000f) * zoom + 120f).dp
-    val rowHeight = 40.dp
-    val totalHeight = 26.dp + rowHeight * (project.layers.size.coerceAtLeast(1))
+    val contentWidth: Dp = ((project.durationMs / 1000f) * zoom + 100f).dp.coerceAtLeast(220.dp)
+    val rowHeight = 28.dp
+    val rows = project.layers.size.coerceAtLeast(1)
     val hScroll = rememberScrollState()
     val vScroll = rememberScrollState()
+    var menuExpanded by remember { mutableStateOf(false) }
+    val totalSeconds = state.playheadMs / 1000L
+    val frames = ((state.playheadMs % 1000L) * project.fps / 1000L).coerceAtLeast(0L)
+    val timecode = "%02d:%02d:%02d".format(totalSeconds / 60, totalSeconds % 60, frames)
 
-    Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Timeline", style = MaterialTheme.typography.titleMedium, fontSize = 12.sp)
-            Spacer(Modifier.width(8.dp))
-            IconButton(onClick = { vm.setZoom(zoom - 16) }, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.Remove, "Zoom out", Modifier.size(16.dp))
-            }
-            Slider(value = zoom, onValueChange = { vm.setZoom(it) }, valueRange = 12f..320f,
-                modifier = Modifier.weight(1f).height(24.dp))
-            IconButton(onClick = { vm.setZoom(zoom + 16) }, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.Add, "Zoom in", Modifier.size(16.dp))
-            }
-            IconButton(onClick = { vm.splitLayer(state.selectedLayerId ?: "") }, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.ContentCut, "Split", Modifier.size(15.dp))
-            }
-            IconButton(onClick = { vm.duplicateLayer(state.selectedLayerId ?: "") }, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.ContentCopy, "Duplicate", Modifier.size(15.dp))
-            }
-            IconButton(onClick = { vm.deleteLayer(state.selectedLayerId ?: "") }, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.Delete, "Delete", Modifier.size(15.dp), tint = MaterialTheme.colorScheme.error)
-            }
-        }
-        Divider()
-        Column(Modifier.fillMaxSize().verticalScroll(vScroll)) {
-            Row(Modifier.fillMaxWidth()) {
-                // Fixed layer labels
-                Column(Modifier.width(112.dp)) {
-                    Box(Modifier.height(26.dp).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.CenterStart) {
-                        Text(" ${project.layers.size} layers", fontSize = 9.sp, modifier = Modifier.padding(start = 4.dp))
+    Column(modifier = modifier.background(EditorPalette.Charcoal)) {
+        Row(Modifier.fillMaxWidth().height(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(108.dp).fillMaxHeight().background(EditorPalette.Surface),
+                contentAlignment = Alignment.CenterStart) {
+                Text(" ${project.layers.size} layer${if (project.layers.size == 1) "" else "s"}",
+                    fontSize = 8.sp, color = EditorPalette.TextMuted)
+                Box(Modifier.align(Alignment.CenterEnd)) {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.MoreHoriz, "Timeline actions", Modifier.size(17.dp), tint = EditorPalette.TextSecondary)
                     }
-                    project.layers.forEachIndexed { index, layer ->
-                        LayerLabel(layer, index, state, vm, rowHeight)
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(text = { Text("Zoom out") }, onClick = { vm.setZoom(zoom - 16f); menuExpanded = false })
+                        DropdownMenuItem(text = { Text("Zoom in") }, onClick = { vm.setZoom(zoom + 16f); menuExpanded = false })
+                        DropdownMenuItem(text = { Text("Split at playhead") },
+                            enabled = state.selectedLayerId != null,
+                            onClick = { state.selectedLayerId?.let(vm::splitLayer); menuExpanded = false })
+                        DropdownMenuItem(text = { Text("Duplicate layer") },
+                            enabled = state.selectedLayerId != null,
+                            onClick = { state.selectedLayerId?.let(vm::duplicateLayer); menuExpanded = false })
+                        DropdownMenuItem(text = { Text("Delete layer") },
+                            enabled = state.selectedLayerId != null,
+                            onClick = { state.selectedLayerId?.let(vm::deleteLayer); menuExpanded = false })
                     }
                 }
-                // Horizontally scrolling tracks
-                Box(Modifier.weight(1f).horizontalScroll(hScroll)) {
-                    Box(Modifier.width(contentWidth)) {
-                        Column {
-                            Ruler(project, zoom, 26.dp)
-                            project.layers.forEach { layer ->
-                                ClipBar(layer, project, zoom, rowHeight, density, state, vm)
-                            }
-                        }
-                        Box(
-                            Modifier
-                                .offset(x = (state.playheadMs / 1000f * zoom).dp)
-                                .width(2.dp)
-                                .height(totalHeight)
-                                .background(Color.White)
-                        )
+            }
+            Box(Modifier.weight(1f).fillMaxHeight().horizontalScroll(hScroll)) {
+                Box(Modifier.width(contentWidth).fillMaxHeight()) {
+                    Ruler(project, zoom, 24.dp)
+                    Box(Modifier.offset(x = (state.playheadMs / 1000f * zoom).dp)
+                        .fillMaxHeight().width(1.dp).background(Color(0x99FFFFFF)))
+                    Text(timecode, fontSize = 9.sp, color = EditorPalette.TextPrimary,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                            .offset(x = (state.playheadMs / 1000f * zoom - 32f).coerceAtLeast(0f).dp)
+                            .background(Color(0xFF303034), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp))
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth().weight(1f).verticalScroll(vScroll)) {
+            Column(Modifier.width(108.dp)) {
+                if (project.layers.isEmpty()) {
+                    Box(Modifier.height(rowHeight).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                        Text("  No layers", fontSize = 8.sp, color = EditorPalette.TextMuted)
                     }
+                } else project.layers.forEachIndexed { index, layer ->
+                    LayerLabel(layer, index, state, vm, rowHeight)
+                }
+            }
+            Box(Modifier.weight(1f).horizontalScroll(hScroll)) {
+                Box(Modifier.width(contentWidth).height(rowHeight * rows)) {
+                    Column {
+                        if (project.layers.isEmpty()) {
+                            Box(Modifier.fillMaxWidth().height(rowHeight).border(0.5.dp, EditorPalette.OutlineSoft))
+                        } else project.layers.forEach { layer ->
+                            ClipBar(layer, project, zoom, rowHeight, density, state, vm)
+                        }
+                    }
+                    Box(Modifier.offset(x = (state.playheadMs / 1000f * zoom).dp)
+                        .fillMaxHeight().width(2.dp).background(Color.White))
                 }
             }
         }
@@ -126,7 +135,7 @@ private fun LayerLabel(layer: Layer, index: Int, state: EditorUiState, vm: Edito
             .height(height).fillMaxWidth()
             .background(if (layer.id == state.selectedLayerId) Color(0xFF243247) else EditorPalette.Surface)
             .border(0.5.dp, EditorPalette.OutlineSoft)
-            .pointerInput(Unit) { },
+            .clickable { vm.selectLayer(layer.id) },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("${index + 1}", fontSize = 9.sp, color = Color.Gray, modifier = Modifier.width(14.dp))
@@ -142,8 +151,7 @@ private fun LayerLabel(layer: Layer, index: Int, state: EditorUiState, vm: Edito
             null, Modifier.size(14.dp), tint = EditorPalette.Purple
         )
         Spacer(Modifier.width(4.dp))
-        Text(layer.name, fontSize = 10.sp, maxLines = 1, modifier = Modifier.weight(1f)
-            .pointerInput(Unit) { detectDragGestures { _, _ -> } })
+        Text(layer.name, fontSize = 9.sp, maxLines = 1, modifier = Modifier.weight(1f))
         IconButton(onClick = { vm.toggleVisible(layer.id) }, modifier = Modifier.size(24.dp)) {
             Icon(if (layer.visible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                 null, Modifier.size(13.dp))

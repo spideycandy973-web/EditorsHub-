@@ -39,7 +39,10 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.abs
 
-enum class EditorTab { ADD, TRANSFORM, KEYFRAMES, EFFECTS, TEXT, SHAPE, VECTOR, MASKS, AUDIO, TRANSITIONS, PROJECT }
+enum class EditorTab {
+    ADD, PROPERTIES, TRANSFORM, KEYFRAMES, EFFECTS, TEXT, SHAPE, VECTOR, MASKS,
+    AUDIO, TRANSITIONS, PROJECT, BORDER, BLEND, COLOR
+}
 
 sealed class ExportUiState {
     data object Idle : ExportUiState()
@@ -117,6 +120,7 @@ class EditorViewModel @Inject constructor(
                 _ui.value = _ui.value.copy(
                     project = p,
                     selectedLayerId = p.layers.firstOrNull()?.id,
+                    tab = if (p.layers.isNotEmpty()) EditorTab.PROPERTIES else EditorTab.ADD,
                     playheadMs = 0L
                 )
                 settings.settings
@@ -275,15 +279,32 @@ class EditorViewModel @Inject constructor(
     fun renameProject(name: String) { commit { it.copy(name = name) } }
 
     // --------------------------------------------------------------------- layers
-    fun addLayer(type: LayerType) {
+    fun addLayer(type: LayerType, requestedShape: ShapeKind? = null) {
         val p = project()
         val id = UUID.randomUUID().toString()
+        val shapeKind = requestedShape ?: if (type == LayerType.SHAPE) ShapeKind.ROUNDED_RECTANGLE else ShapeKind.RECTANGLE
+        val shapeName = shapeLabel(shapeKind)
+        val name = if (type == LayerType.SHAPE) {
+            val count = p.layers.count { it.name.startsWith(shapeName, ignoreCase = true) } + 1
+            "$shapeName $count"
+        } else defaultName(type)
+        val isOpenStroke = shapeKind in setOf(ShapeKind.LINE, ShapeKind.ARC)
+        val shapeSpec = if (type == LayerType.SHAPE || type == LayerType.SOLID) ShapeSpec(
+            kind = shapeKind,
+            width = 200f,
+            height = 200f,
+            cornerRadius = if (shapeKind == ShapeKind.ROUNDED_RECTANGLE) 25f else 0f,
+            fillColor = "#FFBA7E38",
+            strokeColor = "#FF000000",
+            strokeWidth = if (isOpenStroke) 8f else 4f,
+            strokeEnabled = isOpenStroke
+        ) else null
         val layer = Layer(
-            id = id, name = defaultName(type), type = type,
+            id = id, name = name, type = type,
             startMs = _ui.value.playheadMs,
             durationMs = minOf(5000L, (p.durationMs - _ui.value.playheadMs).coerceAtLeast(500L)),
             text = if (type == LayerType.TEXT) TextSpec() else null,
-            shape = if (type == LayerType.SHAPE || type == LayerType.SOLID) ShapeSpec() else null,
+            shape = shapeSpec,
             vector = if (type == LayerType.VECTOR) VectorSpec(
                 commands = listOf(
                     VectorCommand("M", listOf(-200f, -200f)),
@@ -296,11 +317,46 @@ class EditorViewModel @Inject constructor(
         commit { it.copy(layers = listOf(layer) + it.layers) }
         _ui.value = _ui.value.copy(selectedLayerId = id, tab = when (type) {
             LayerType.TEXT -> EditorTab.TEXT
-            LayerType.SHAPE, LayerType.SOLID -> EditorTab.SHAPE
+            LayerType.SHAPE, LayerType.SOLID -> EditorTab.PROPERTIES
             LayerType.VECTOR -> EditorTab.VECTOR
             else -> EditorTab.TRANSFORM
         })
-        message("${defaultName(type)} layer added")
+        message("$name added")
+    }
+
+    private fun shapeLabel(kind: ShapeKind): String = when (kind) {
+        ShapeKind.CIRCLE -> "Circle"
+        ShapeKind.ROUNDED_RECTANGLE -> "Rounded Rectangle"
+        ShapeKind.CROSS -> "Plus"
+        ShapeKind.ARC -> "Arc"
+        ShapeKind.TRIANGLE -> "Triangle"
+        ShapeKind.CALLOUT -> "Callout"
+        ShapeKind.PIE -> "Pie"
+        ShapeKind.HEXAGON -> "Hexagon"
+        ShapeKind.FLOWER -> "Flower"
+        ShapeKind.ARROW -> "Arrow"
+        ShapeKind.TRAPEZOID -> "Trapezoid"
+        ShapeKind.CRESCENT -> "Crescent"
+        ShapeKind.RECTANGLE -> "Rectangle"
+        ShapeKind.STAR -> "Star"
+        ShapeKind.LINE -> "Line"
+        ShapeKind.BEAM -> "Beam"
+        ShapeKind.FLAG -> "Curve"
+        ShapeKind.SEAL -> "Burst Seal"
+        ShapeKind.DIAMOND -> "Diamond"
+        ShapeKind.PENTAGON -> "Pentagon"
+        ShapeKind.SPARKLE -> "Sparkle"
+        ShapeKind.BURST -> "Burst"
+        ShapeKind.RING -> "Ring"
+        ShapeKind.HALF_CIRCLE -> "Half Circle"
+        ShapeKind.OCTAGON -> "Octagon"
+        ShapeKind.LEAF -> "Leaf"
+        ShapeKind.ARROWHEAD -> "Arrowhead"
+        ShapeKind.CROWN -> "Crown"
+        ShapeKind.HOURGLASS -> "Hourglass"
+        ShapeKind.SECTOR -> "Sector"
+        ShapeKind.NOTCHED_SQUARE -> "Notched Square"
+        ShapeKind.WAVE -> "Wave"
     }
 
     private fun defaultName(type: LayerType) = when (type) {

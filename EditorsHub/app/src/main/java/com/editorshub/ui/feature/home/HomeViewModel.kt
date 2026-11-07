@@ -7,11 +7,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.core.content.FileProvider
 import com.editorshub.core.ai.AiKeyStore
 import com.editorshub.core.data.ProjectRepository
 import com.editorshub.core.data.ProjectSerializer
 import com.editorshub.core.data.TemplateCatalog
 import com.editorshub.core.domain.model.*
+import com.editorshub.core.importer.ImportResult
+import com.editorshub.core.importer.ProjectImporter
 import com.editorshub.core.media.MediaKind
 import com.editorshub.core.media.MediaRepository
 import com.editorshub.core.rendering.ThumbnailGenerator
@@ -25,6 +28,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URI
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -38,7 +44,8 @@ class HomeViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val media: MediaRepository,
     private val thumbnails: ThumbnailGenerator,
-    private val workManager: WorkManager
+    private val workManager: WorkManager,
+    private val projectImporter: ProjectImporter
 ) : ViewModel() {
 
     val projects: StateFlow<List<ProjectSummary>> = repository.observeProjects()
@@ -92,6 +99,69 @@ class HomeViewModel @Inject constructor(
             saveThumbnail(project)
             _open.emit(project.id)
         }.onFailure { _message.emit("Could not create from template: ${it.message}") }
+    }
+
+    /** Downloads and imports a shared package URL. Only HTTPS is accepted; data is streamed to app-private storage. */
+    fun importPackageLink(rawUrl: String) = viewModelScope.launch {
+        val parsed = runCatching { URI(rawUrl.trim()) }.getOrNull()
+        if (parsed == null || parsed.scheme?.equals("https", ignoreCase = true) != true || parsed.host.isNullOrBlank()) {
+            _message.emit("Enter a valid HTTPS project-package link")
+            return@launch
+        }
+        val url = runCatching { URL(parsed.toString()) }.getOrNull()
+            ?: run { _message.emit("This package link is not valid"); return@launch }
+        val pathExt = parsed.path.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        val targetExt = pathExt.takeIf { it in setOf("xml", "json", "zip", "amproj", "aepx", "aep", "ehp", "node", "nvp") }
+            ?: "zip"
+        val target = File(context.filesDir, "package-downloads/${UUID.randomUUID()}.$targetExt")
+        val maxBytes = 512L * 1024L * 1024L
+        runCatching {
+            withContext(Dispatchers.IO) {
+                target.parentFile?.mkdirs()
+                val connection = (url.openConnection() as? HttpURLConnection)
+                    ?: error("Only HTTPS package links are supported")
+                try {
+                    connection.connectTimeout = 20_000
+                    connection.readTimeout = 30_000
+                    connection.instanceFollowRedirects = true
+                    connection.connect()
+                    if (connection.url.protocol != "https") error("The package redirected to a non-secure link")
+                    if (connection.responseCode !in 200..299) error("Server returned HTTP ${connection.responseCode}")
+                    val declared = connection.contentLengthLong
+                    if (declared > maxBytes) error("Package is larger than 512 MB")
+                    connection.inputStream.use { input ->
+                        target.outputStream().buffered().use { output ->
+                            val buffer = ByteArray(64 * 1024)
+                            var total = 0L
+                            while (true) {
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                total += read
+                                if (total > maxBytes) error("Package is larger than 512 MB")
+                                output.write(buffer, 0, read)
+                            }
+                        }
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+                if (target.length() == 0L) error("The package download was empty")
+                val contentUri = FileProvider.getUriForFile(context,
+                    "${context.packageName}.fileprovider", target)
+                when (val imported = projectImporter.import(contentUri, { _, _ -> Unit }, { false })) {
+                    is ImportResult.Success -> {
+                        _message.emit("Package imported: ${imported.project.name}")
+                        _open.emit(imported.project.id)
+                    }
+                    is ImportResult.Failure -> error(imported.message)
+                    is ImportResult.ReportOnly -> error(imported.report.headline)
+                    ImportResult.Cancelled -> error("Package import was cancelled")
+                }
+            }
+        }.onFailure { error ->
+            _message.emit("Package import failed: ${error.message ?: "network error"}")
+        }
+        target.delete()
     }
 
     fun importMedia(uris: List<Uri>, names: List<String?>) = viewModelScope.launch {

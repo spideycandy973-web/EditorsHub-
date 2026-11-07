@@ -4,12 +4,14 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -94,6 +96,11 @@ private fun MainShell(rootNav: androidx.navigation.NavHostController) {
     val tabNav = rememberNavController()
     val current by tabNav.currentBackStackEntryAsState()
     val tab = MainTab.fromRoute(current?.destination?.route)
+    var createRequest by remember { mutableIntStateOf(0) }
+    val requestCreate: () -> Unit = {
+        if (tab != MainTab.HOME) navigateToTab(tabNav, MainTab.HOME)
+        createRequest += 1
+    }
     // Navigation rail on tablets / landscape, bottom bar on phones.
     val wide = LocalConfiguration.current.screenWidthDp >= 600
 
@@ -103,15 +110,15 @@ private fun MainShell(rootNav: androidx.navigation.NavHostController) {
     if (wide) {
         Row(Modifier.fillMaxSize()) {
             AnimatedNavigationRail(tabNav, tab)
-            Box(Modifier.weight(1f)) { TabHost(tabNav, openProject, goImport, rootNav) }
+            Box(Modifier.weight(1f)) { TabHost(tabNav, openProject, goImport, rootNav, createRequest) }
         }
     } else {
         Scaffold(
             containerColor = EditorPalette.Black,
-            bottomBar = { AnimatedNavigationBar(tabNav, tab) }
+            bottomBar = { AnimatedNavigationBar(tabNav, tab, requestCreate) }
         ) { padding ->
             Box(Modifier.padding(padding).fillMaxSize()) {
-                TabHost(tabNav, openProject, goImport, rootNav)
+                TabHost(tabNav, openProject, goImport, rootNav, createRequest)
             }
         }
     }
@@ -123,7 +130,8 @@ private fun TabHost(
     tabNav: androidx.navigation.NavHostController,
     openProject: (String) -> Unit,
     goImport: () -> Unit,
-    rootNav: androidx.navigation.NavHostController
+    rootNav: androidx.navigation.NavHostController,
+    createRequest: Int
 ) {
     NavHost(
         navController = tabNav,
@@ -152,20 +160,20 @@ private fun TabHost(
         composable(MainTab.HOME.route) {
             HomeScreen(
                 onOpenProject = openProject,
-                onProjects = { tabNav.navigate(MainTab.PROJECTS.route) },
-                onTemplates = { tabNav.navigate(MainTab.TEMPLATES.route) },
-                onEffects = { tabNav.navigate(MainTab.EFFECTS.route) },
-                onAi = { tabNav.navigate(MainTab.AI.route) },
                 onSettings = { tabNav.navigate(MainTab.SETTINGS.route) },
-                onTutorials = { rootNav.navigate(Routes.TUTORIALS) },
                 onImport = goImport,
-                onNodeEditor = { rootNav.navigate(Routes.NODE_EDITOR) }
+                createRequest = createRequest
             )
         }
         composable(MainTab.PROJECTS.route) {
-            ProjectsScreen(onOpenProject = openProject, onImport = goImport, onNew = {
-                tabNav.navigate(MainTab.HOME.route)
-            })
+            ProjectsScreen(
+                onOpenProject = openProject,
+                onImport = goImport,
+                onNew = requestCreate,
+                onTemplates = { tabNav.navigate(MainTab.TEMPLATES.route) },
+                onEffects = { tabNav.navigate(MainTab.EFFECTS.route) },
+                onSettings = { tabNav.navigate(MainTab.SETTINGS.route) }
+            )
         }
         composable(MainTab.TEMPLATES.route) {
             TemplatesScreen(onBack = { tabNav.popBackStack() }, onCreated = openProject)
@@ -179,68 +187,59 @@ private fun TabHost(
                 onSettings = { tabNav.navigate(MainTab.SETTINGS.route) })
         }
         composable(MainTab.SETTINGS.route) {
-            SettingsScreen(onBack = { tabNav.popBackStack() },
-                onTutorials = { rootNav.navigate(Routes.TUTORIALS) })
+            SettingsScreen(
+                onBack = { tabNav.popBackStack() },
+                onTutorials = { rootNav.navigate(Routes.TUTORIALS) },
+                onAi = { tabNav.navigate(MainTab.AI.route) },
+                onNodeEditor = { rootNav.navigate(Routes.NODE_EDITOR) }
+            )
         }
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun AnimatedNavigationBar(
     nav: androidx.navigation.NavHostController,
-    current: MainTab
+    current: MainTab,
+    onCreate: () -> Unit
 ) {
-    NavigationBar(
-        containerColor = EditorPalette.Charcoal,
-        tonalElevation = 0.dp,
-        modifier = Modifier.height(72.dp)
-    ) {
-        MainTab.entries.forEach { tab ->
-            val selected = tab == current
-            val scale by animateFloatAsState(if (selected) 1.16f else 1f, AppMotion.springSpec(), label = "nav-scale")
-            val tint by animateColorAsState(
-                if (selected) EditorPalette.Purple else EditorPalette.TextMuted,
-                tween(AppMotion.Normal), label = "nav-tint"
-            )
-            NavigationBarItem(
-                selected = selected,
-                onClick = { navigateToTab(nav, tab) },
-                icon = {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = selected,
-                            enter = scaleIn(tween(AppMotion.Normal)) + fadeIn(),
-                            exit = scaleOut(tween(AppMotion.Fast)) + fadeOut()
-                        ) {
-                            Box(
-                                Modifier.size(32.dp).background(
-                                    Brush.radialGradient(listOf(Color(0x558B7BFF), Color.Transparent)),
-                                    CircleShape
-                                )
-                            )
-                        }
-                        Icon(tab.icon, tab.label, Modifier.scale(scale).size(EditorDimens.Icon), tint = tint)
-                    }
-                },
-                label = {
-                    AnimatedContent(
-                        targetState = selected,
-                        transitionSpec = { fadeIn(tween(AppMotion.Fast)) togetherWith fadeOut(tween(AppMotion.Fast)) },
-                        label = "nav-label"
-                    ) { isSelected ->
-                        Text(
-                            tab.label,
-                            fontSize = if (isSelected) 10.sp else 9.sp,
-                            color = if (isSelected) EditorPalette.TextPrimary else EditorPalette.TextMuted,
-                            maxLines = 1
-                        )
-                    }
-                },
-                alwaysShowLabel = true,
-                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
-            )
+    val projectsSelected = current in setOf(MainTab.PROJECTS, MainTab.TEMPLATES, MainTab.EFFECTS, MainTab.AI)
+    Box(Modifier.fillMaxWidth().height(82.dp).background(EditorPalette.Black),
+        contentAlignment = Alignment.Center) {
+        Row(
+            Modifier.widthIn(min = 250.dp, max = 278.dp).fillMaxHeight(0.78f)
+                .clip(CircleShape).background(EditorPalette.Surface).padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MainNavItem(MainTab.HOME, current == MainTab.HOME, Modifier.weight(1f)) {
+                navigateToTab(nav, MainTab.HOME)
+            }
+            Box(
+                Modifier.size(54.dp).clip(CircleShape).background(EditorPalette.Purple)
+                    .clickable(onClick = onCreate),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, "Create project", Modifier.size(30.dp), tint = EditorPalette.Black)
+            }
+            MainNavItem(MainTab.PROJECTS, projectsSelected, Modifier.weight(1f)) {
+                navigateToTab(nav, MainTab.PROJECTS)
+            }
         }
+    }
+}
+
+@Composable
+private fun MainNavItem(tab: MainTab, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Column(
+        modifier.fillMaxHeight().clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(tab.icon, tab.label, Modifier.size(23.dp),
+            tint = if (selected) Color.White else EditorPalette.TextSecondary)
+        Spacer(Modifier.height(2.dp))
+        Text(tab.label, fontSize = 11.sp,
+            color = if (selected) Color.White else EditorPalette.TextSecondary, maxLines = 1)
     }
 }
 

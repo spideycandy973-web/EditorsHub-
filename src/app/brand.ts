@@ -32,9 +32,9 @@ const KEY = 'editorshub.brand.v1';
 export const REFERENCE_LOOK: BrandOverride = {
   wordmark: 'ULTRA MOTION',
   domain: 'ultramotionofficial.com',
-  accent: '#01ffa7',
+  accent: '#00ffa8',
   lavender: '#d8dcff',
-  home: '#121214',
+  home: '#121215',
 };
 
 export const BASE_BRAND: Brand = {
@@ -42,17 +42,19 @@ export const BASE_BRAND: Brand = {
   wordmark: 'ULTRA MOTION',
   domain: 'ultramotionofficial.com',
   packageName: 'com.editorshub',
-  version: '4.4.0',
+  version: '4.5.0',
   website: 'https://github.com/spideycandy973-web/EditorsHub-',
   links: [
     { label: 'Website', url: 'https://github.com/spideycandy973-web/EditorsHub-', icon: 'globe' },
     { label: 'Telegram', url: 'https://t.me/', icon: 'send' },
     { label: 'TikTok', url: 'https://www.tiktok.com/', icon: 'music' },
   ],
+  /* Exact decoded resource tokens (A10/A9/S8/A7/Y1/P5/W3). These are struct facts
+     from the APK's colours.xml, not copied artwork. */
   palette: {
-    home: '#121214', card: '#1c1c1e', input: '#262628', line: '#2e2e33',
-    text: '#f3f3f6', muted: '#92929c', lavender: '#d8dcff',
-    accent: '#01ffa7', pink: '#ff3b7f',
+    home: '#121215', card: '#1c1c1f', input: '#262629', line: '#2e2e33',
+    text: '#f2f3f5', muted: '#8c8e93', lavender: '#d8dcff',
+    accent: '#00ffa8', pink: '#ff3b7f',
   },
   legal: 'EditorsHub is an original, independent motion editor. No assets or code from any other application are included.',
 };

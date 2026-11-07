@@ -1,20 +1,19 @@
-# EditorsHub v4.4.0
+# EditorsHub v4.5.0
 
 A **real, working mobile video & motion-graphics editor** that runs entirely in
 the browser, packaged as an Android app (`com.editorshub`). Layers, keyframes,
 47 effects, blending, masks, media, XML project import/export, six real export
 encoders — all backed by a canvas compositor that draws every frame for real.
 
-**v4.4.0 — screenshot pass and reliable APK updates.** An installed APK could
-keep showing the previous build because v4.3.0 registered a cache-first service
-worker inside the WebView; native builds no longer register it, stale caches are
-cleared at launch, and **About → Clear cached UI & reload** performs a real
-reset. The launcher wordmark/domain, card glyphs, effect browser, guide card,
-presets dialog, create sheet, shape picker and FAB states were rebuilt from the
-28 reference JPGs. Three new real effects (Fade In/Out, Crystal, Hot Color)
-back the quick-pick tiles. See [`docs/VISUAL_AUDIT.md`](docs/VISUAL_AUDIT.md)
-for measured before/after differences. Headless checks: **95/95**, zero console
-errors.
+**v4.5.0 — measured Ultra Motion editor alignment.** The latest pass is based
+on the supplied JPGs and fresh APK/REA/Ghidra structure: the 200 × 200 centered
+rounded square, `#ba7e38` fill and selection-only outline; the six-column,
+18-shape first picker page; the right preview rail's real show/hide state; and
+measured timeline/property-pane geometry. Launcher colors use the decoded
+resource tokens; the identity remains editable and the Android id remains
+`com.editorshub`. See [`docs/VISUAL_AUDIT.md`](docs/VISUAL_AUDIT.md) for the
+per-state pixel comparisons. Release checks are **100/100** when run with the
+optional headless browser toolchain (zero console errors/warnings).
 
 **v4.3.0 — APK features + editor rebuild.** The editor canvas was wrong (a
 small landscape rectangle); it is now the reference's **9:16 portrait canvas at
@@ -63,7 +62,7 @@ npm ci
 npm run typecheck
 npm run build
 node tools/verify-gif.mjs              # 7/7 GIF89a encoder checks
-node tools/smoke.mjs --shots          # 95 headless UI checks
+node tools/smoke.mjs --shots          # 100 headless UI checks
 node tools/capture-states.mjs           # 430x956 comparison frames
 ```
 
@@ -74,9 +73,9 @@ then `node tools/frames-libs.mjs` and run against `npm run preview`.
 ## Android
 
 `EditorsHub-Motion.apk` (Capacitor, installable) is committed at the repository
-root and attached to `apk-latest`, `v4.4.0` and `editorshub-latest`, together
+root and attached to `apk-latest`, `v4.5.0` and `editorshub-latest`, together
 with `EditorsHub-debug.apk`, `EditorsHub-release-unsigned.apk`,
-`EditorsHub-release.aab` and `EditorsHub-source-v4.4.0.zip`. Release APK/AAB are
+`EditorsHub-release.aab` and `EditorsHub-source-v4.5.0.zip`. Release APK/AAB are
 unsigned by design; see `EditorsHub/docs/RELEASE_SIGNING.md` for the keystore
 workflow. All Android builds run in GitHub Actions.
 

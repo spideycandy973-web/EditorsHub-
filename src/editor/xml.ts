@@ -84,6 +84,7 @@ function serializeLayer(l: Layer, indent: number): string {
     `color="${escapeXml(style.color)}"`,
     `color2="${escapeXml(style.color2)}"`,
     `strokeColor="${escapeXml(style.strokeColor)}"`,
+    `strokeEnabled="${style.strokeEnabled === false ? 0 : 1}"`,
     `shape="${style.shape}"`,
     `fit="${style.fit}"`,
     `audio="${style.audio ? 1 : 0}"`,
@@ -157,6 +158,10 @@ const PROP_ALIASES: Record<string, string> = {
   shapeheight: 'shapeHeight', height: 'shapeHeight', h: 'shapeHeight',
   cornerradius: 'cornerRadius', radius: 'cornerRadius',
   strokewidth: 'strokeWidth', stroke: 'strokeWidth',
+  strokecap: 'strokeCap', strokelinecap: 'strokeCap',
+  strokejoin: 'strokeJoin', strokelinejoin: 'strokeJoin',
+  strokestart: 'strokeStart', starttrim: 'strokeStart',
+  strokeend: 'strokeEnd', endtrim: 'strokeEnd',
   fontsize: 'fontSize', size: 'fontSize', textsize: 'fontSize',
   letterspacing: 'letterSpacing', tracking: 'letterSpacing',
   lineheight: 'lineHeight', leading: 'lineHeight',
@@ -308,6 +313,9 @@ function readStyle(layerEl: Element, layer: Layer): void {
   layer.style.color = normalizeColor(get(['color', 'fillColor', 'primaryColor', 'backgroundColor'], layer.style.color), layer.style.color);
   layer.style.color2 = normalizeColor(get(['color2', 'secondaryColor', 'gradientColor'], layer.style.color2), layer.style.color2);
   layer.style.strokeColor = normalizeColor(get(['strokeColor', 'outlineColor'], layer.style.strokeColor), layer.style.strokeColor);
+  const strokeEnabled = get(['strokeEnabled', 'strokeOn', 'outlineEnabled']);
+  if (strokeEnabled !== '') layer.style.strokeEnabled = truthy(strokeEnabled);
+  else if (layer.props.strokeWidth.value > 0) layer.style.strokeEnabled = true;
   const shape = get(['shape', 'shapeType', 'kind'], layer.style.shape);
   if (SHAPE_ALIASES[norm(shape)]) layer.style.shape = SHAPE_ALIASES[norm(shape)];
   else if (TYPE_ALIASES[norm(shape)] === 'shape') layer.style.shape = shape as ShapeKind;
@@ -367,6 +375,12 @@ function parseLayer(el: Element, projectSize: { width: number; height: number },
     height: projectSize.height,
     duration: attrNum(el, ['duration', 'length', 'outPoint'], 5),
   });
+  // XML input may omit stroke settings; imported shapes then start unpainted.
+  // An explicit legacy strokeWidth is enabled later by readStyle's migration.
+  if (type === 'shape') {
+    layer.props.strokeWidth.value = 0;
+    layer.style.strokeEnabled = false;
+  }
   layer.id = attrStr(el, ['id', 'uuid'], uid('layer'));
   layer.name = attrStr(el, ['name', 'label', 'title'], layer.name);
   layer.start = Math.max(0, attrNum(el, ['start', 'startTime', 'in', 'offset'], 0));

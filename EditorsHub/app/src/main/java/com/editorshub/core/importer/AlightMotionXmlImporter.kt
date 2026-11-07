@@ -1,6 +1,8 @@
 package com.editorshub.core.importer
 
+import android.util.Base64
 import android.util.Xml
+import com.editorshub.core.data.ProjectSerializer
 import com.editorshub.core.domain.model.*
 import org.xmlpull.v1.XmlPullParser
 import java.io.InputStream
@@ -60,6 +62,8 @@ object AlightMotionXmlImporter {
         var currentLayer: MutableLayer? = null
         var inKeyframes = false; var inEffects = false; var inMasks = false; var inComposition = false
         var textBuffer = StringBuilder()
+        var embeddedData = StringBuilder()
+        var inEmbeddedData = false
         var skipDepth = 0
 
         fun attr(n: String): String? = parser.getAttributeValue(null, n)
@@ -74,18 +78,20 @@ object AlightMotionXmlImporter {
                     val tag = parser.name.lowercase()
                     if (skipDepth > 0) { skipDepth++; continue }
                     when (tag) {
-                        "composition", "comp", "project", "settings", "alightmotion", "amproject", "motionproject" -> {
+                        "composition", "comp", "project", "settings", "alightmotion", "amproject", "motionproject", "editorshubmotion" -> {
                             inComposition = true
                             anyAttr("name", "projectName")?.let { name = it }
                             anyAttr("width", "w")?.toIntOrNull()?.let { width = it }
                             anyAttr("height", "h")?.toIntOrNull()?.let { height = it }
                             anyAttr("fps", "framerate", "frameRate")?.toDoubleOrNull()?.let { fps = it }
-                            anyAttr("duration", "durationMs")?.toDoubleOrNull()?.let { d ->
-                                durationMs = if (d < 1000) (d * 1000).roundToLong() else d.roundToLong()
+                            anyAttr("durationMs", "duration")?.toDoubleOrNull()?.let { d ->
+                                durationMs = if (attr("durationMs") == null && d < 1000)
+                                    (d * 1000).roundToLong() else d.roundToLong()
                             }
                             anyAttr("background", "bg", "backgroundColor")?.let { background = normalizeColor(it) }
                         }
-                        "layers" -> inComposition = true
+                        "layers", "audiotracks" -> inComposition = true
+                        "editorshubdata" -> inEmbeddedData = true
                         "layer", "item", "track" -> {
                             val typeName = (anyAttr("type", "kind") ?: "shape").lowercase()
                             val type = layerAliases[typeName] ?: run {
@@ -96,8 +102,12 @@ object AlightMotionXmlImporter {
                                 id = ImportIds.newId("layer"),
                                 name = anyAttr("name", "label") ?: "Layer ${outLayers.size + 1}",
                                 type = type,
-                                startMs = longAttr("start", 0L).let { if (it < 1000 && durationMs > 1000) it * 1000L else it },
-                                durationMs = longAttr("duration", durationMs).let { if (it < 1000 && durationMs > 1000) it * 1000L else it },
+                                startMs = longAttr("startMs", longAttr("start", 0L)).let {
+                                    if (attr("startMs") == null && it < 1000 && durationMs > 1000) it * 1000L else it
+                                },
+                                durationMs = longAttr("durationMs", longAttr("duration", durationMs)).let {
+                                    if (attr("durationMs") == null && it < 1000 && durationMs > 1000) it * 1000L else it
+                                },
                                 source = source,
                                 transform = Transform(
                                     x = floatAttr("x", 0f), y = floatAttr("y", 0f),
@@ -105,7 +115,10 @@ object AlightMotionXmlImporter {
                                     scaleY = floatAttr("scaleY", floatAttr("scale", 1f)),
                                     rotation = floatAttr("rotation", 0f),
                                     opacity = floatAttr("opacity", floatAttr("alpha", 1f))
-                                )
+                                ),
+                                blend = runCatching {
+                                    BlendMode.valueOf((attr("blend") ?: "NORMAL").uppercase())
+                                }.getOrDefault(BlendMode.NORMAL)
                             )
                             textBuffer.setLength(0)
                         }
@@ -161,16 +174,71 @@ object AlightMotionXmlImporter {
                         }
                         "text", "content", "value" -> { /* captured via TEXT event */ }
                         "shape" -> {
-                            val sk = when ((anyAttr("kind", "type") ?: "rectangle").lowercase()) {
+                            val rawKind = (anyAttr("kind", "type") ?: "rectangle").lowercase()
+                                .replace("_", "").replace("-", "").replace(" ", "")
+                            val sk = when (rawKind) {
                                 "circle", "ellipse" -> ShapeKind.CIRCLE
+                                "rounded", "roundedrect", "roundedrectangle" -> ShapeKind.ROUNDED_RECTANGLE
                                 "triangle" -> ShapeKind.TRIANGLE
                                 "polygon" -> ShapeKind.POLYGON
                                 "star" -> ShapeKind.STAR
+                                "plus", "cross" -> ShapeKind.CROSS
+                                "arc" -> ShapeKind.ARC
+                                "callout", "speechbubble" -> ShapeKind.CALLOUT
+                                "pie" -> ShapeKind.PIE
+                                "hexagon" -> ShapeKind.HEXAGON
+                                "flower" -> ShapeKind.FLOWER
+                                "arrow" -> ShapeKind.ARROW
+                                "trapezoid" -> ShapeKind.TRAPEZOID
+                                "crescent" -> ShapeKind.CRESCENT
+                                "line" -> ShapeKind.LINE
+                                "beam" -> ShapeKind.BEAM
+                                "curve", "flag" -> ShapeKind.FLAG
+                                "seal", "burstseal" -> ShapeKind.SEAL
+                                "diamond" -> ShapeKind.DIAMOND
+                                "pentagon" -> ShapeKind.PENTAGON
+                                "sparkle" -> ShapeKind.SPARKLE
+                                "burst" -> ShapeKind.BURST
+                                "ring" -> ShapeKind.RING
+                                "halfcircle" -> ShapeKind.HALF_CIRCLE
+                                "octagon" -> ShapeKind.OCTAGON
+                                "leaf" -> ShapeKind.LEAF
+                                "arrowhead" -> ShapeKind.ARROWHEAD
+                                "crown" -> ShapeKind.CROWN
+                                "hourglass" -> ShapeKind.HOURGLASS
+                                "sector" -> ShapeKind.SECTOR
+                                "notchedsquare" -> ShapeKind.NOTCHED_SQUARE
+                                "wave" -> ShapeKind.WAVE
                                 else -> ShapeKind.RECTANGLE
                             }
-                            currentLayer?.shape = ShapeSpec(kind = sk,
+                            val strokeWidth = floatAttr("strokeWidth", 4f)
+                            val enabled = attr("strokeEnabled")?.toBooleanStrictOrNull()
+                                ?: (attr("strokeWidth")?.toFloatOrNull()?.let { it > 0f } ?: false)
+                            currentLayer?.shape = ShapeSpec(
+                                kind = sk,
                                 width = floatAttr("width", 500f), height = floatAttr("height", 500f),
-                                fillColor = normalizeColor(anyAttr("fill", "color") ?: "#FFFFFFFF"))
+                                cornerRadius = floatAttr("cornerRadius", 0f),
+                                sides = floatAttr("sides", 6f).toInt().coerceIn(3, 32),
+                                starPoints = floatAttr("starPoints", 5f).toInt().coerceIn(3, 20),
+                                innerRadius = floatAttr("innerRadius", 0.45f).coerceIn(0.05f, 0.95f),
+                                fillColor = normalizeColor(anyAttr("fill", "color") ?: "#FFFFFFFF"),
+                                fillColor2 = normalizeColor(anyAttr("fill2", "color2") ?: "#FF8B7BFF"),
+                                gradient = runCatching { GradientType.valueOf((attr("gradient") ?: "SOLID").uppercase()) }
+                                    .getOrDefault(GradientType.SOLID),
+                                gradientAngle = floatAttr("gradientAngle", 45f),
+                                strokeColor = normalizeColor(attr("strokeColor") ?: "#FF000000"),
+                                strokeWidth = strokeWidth,
+                                strokeEnabled = enabled,
+                                strokeCap = floatAttr("strokeCap", 1f).toInt().coerceIn(0, 2),
+                                strokeJoin = floatAttr("strokeJoin", 0f).toInt().coerceIn(0, 2),
+                                strokeStart = floatAttr("strokeStart", 0f).coerceIn(0f, 100f),
+                                strokeEnd = floatAttr("strokeEnd", 100f).coerceIn(0f, 100f),
+                                shadowEnabled = attr("shadowEnabled")?.toBooleanStrictOrNull() ?: false,
+                                shadowSize = floatAttr("shadowSize", 0f).coerceAtLeast(0f),
+                                shadowAlpha = floatAttr("shadowAlpha", 1f).coerceIn(0f, 1f),
+                                shadowX = floatAttr("shadowX", 0f), shadowY = floatAttr("shadowY", 3f),
+                                shadowColor = normalizeColor(attr("shadowColor") ?: "#FF000000")
+                            )
                         }
                         "media", "asset" -> {
                             val p = anyAttr("path", "src", "source", "uri")
@@ -187,7 +255,11 @@ object AlightMotionXmlImporter {
                     }
                 }
                 XmlPullParser.TEXT -> {
-                    if (currentLayer != null && textBuffer.length < 4096) textBuffer.append(parser.text.trim())
+                    if (inEmbeddedData && embeddedData.length < 64 * 1024 * 1024) {
+                        embeddedData.append(parser.text.trim())
+                    } else if (currentLayer != null && textBuffer.length < 4096) {
+                        textBuffer.append(parser.text.trim())
+                    }
                 }
                 XmlPullParser.END_TAG -> {
                     val tag = parser.name.lowercase()
@@ -196,6 +268,7 @@ object AlightMotionXmlImporter {
                         "keyframes", "animations" -> inKeyframes = false
                         "effects" -> inEffects = false
                         "masks" -> inMasks = false
+                        "editorshubdata" -> inEmbeddedData = false
                         "layer", "item", "track" -> {
                             currentLayer?.let { m ->
                                 val text = textBuffer.toString().trim()
@@ -217,6 +290,37 @@ object AlightMotionXmlImporter {
             }
         }
 
+        if (embeddedData.isNotEmpty()) {
+            val decoded = runCatching {
+                val json = String(Base64.decode(embeddedData.toString(), Base64.DEFAULT), Charsets.UTF_8)
+                ProjectSerializer.decode(json)
+            }.getOrNull()
+            if (decoded != null) {
+                val now = System.currentTimeMillis()
+                val imported = decoded.copy(
+                    id = ImportIds.newId("project"),
+                    createdAt = now,
+                    updatedAt = now
+                )
+                val mediaUris = imported.layers.mapNotNull { it.sourceUri } + imported.audioTracks.map { it.uri }
+                val missingMedia = mediaUris.filter { uri ->
+                    when {
+                        uri.startsWith("content:") || uri.startsWith("data:") ||
+                            uri.startsWith("http:") || uri.startsWith("https:") -> false
+                        uri.startsWith("file://") -> !java.io.File(uri.removePrefix("file://")).exists()
+                        else -> !java.io.File(uri).exists()
+                    }
+                }
+                val counts = intArrayOf(
+                    imported.layers.size + imported.audioTracks.size,
+                    imported.layers.sumOf { layer -> layer.keyframes.sumOf { it.keyframes.size } },
+                    imported.layers.sumOf { it.effects.size },
+                    imported.layers.sumOf { it.masks.size }
+                )
+                return Draft(imported, missingMedia.distinct(), emptyList(), emptyList(), counts)
+            }
+            warnings.add("The embedded EditorsHub project data could not be decoded; visible XML data was imported instead.")
+        }
         if (layers == 0) warnings.add("No layers were found in the XML file.")
         if (outLayers.isEmpty()) warnings.add("A blank composition was created so the project is still usable.")
         val project = Project(
@@ -271,6 +375,7 @@ object AlightMotionXmlImporter {
         val id: String, var name: String, var type: LayerType,
         var startMs: Long, var durationMs: Long, var source: String?,
         var transform: Transform,
+        var blend: BlendMode = BlendMode.NORMAL,
         val keyframes: MutableList<KeyframeTrack> = mutableListOf(),
         val effects: MutableList<Effect> = mutableListOf(),
         val masks: MutableList<MaskSpec> = mutableListOf(),
@@ -290,6 +395,7 @@ object AlightMotionXmlImporter {
                 startMs = startMs, durationMs = durationMs,
                 sourceUri = source,
                 transform = transform,
+                blendMode = blend,
                 keyframes = keyframes,
                 effects = effects,
                 masks = masks,

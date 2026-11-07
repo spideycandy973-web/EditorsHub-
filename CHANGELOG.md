@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.5.0 — measured Ultra Motion editor alignment (2026-11-06)
+
+- **Rechecked the screenshots and RE evidence instead of guessing.** Fresh
+  APK/REA/Ghidra measurements are in `apk-analysis/`; the clean-room app now
+  uses the decoded surface palette and the visible reference dimensions.
+- **Fixed the central shape mismatch:** the default `Rounded Rectangle 1` is
+  centered at 200 × 200 composition units, filled `#ba7e38`, radius matched to
+  the 50 px rendered square, and has no painted white stroke. The white edge in
+  the selected screenshot is the real selection outline; deselecting the layer
+  removes it, as it does in the reference.
+- **Rebuilt the shape picker:** first page is the reference 18-shape, six-column
+  grid; the picker has three pages, reference-sized controls and path-point
+  previews. The rest of the original shape/vector library remains available.
+- **Aligned the editor/timeline details:** preview tools are hidden until their
+  real toggle is used; reference property/detail pane geometry and the rounded
+  selection handles are preserved; default layer duration is four seconds and
+  the ruler is 53 px/sec so a new shape's clip matches the screenshot width.
+- **Launcher and editor styling:** header coordinates and decoded dark/accent
+  resource colours were corrected; the native/PWA version is 4.5.0 / code 18,
+  with web shell cache `editorshub-v19`.
+- Added a regression check for the default shape's dimensions, fill, stroke,
+  duration and rail behavior. `npm run typecheck`, `npm run build`, GIF checks,
+  and the headless smoke suite are recorded in the release notes after the final
+  verification run.
+- Clean-room boundary remains unchanged: no decompiled code, proprietary
+  assets, fonts, or re-signed reference APK are included; package remains
+  `com.editorshub` and branding is still editable in-app.
+
 ## 4.4.0 — screenshot pass and reliable APK updates (2026-11-06)
 
 - **Fixed the reason an installed APK can look unchanged after an update.**

@@ -14,7 +14,13 @@ const val PROJECT_FORMAT_VERSION = 2
     NOISE, RGB_SPLIT, CHROMATIC_ABERRATION, PIXELATION, WAVE_DISTORTION, COLOR_GRADING
 }
 @Serializable enum class TransitionType { FADE_IN, FADE_OUT, CROSSFADE, ZOOM, SLIDE, SPIN, BLUR, WIPE, CUSTOM }
-@Serializable enum class ShapeKind { RECTANGLE, CIRCLE, TRIANGLE, POLYGON, STAR, LINE, HEART, ARROW }
+@Serializable enum class ShapeKind {
+    RECTANGLE, CIRCLE, TRIANGLE, POLYGON, STAR, LINE, HEART, ARROW,
+    ROUNDED_RECTANGLE, CROSS, ARC, CALLOUT, PIE, HEXAGON, FLOWER, TRAPEZOID,
+    CRESCENT, BEAM, FLAG, SEAL, DIAMOND, PENTAGON, SPARKLE, BURST, RING,
+    HALF_CIRCLE, OCTAGON, LEAF, ARROWHEAD, CROWN, HOURGLASS, SECTOR,
+    NOTCHED_SQUARE, WAVE
+}
 @Serializable enum class GradientType { SOLID, LINEAR, RADIAL }
 @Serializable enum class MaskKind { RECTANGLE, CIRCLE, PATH }
 @Serializable enum class FitMode { COVER, CONTAIN, STRETCH, NONE }
@@ -135,7 +141,20 @@ data class ShapeSpec(
     val gradient: GradientType = GradientType.SOLID,
     val gradientAngle: Float = 45f,
     val strokeColor: String = "#FF000000",
-    val strokeWidth: Float = 0f
+    val strokeWidth: Float = 4f,
+    /** Width is retained independently from the switch, matching editor behaviour. */
+    val strokeEnabled: Boolean = false,
+    /** 0 butt, 1 round, 2 square; 0 miter, 1 round, 2 bevel. */
+    val strokeCap: Int = 1,
+    val strokeJoin: Int = 0,
+    val strokeStart: Float = 0f,
+    val strokeEnd: Float = 100f,
+    val shadowEnabled: Boolean = false,
+    val shadowSize: Float = 0f,
+    val shadowAlpha: Float = 1f,
+    val shadowX: Float = 0f,
+    val shadowY: Float = 3f,
+    val shadowColor: String = "#FF000000"
 )
 
 /** A vector path as an ordered list of drawing commands. args are in layer-local px. */

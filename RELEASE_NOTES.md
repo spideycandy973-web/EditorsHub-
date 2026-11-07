@@ -1,45 +1,32 @@
-# EditorsHub v4.4.0 — screenshot pass and reliable APK updates
+# EditorsHub v4.5.0 — measured Ultra Motion editor alignment
 
-Package `com.editorshub`. All code and artwork are original; the app identity is
-fully customisable in-app (About → Customise app).
+Package `com.editorshub` (version code 18). The reference screenshots and fresh
+REA/Ghidra structural measurements were used as the visual targets. This is an
+original implementation; no reference-app source, proprietary assets, fonts,
+or re-signed APK are included. Branding remains editable in the app.
 
-## Install
+## What changed
 
-**Install `EditorsHub-Motion.apk`** from this release (or from the rolling
-`apk-latest` release). If you previously installed an older build, open
-**About → Clear cached UI & reload** once: older builds registered an offline
-cache inside the WebView that could keep showing the previous interface even
-after the APK was replaced. v4.4.0 removes that cache on native builds.
-
-## What's new in 4.4.0
-
-- **APK updates actually show the new UI.** v4.3.0's cache-first service worker
-  pinned `index.html` and the old hashed JS bundles. Native builds no longer
-  register it, clear stale registrations/caches at startup, and expose a real
-  cache reset in the About menu. Hosted-web builds are network-first with a
-  versioned cache.
-- **Launcher matches the reference JPGs**: `ULTRA MOTION` /
-  `ultramotionofficial.com`, original stacked-images-with-arrow and hex-cube
-  SVG glyphs, diamond brand badge, and a real network-speed readout measured
-  from Resource Timing. One-tap presets switch between the reference look and
-  `EDITORS HUB` / `editorshub.app`.
-- **Effect Browser**: five original vector quick-pick tiles, teal separator
-  dot, muted category plates, rounded top and corrected 77px status gap. Three
-  new real effects back the quick picks — Fade In/Out, Crystal and Hot Color.
-- **Guide card**: half-screen artwork panel with overlaid title/description and
-  a fixed Standard Settings bar.
-- **Presets**: wider card, centred close, taller transport illustration, real
-  Import elements action.
-- **Create sheet**: single Background control; **shape picker**: 5-column grid
-  with 15 shapes; **FAB**: real X close state.
-- `com.editorshub` package name unchanged, so this installs as an update.
+- The default `Rounded Rectangle 1` now renders at 200 × 200 composition units,
+  centered and filled with the screenshot-measured `#ba7e38`. It has no painted
+  white stroke: the white border and handles appear only while selected.
+- The shape picker now starts with the reference's 18 shapes in six columns,
+  with three page dots, reference-sized spacing and vector edit-point previews.
+- The editor's initially hidden preview rail now follows its actual toggle;
+  the measured stage, timeline, property root/detail layout and 53 px/sec ruler
+  are aligned. New shape clips default to four seconds, matching the visible
+  clip width in the reference.
+- Launcher header geometry and decoded resource colors were corrected. PWA
+  shell cache is `editorshub-v19`; Android build metadata is 4.5.0 / code 18.
 
 ## Verification
 
-- `npm run typecheck`, `npm run build`: clean.
-- `node tools/smoke.mjs --shots`: 95/95 checks, no console errors/warnings.
-- `tools/capture-states.mjs` regenerates the comparison frames; measured
-  mean per-pixel differences against the 28 reference JPGs: home 6.64,
-  settings 10.97, create 19.86, blank editor 8.94, Add 10.09, Shape 14.36,
-  Effect Browser 31.26, Presets 27.64 (0 = identical, 255 = maximally
-  different). These are measurements, not a claim of pixel identity.
+- `npm run typecheck` and `npm run build`.
+- `node tools/verify-gif.mjs`: GIF89a encoder checks.
+- `node tools/smoke.mjs --shots`: 100 headless checks, zero console errors or
+  warnings; includes shape geometry/fill/stroke/duration and real preview-rail
+  show/hide behavior.
+- Android debug/release/AAB and Capacitor APK builds run in GitHub Actions; the
+  installable Capacitor debug APK is attached to this release by CI.
+- Pixel differences are recorded per state in `docs/VISUAL_AUDIT.md`; they are
+  measurements, not a claim of pixel identity.

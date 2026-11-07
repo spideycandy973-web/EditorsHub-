@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   ArrowLeft, ArrowLeftToLine, ArrowRightToLine, ChevronDown, ChevronLeft, Copy,
-  ExternalLink, Grid2X2, ImagePlus, Layers3, Minus, MoreHorizontal, Pause, Play, Plus,
-  Redo2, ScanLine, Settings2, Trash2, Undo2, VideoOff, Volume2, X,
+  ExternalLink, Grid2X2, ImagePlus, Layers3, Link2, Minus, MoreHorizontal, Pause, Play, Plus,
+  Redo2, ScanLine, Settings, Settings2, Trash2, Undo2, VideoOff, Volume2, X,
 } from 'lucide-react';
 import { useEditor, usePlayhead } from '../editor/store';
 import type { Renderer } from '../editor/renderer';
@@ -56,6 +56,16 @@ function PageCurve() {
 }
 
 /* --------------------------------- top bar -------------------------------- */
+function ShapeSizeGlyph() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="6" y="5" width="12" height="14" rx="1" />
+      <path d="M1.8 12h4.1M4 10l-2.2 2L4 14M22.2 12h-4.1M20 10l2.2 2-2.2 2" />
+    </svg>
+  );
+}
+
 function TopBar() {
   const e = useEditor();
   const ui = useUI();
@@ -68,6 +78,17 @@ function TopBar() {
         <IBtn title="Back to layer properties" onClick={() => ui.setSheet('properties')}><ArrowLeft size={20} strokeWidth={1.8} /></IBtn>
         <strong className="um-top-title">{PROPERTY_TITLES[ui.property]}</strong>
         <div className="um-top-spacer" />
+        {ui.property === 'editShape' && (
+          <>
+            <IBtn title={ui.shapeRatioLocked ? 'Unlock aspect ratio' : 'Lock aspect ratio'} active={ui.shapeRatioLocked}
+              onClick={() => ui.setShapeRatioLocked(!ui.shapeRatioLocked)}>
+              <Link2 size={20} strokeWidth={1.7} />
+            </IBtn>
+            <IBtn title="Open size and scale controls" onClick={() => { ui.openProperty('move'); ui.setMoveView('size'); }}>
+              <ShapeSizeGlyph />
+            </IBtn>
+          </>
+        )}
       </header>
     );
   }
@@ -95,7 +116,7 @@ function TopBar() {
         </>
       ) : (
         <>
-          <IBtn title="Project settings" onClick={() => ui.setSheet('projectSettings')}><Settings2 size={19} strokeWidth={1.7} /></IBtn>
+          <IBtn title="Project settings" onClick={() => ui.setSheet('projectSettings')}><Settings size={19} strokeWidth={1.7} /></IBtn>
           <IBtn title="Export" onClick={() => ui.setSheet('export')}><ExternalLink size={19} strokeWidth={1.7} /></IBtn>
         </>
       )}
@@ -133,17 +154,19 @@ function RightToolbar({ onProperties, onAdd }: { onProperties: () => void; onAdd
 }
 
 /** Real selection handles: drag the box to move, drag a corner to scale. */
-function SelectionOverlay({ canvasRef, rendererRef }: {
+function SelectionOverlay({ canvasRef, rendererRef, mode = 'handles', radiusHandle = false }: {
   canvasRef: RefObject<HTMLCanvasElement>;
   rendererRef: React.MutableRefObject<Renderer | null>;
+  mode?: 'handles' | 'outline' | 'anchor';
+  radiusHandle?: boolean;
 }) {
   const e = useEditor();
   const time = usePlayhead();
   const layer = e.selectedLayer;
   const [size, setSize] = useState({ w: 0, h: 0 });
   const drag = useRef<{
-    mode: 'move' | 'scale'; id: string; x: number; y: number;
-    px: number; py: number; sx: number; sy: number;
+    mode: 'move' | 'scale' | 'radius'; id: string; x: number; y: number;
+    px: number; py: number; sx: number; sy: number; radius: number;
   } | null>(null);
 
   useEffect(() => {
@@ -165,8 +188,13 @@ function SelectionOverlay({ canvasRef, rendererRef }: {
   const top = (b.y - b.h / 2) * sy;
   const w = b.w * sx;
   const h = b.h * sy;
+  const radius = e.getLayerProp(layer, 'cornerRadius');
+  const borderRadius = layer.type !== 'shape' ? '0px'
+    : layer.style.shape === 'ellipse' ? '50%'
+      : layer.style.shape === 'rounded' ? `${Math.min(w / 2, h / 2, Math.max(radius * sx, Math.min(w, h) * 0.14))}px`
+        : layer.style.shape === 'rectangle' ? `${Math.min(w / 2, h / 2, Math.max(0, radius * sx))}px` : '0px';
 
-  const begin = (mode: 'move' | 'scale', ev: React.PointerEvent) => {
+  const begin = (mode: 'move' | 'scale' | 'radius', ev: React.PointerEvent) => {
     ev.stopPropagation();
     (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
     e.beginBatch();
@@ -174,6 +202,7 @@ function SelectionOverlay({ canvasRef, rendererRef }: {
       mode, id: layer.id, x: ev.clientX, y: ev.clientY,
       px: e.getLayerProp(layer, 'x'), py: e.getLayerProp(layer, 'y'),
       sx: e.getLayerProp(layer, 'scaleX'), sy: e.getLayerProp(layer, 'scaleY'),
+      radius: e.getLayerProp(layer, 'cornerRadius'),
     };
   };
   const move = (ev: React.PointerEvent) => {
@@ -184,6 +213,8 @@ function SelectionOverlay({ canvasRef, rendererRef }: {
     if (d.mode === 'move') {
       e.setProp(d.id, 'x', d.px + dx, false);
       e.setProp(d.id, 'y', d.py + dy, false);
+    } else if (d.mode === 'radius') {
+      e.setProp(d.id, 'cornerRadius', Math.max(0, d.radius + dx), false);
     } else {
       const f = Math.max(0.08, Math.min(8, 1 + (dx / Math.max(1, b.w) + dy / Math.max(1, b.h)) * 2));
       e.setProp(d.id, 'scaleX', d.sx * f, false);
@@ -198,12 +229,12 @@ function SelectionOverlay({ canvasRef, rendererRef }: {
   ] as const;
 
   return (
-    <div className="um-selection" style={{ left, top, width: w, height: h, transform: `rotate(${b.angle}deg)` }}
+    <div className={`um-selection mode-${mode}`} style={{ left, top, width: w, height: h, borderRadius, transform: `rotate(${b.angle}deg)` }}
       onPointerDown={ev => begin('move', ev)} onPointerMove={move} onPointerUp={end} onPointerCancel={end}>
-      {handles.map(([hx, hy], i) => (
-        <i key={i} className={i % 2 === 0 ? 'corner' : ''}
+      {mode === 'handles' && handles.map(([hx, hy], i) => (
+        <i key={i} className={`${i % 2 === 0 ? 'corner' : ''} ${radiusHandle && i === 3 ? 'radius' : ''}`}
           style={{ left: `${hx * 100}%`, top: `${hy * 100}%` }}
-          onPointerDown={ev => begin('scale', ev)} />
+          onPointerDown={ev => begin(radiusHandle && i === 3 ? 'radius' : 'scale', ev)} />
       ))}
     </div>
   );
@@ -250,6 +281,10 @@ function Stage({ canvasRef, stageRef, rendererRef }: {
   const cameraSelected = e.selectedLayer?.type === 'camera';
   const showMagnifier = !!e.selectedLayer || ui.toolsOpen;
   const showHandles = ui.sheet === 'properties' && !!e.selectedLayer;
+  const editShapeOverlay = ui.sheet === 'property' && ui.property === 'editShape' && !!e.selectedLayer;
+  const easingOverlay = ui.sheet === 'property' && ui.property === 'move' && ui.moveView === 'easing' && !!e.selectedLayer;
+  const moveOverlay = ui.sheet === 'property' && ui.property === 'move' && ui.moveView !== 'easing' && !!e.selectedLayer;
+  const selectionMode = showHandles || editShapeOverlay ? 'handles' : ui.property === 'move' && ui.moveView === 'easing' ? 'outline' : ui.moveView === 'pos' ? 'anchor' : 'outline';
 
   return (
     <div className={`um-stage ${dragOver ? 'drag-over' : ''} ${ui.toolsOpen ? 'tools-open' : ''}`} ref={stageRef}
@@ -270,7 +305,7 @@ function Stage({ canvasRef, stageRef, rendererRef }: {
       <div className="um-canvas-holder" style={{ transform: `scale(${e.previewZoom})` }}>
         <canvas ref={canvasRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
           onPointerUp={onPointerUp} onPointerCancel={onPointerUp} />
-        {showHandles && <SelectionOverlay canvasRef={canvasRef} rendererRef={rendererRef} />}
+        {(showHandles || editShapeOverlay || easingOverlay || moveOverlay) && <SelectionOverlay canvasRef={canvasRef} rendererRef={rendererRef} mode={selectionMode} radiusHandle={editShapeOverlay} />}
         {e.showGuides && <div className="um-safe-area"><div /></div>}
         {cameraSelected && <svg className="um-camera-x" viewBox="0 0 100 100" preserveAspectRatio="none">
           <line x1="0" y1="0" x2="100" y2="100" /><line x1="100" y1="0" x2="0" y2="100" />
@@ -399,7 +434,7 @@ function Timeline() {
   const layerColor = (l: Layer) => l.type === 'camera' ? '#ff3b7f'
     : l.type === 'audio' ? '#a78bfa'
       : l.type === 'text' ? '#f5b642'
-        : '#26d5dd';
+        : '#4cbbc7';
 
   const isControl = (ev: React.PointerEvent) =>
     !!(ev.target as HTMLElement).closest('button, input, select, .um-layer-fixed-column');
@@ -491,7 +526,7 @@ export function Editor({ canvasRef, stageRef, rendererRef }: {
   const ui = useUI();
   const docked = ui.sheet === 'property' || ui.sheet === 'properties';
   return (
-    <div className={`um-screen um-editor ${docked ? 'docked' : ''}`}>
+    <div className={`um-screen um-editor ${docked ? 'docked' : ''} ${ui.sheet === 'property' ? 'detail' : ''}`}>
       <TopBar />
       <Stage canvasRef={canvasRef} stageRef={stageRef} rendererRef={rendererRef} />
       <Transport />

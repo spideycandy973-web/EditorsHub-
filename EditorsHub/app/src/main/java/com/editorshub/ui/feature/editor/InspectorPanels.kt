@@ -12,6 +12,8 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -32,6 +34,7 @@ import com.editorshub.core.domain.model.*
 import com.editorshub.core.rendering.RenderGraph
 import com.editorshub.ui.components.*
 import com.editorshub.ui.theme.AppMotion
+import com.editorshub.ui.theme.EditorPalette
 import kotlin.math.abs
 
 private val TRANSFORM_PROPS = listOf(
@@ -46,53 +49,258 @@ private val TRANSFORM_PROPS = listOf(
     Triple("skewX", "Skew X", -80f..80f)
 )
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun Inspector(state: EditorUiState, vm: EditorViewModel, modifier: Modifier = Modifier) {
+fun Inspector(
+    state: EditorUiState,
+    vm: EditorViewModel,
+    modifier: Modifier = Modifier,
+    onShapePicker: () -> Unit = {}
+) {
     val project = state.project ?: return
     val layer = project.layers.firstOrNull { it.id == state.selectedLayerId }
-    Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
-        ScrollableTabRow(selectedTabIndex = EditorTab.entries.indexOf(state.tab),
-            edgePadding = 4.dp, modifier = Modifier.fillMaxWidth()) {
-            EditorTab.entries.forEach { tab ->
-                Tab(selected = state.tab == tab, onClick = { vm.setTab(tab) },
-                    text = { Text(tab.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 9.sp) })
+    Row(modifier = modifier.background(EditorPalette.Surface)) {
+        Column(
+            Modifier.width(54.dp).fillMaxHeight().background(EditorPalette.SurfaceRaised),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            IconButton(onClick = {
+                if (state.tab in setOf(EditorTab.BORDER, EditorTab.BLEND, EditorTab.COLOR,
+                        EditorTab.SHAPE, EditorTab.TRANSFORM, EditorTab.EFFECTS, EditorTab.TEXT,
+                        EditorTab.VECTOR, EditorTab.MASKS, EditorTab.KEYFRAMES)) {
+                    vm.setTab(EditorTab.PROPERTIES)
+                } else vm.setTab(EditorTab.ADD)
+            }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.ArrowBack, "Back to properties", tint = EditorPalette.TextPrimary)
+            }
+            IconButton(onClick = { vm.setTab(EditorTab.KEYFRAMES) }, modifier = Modifier.size(42.dp)) {
+                Icon(Icons.Default.Add, "Add keyframe", tint = EditorPalette.TextSecondary)
+            }
+            IconButton(onClick = { vm.setTab(EditorTab.TRANSFORM) }, modifier = Modifier.size(42.dp)) {
+                Icon(Icons.Default.ShowChart, "Transform and easing", tint = EditorPalette.TextSecondary)
+            }
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { vm.undo() }, enabled = state.undoAvailable,
+                modifier = Modifier.size(42.dp)) {
+                Icon(Icons.Default.Undo, "Undo", tint = EditorPalette.TextMuted)
             }
         }
-        LazyColumn(Modifier.fillMaxSize().padding(vertical = 4.dp)) {
-            item {
-                AnimatedContent(
-                    targetState = state.tab,
-                    transitionSpec = {
-                        val from = EditorTab.entries.indexOf(initialState)
-                        val to = EditorTab.entries.indexOf(targetState)
-                        val dir = if (to > from) 1 else -1
-                        (fadeIn(tween(220)) + slideInHorizontally(tween(260, easing = AppMotion.Emphasized)) { dir * it / 8 }) togetherWith
-                            (fadeOut(tween(140)) + slideOutHorizontally(tween(220)) { -dir * it / 8 })
-                    },
-                    label = "inspector-tab"
-                ) { tab ->
-                    when (tab) {
-                        EditorTab.ADD -> AddPanel(state, vm)
-                        EditorTab.TRANSFORM -> TransformPanel(state, vm, layer, project)
-                        EditorTab.KEYFRAMES -> KeyframesPanel(state, vm, layer)
-                        EditorTab.EFFECTS -> EffectsPanel(state, vm, layer)
-                        EditorTab.TEXT -> TextPanel(state, vm, layer)
-                        EditorTab.SHAPE -> ShapePanel(state, vm, layer)
-                        EditorTab.VECTOR -> VectorPanel(state, vm, layer)
-                        EditorTab.MASKS -> MasksPanel(state, vm, layer)
-                        EditorTab.AUDIO -> AudioPanel(state, vm, project)
-                        EditorTab.TRANSITIONS -> TransitionsPanel(state, vm, layer, project)
-                        EditorTab.PROJECT -> ProjectPanel(state, vm, project)
-                    }
+        Box(Modifier.weight(1f).fillMaxHeight().padding(horizontal = 6.dp, vertical = 4.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                when (state.tab) {
+                    EditorTab.ADD -> AddPanel(state, vm, onShapePicker)
+                    EditorTab.PROPERTIES -> PropertiesPanel(vm, layer)
+                    EditorTab.BORDER -> BorderPanel(state, vm, layer)
+                    EditorTab.BLEND -> BlendPanel(vm, layer)
+                    EditorTab.COLOR -> ColorPanel(vm, layer)
+                    EditorTab.TRANSFORM -> TransformPanel(state, vm, layer, project)
+                    EditorTab.KEYFRAMES -> KeyframesPanel(state, vm, layer)
+                    EditorTab.EFFECTS -> EffectsPanel(state, vm, layer)
+                    EditorTab.TEXT -> TextPanel(state, vm, layer)
+                    EditorTab.SHAPE -> ShapePanel(state, vm, layer)
+                    EditorTab.VECTOR -> VectorPanel(state, vm, layer)
+                    EditorTab.MASKS -> MasksPanel(state, vm, layer)
+                    EditorTab.AUDIO -> AudioPanel(state, vm, project)
+                    EditorTab.TRANSITIONS -> TransitionsPanel(state, vm, layer, project)
+                    EditorTab.PROJECT -> ProjectPanel(state, vm, project)
                 }
+            }
+        }
+        if (state.tab == EditorTab.BORDER) {
+            Column(
+                Modifier.width(62.dp).fillMaxHeight().background(EditorPalette.Charcoal),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                BorderModeButton("stroke", "Stroke", Icons.Default.Brush, state, vm)
+                BorderModeButton("border", "Border", Icons.Default.CropSquare, state, vm)
+                BorderModeButton("shadow", "Shadow", Icons.Default.Layers, state, vm)
             }
         }
     }
 }
 
 @Composable
-private fun AddPanel(state: EditorUiState, vm: EditorViewModel) {
+private fun PropertiesPanel(vm: EditorViewModel, layer: Layer?) {
+    val entries = listOf(
+        Triple("Color & Fill", Icons.Default.Palette, EditorTab.COLOR),
+        Triple("Border & Shadow", Icons.Default.BorderColor, EditorTab.BORDER),
+        Triple("Blending & Opacity", Icons.Default.BlurOn, EditorTab.BLEND),
+        Triple("Move & Transform", Icons.Default.OpenWith, EditorTab.TRANSFORM),
+        Triple("Edit Shape", Icons.Default.Edit, EditorTab.SHAPE),
+        Triple("Effects", Icons.Default.AutoAwesome, EditorTab.EFFECTS),
+        Triple("Keyframes", Icons.Default.Add, EditorTab.KEYFRAMES),
+        Triple("Masks", Icons.Default.Crop, EditorTab.MASKS)
+    )
+    if (layer == null) { Hint("Select a layer to edit its properties"); return }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        entries.chunked(3).forEach { row ->
+            Row(Modifier.fillMaxWidth().height(62.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { (title, icon, tab) ->
+                    Card(
+                        Modifier.weight(1f).fillMaxHeight().clickable { vm.setTab(tab) },
+                        shape = RoundedCornerShape(9.dp),
+                        colors = CardDefaults.cardColors(containerColor = EditorPalette.SurfaceRaised)
+                    ) {
+                        Column(Modifier.fillMaxSize().padding(5.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center) {
+                            Icon(icon, null, Modifier.size(20.dp), tint = EditorPalette.TextPrimary)
+                            Spacer(Modifier.height(3.dp))
+                            Text(title, fontSize = 8.sp, color = EditorPalette.TextPrimary, maxLines = 2)
+                        }
+                    }
+                }
+                repeat((3 - row.size).coerceAtLeast(0)) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BorderModeButton(mode: String, label: String,
+                             icon: androidx.compose.ui.graphics.vector.ImageVector,
+                             state: EditorUiState, vm: EditorViewModel) {
+    val selected = state.selectedProperty == mode
+    Column(
+        Modifier.width(52.dp).height(58.dp).background(
+            if (selected) EditorPalette.SurfaceRaised else Color.Transparent, RoundedCornerShape(8.dp)
+        ).clickable { vm.setSelectedProperty(mode) },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(icon, label, Modifier.size(21.dp), tint = if (selected) EditorPalette.Purple else EditorPalette.TextSecondary)
+        Text(label, fontSize = 7.sp, color = if (selected) EditorPalette.Purple else EditorPalette.TextMuted)
+    }
+}
+
+@Composable
+private fun BorderPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?) {
+    val spec = layer?.shape
+    if (spec == null) { Hint("Border and shadow are available for shape layers"); return }
+    when (state.selectedProperty) {
+        "border" -> {
+            if (!spec.strokeEnabled) {
+                Button(onClick = { vm.updateShape { it.copy(strokeEnabled = true) } },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = EditorPalette.SurfaceRaised)) {
+                    Icon(Icons.Default.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
+                    Text("Add Border", color = EditorPalette.TextPrimary, fontSize = 12.sp)
+                }
+            } else {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Border", Modifier.weight(1f), fontSize = 12.sp)
+                    Switch(checked = spec.strokeEnabled,
+                        onCheckedChange = { enabled -> vm.updateShape { it.copy(strokeEnabled = enabled) } })
+                }
+                SliderRow("Width", spec.strokeWidth, 0f..100f) { value ->
+                    vm.updateShape { shape -> shape.copy(strokeWidth = value) }
+                }
+            }
+        }
+        "shadow" -> {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Shadow", Modifier.weight(1f), fontSize = 12.sp)
+                Switch(checked = spec.shadowEnabled,
+                    onCheckedChange = { enabled -> vm.updateShape { it.copy(shadowEnabled = enabled) } })
+            }
+            SliderRow("Size", spec.shadowSize, 0f..80f) { value ->
+                vm.updateShape { shape -> shape.copy(shadowSize = value) }
+            }
+            SliderRow("Alpha", spec.shadowAlpha, 0f..1f) { value ->
+                vm.updateShape { shape -> shape.copy(shadowAlpha = value) }
+            }
+            SliderRow("Position X", spec.shadowX, -100f..100f) { value ->
+                vm.updateShape { shape -> shape.copy(shadowX = value) }
+            }
+            SliderRow("Position Y", spec.shadowY, -100f..100f) { value ->
+                vm.updateShape { shape -> shape.copy(shadowY = value) }
+            }
+            ColorSwatchRow("Shadow color", spec.shadowColor) { value ->
+                vm.updateShape { shape -> shape.copy(shadowColor = value) }
+            }
+        }
+        else -> {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CropSquare, null, Modifier.size(20.dp), tint = EditorPalette.TextPrimary)
+                Text("Stroke", Modifier.weight(1f).padding(start = 8.dp), fontSize = 12.sp)
+                Switch(checked = spec.strokeEnabled,
+                    onCheckedChange = { enabled -> vm.updateShape { it.copy(strokeEnabled = enabled) } })
+            }
+            SliderRow("Width", spec.strokeWidth, 0f..100f) { value ->
+                vm.updateShape { shape -> shape.copy(strokeWidth = value) }
+            }
+            Text("Line cap", fontSize = 9.sp, color = EditorPalette.TextMuted)
+            ChoiceStrip(listOf("Butt", "Round", "Square"), spec.strokeCap) { value ->
+                vm.updateShape { it.copy(strokeCap = value) }
+            }
+            Text("Line join", fontSize = 9.sp, color = EditorPalette.TextMuted)
+            ChoiceStrip(listOf("Miter", "Round", "Bevel"), spec.strokeJoin) { value ->
+                vm.updateShape { it.copy(strokeJoin = value) }
+            }
+            SliderRow("Start", spec.strokeStart, 0f..100f) { value ->
+                vm.updateShape { shape -> shape.copy(strokeStart = value) }
+            }
+            SliderRow("End", spec.strokeEnd, 0f..100f) { value ->
+                vm.updateShape { shape -> shape.copy(strokeEnd = value) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChoiceStrip(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        labels.forEachIndexed { index, label ->
+            TextButton(onClick = { onSelect(index) }, modifier = Modifier.weight(1f).height(32.dp),
+                contentPadding = PaddingValues(0.dp)) {
+                Text(label, fontSize = 8.sp,
+                    color = if (index == selected) EditorPalette.Purple else EditorPalette.TextSecondary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlendPanel(vm: EditorViewModel, layer: Layer?) {
+    if (layer == null) { Hint("Select a layer"); return }
+    val modes = BlendMode.entries
+    SliderRow("Opacity", layer.transform.opacity, 0f..1f,
+        { vm.setTransform("opacity", it) })
+    Text("Blending mode", fontSize = 10.sp, color = EditorPalette.TextMuted,
+        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp))
+    modes.chunked(2).forEach { row ->
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            row.forEach { mode ->
+                val selected = layer.blendMode == mode
+                TextButton(onClick = { vm.setBlend(layer.id, mode) }, modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColors(contentColor = if (selected) EditorPalette.Purple else EditorPalette.TextPrimary)) {
+                    Text(mode.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() },
+                        fontSize = 9.sp, maxLines = 1)
+                }
+            }
+            if (row.size == 1) Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun ColorPanel(vm: EditorViewModel, layer: Layer?) {
+    val spec = layer?.shape
+    if (spec == null) { Hint("Select a shape layer to edit its fill"); return }
+    LabeledSelect("Fill", spec.gradient.name,
+        GradientType.entries.map { it.name to it.name }) { value ->
+        vm.updateShape { it.copy(gradient = GradientType.valueOf(value)) }
+    }
+    ColorSwatchRow("Primary", spec.fillColor) { value -> vm.updateShape { it.copy(fillColor = value) } }
+    ColorSwatchRow("Gradient end", spec.fillColor2) { value -> vm.updateShape { it.copy(fillColor2 = value) } }
+    SliderRow("Gradient angle", spec.gradientAngle, 0f..360f) { value ->
+        vm.updateShape { shape -> shape.copy(gradientAngle = value) }
+    }
+}
+
+@Composable
+private fun AddPanel(state: EditorUiState, vm: EditorViewModel, onShapePicker: () -> Unit) {
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         uris.forEach { uri -> vm.importMedia(uri, null) }
     }
@@ -109,7 +317,9 @@ private fun AddPanel(state: EditorUiState, vm: EditorViewModel) {
             types.chunked(3).forEach { group ->
                 Column(Modifier.weight(1f)) {
                     group.forEach { (type, icon) ->
-                        Button(onClick = { vm.addLayer(type) }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                        Button(onClick = {
+                            if (type == LayerType.SHAPE) onShapePicker() else vm.addLayer(type)
+                        }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                             Icon(icon, null, Modifier.size(15.dp)); Spacer(Modifier.width(4.dp))
                             Text(type.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 10.sp)
                         }

@@ -123,6 +123,8 @@ export interface LayerStyle {
   color: string;
   color2: string;
   strokeColor: string;
+  /** Whether the stored stroke width is currently rendered (separate from its value). */
+  strokeEnabled?: boolean;
   shape: ShapeKind;
   fit: 'cover' | 'contain' | 'stretch' | 'none';
   audio: boolean;   // include sound from a video source
@@ -203,6 +205,7 @@ export interface PropDef {
 export const PROP_DEFS: PropDef[] = [
   { key: 'x', label: 'Position X', min: -4000, max: 4000, step: 1, default: 0, unit: 'px', group: 'transform' },
   { key: 'y', label: 'Position Y', min: -4000, max: 4000, step: 1, default: 0, unit: 'px', group: 'transform' },
+  { key: 'z', label: 'Position Z', min: -4000, max: 4000, step: 1, default: 0, unit: 'px', group: 'transform' },
   { key: 'scaleX', label: 'Scale X', min: 0, max: 500, step: 1, default: 100, unit: '%', group: 'transform' },
   { key: 'scaleY', label: 'Scale Y', min: 0, max: 500, step: 1, default: 100, unit: '%', group: 'transform' },
   { key: 'rotation', label: 'Rotation', min: -1440, max: 1440, step: 1, default: 0, unit: '°', group: 'transform' },
@@ -210,11 +213,14 @@ export const PROP_DEFS: PropDef[] = [
   { key: 'anchorX', label: 'Anchor X', min: -200, max: 200, step: 1, default: 0, unit: '%', group: 'transform' },
   { key: 'anchorY', label: 'Anchor Y', min: -200, max: 200, step: 1, default: 0, unit: '%', group: 'transform' },
   { key: 'skewX', label: 'Skew X', min: -80, max: 80, step: 1, default: 0, unit: '°', group: 'transform' },
+  { key: 'skewY', label: 'Skew Y', min: -80, max: 80, step: 1, default: 0, unit: '°', group: 'transform' },
   { key: 'shapeWidth', label: 'Width', min: 4, max: 4000, step: 1, default: 500, unit: 'px', group: 'appearance' },
   { key: 'shapeHeight', label: 'Height', min: 4, max: 4000, step: 1, default: 500, unit: 'px', group: 'appearance' },
   { key: 'cornerRadius', label: 'Corner radius', min: 0, max: 500, step: 1, default: 0, unit: 'px', group: 'appearance' },
   { key: 'strokeWidth', label: 'Stroke width', min: 0, max: 200, step: 1, default: 0, unit: 'px', group: 'appearance' },
-  { key: 'strokeDash', label: 'Stroke style', min: 0, max: 4, step: 1, default: 0, unit: '', group: 'appearance' },
+  { key: 'strokeDash', label: 'Stroke dash', min: 0, max: 4, step: 1, default: 0, unit: '', group: 'appearance' },
+  { key: 'strokeCap', label: 'Stroke cap', min: 0, max: 2, step: 1, default: 1, unit: '', group: 'appearance' },
+  { key: 'strokeJoin', label: 'Stroke join', min: 0, max: 2, step: 1, default: 0, unit: '', group: 'appearance' },
   { key: 'strokeStart', label: 'Stroke start', min: 0, max: 100, step: 1, default: 0, unit: '%', group: 'appearance' },
   { key: 'strokeEnd', label: 'Stroke end', min: 0, max: 100, step: 1, default: 100, unit: '%', group: 'appearance' },
   { key: 'forceBlur', label: 'Force blur', min: 0, max: 100, step: 1, default: 0, unit: '%', group: 'appearance' },

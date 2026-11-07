@@ -30,7 +30,9 @@ private val SECTIONS = listOf("General", "Performance", "Export", "Storage", "AI
 fun SettingsScreen(
     vm: HomeViewModel = hiltViewModel(),
     onBack: () -> Unit,
-    onTutorials: () -> Unit
+    onTutorials: () -> Unit,
+    onAi: () -> Unit,
+    onNodeEditor: () -> Unit
 ) {
     val s by vm.appSettings.collectAsState()
     var section by remember { mutableStateOf("General") }
@@ -67,6 +69,16 @@ fun SettingsScreen(
                                 SliderRow("UI scale", s.uiScale, 0.8f..1.4f, {
                                     vm.updateSettings { st -> st.copy(uiScale = it) }
                                 })
+                            }
+                            SettingsCard("Editable in-app identity") {
+                                OutlinedTextField(value = s.brandName,
+                                    onValueChange = { value -> vm.updateSettings { it.copy(brandName = value.take(40)) } },
+                                    label = { Text("Brand name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                                OutlinedTextField(value = s.brandSubtitle,
+                                    onValueChange = { value -> vm.updateSettings { it.copy(brandSubtitle = value.take(60)) } },
+                                    label = { Text("Subtitle / website") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                                Text("This only changes the local wordmark. The Android package remains com.editorshub.",
+                                    style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextMuted)
                             }
                             SettingsCard("Language & files") {
                                 LabeledSelect("Language", s.language,
@@ -181,6 +193,10 @@ fun SettingsScreen(
                         }
                         "AI" -> {
                             SettingsCard("AI service") {
+                                Button(onClick = onAi, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Default.Bolt, null, Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp)); Text("Open AI Studio")
+                                }
                                 SwitchRow("Enable AI Studio", s.aiEnabled) {
                                     vm.updateSettings { st -> st.copy(aiEnabled = !st.aiEnabled) }
                                 }
@@ -215,6 +231,7 @@ fun SettingsScreen(
                                 Text("Kotlin · Compose · Room · Hilt · MediaCodec · OpenGL ES",
                                     style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextMuted)
                                 TextButton(onClick = onTutorials) { Text("Help, tutorials & documentation") }
+                                TextButton(onClick = onNodeEditor) { Text("Open Node Editor") }
                                 Text("Privacy: projects and media remain on this device unless you explicitly share them. AI prompts are sent only to the endpoint you configure.",
                                     style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextMuted)
                                 Text("Licenses: Apache 2.0 (AndroidX, Media3, Hilt, Room), MIT (kotlinx), SIL OFL (system fonts).",

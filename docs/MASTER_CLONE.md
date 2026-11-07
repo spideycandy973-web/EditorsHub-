@@ -1,4 +1,4 @@
-# Master screen & feature map (v4.4.0)
+# Master screen & feature map (v4.5.0)
 
 This document is the audit of what the app actually implements. It maps every
 screen, panel and behaviour observed in the reference recording (747 distinct UI

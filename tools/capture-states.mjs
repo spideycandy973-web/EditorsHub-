@@ -50,6 +50,86 @@ await shot('editor');
 await ui('openAdd'); await shot('add');
 await ui('setSheet', 'shape'); await shot('shape');
 await ui('setSheet', 'none');
+
+// Capture the measured selected-shape and property states as well as the
+// blank editor states. The default square and its pane geometry are screenshot
+// regressions for the reference's 200×200 Rounded Rectangle 1.
+await ui('openAdd');
+await page.waitForSelector('.um-add-sheet');
+await page.locator('.um-add-tile').filter({ hasText: 'Shape' }).first().click();
+await page.waitForSelector('.um-shape-sheet');
+await page.locator('.um-shape-cell').nth(1).click();
+await page.waitForTimeout(300);
+await shot('property-root');
+for (const [name, label] of [
+  ['blend', 'Blending & Opacity'], ['move', 'Move & Transform'],
+  ['edit-shape', 'Edit Shape'], ['color', 'Color & Fill'],
+  ['border', 'Border & Shadow'], ['effects', 'Effects'],
+]) {
+  if (name === 'move') await page.evaluate(() => {
+    const editor = window.__editor;
+    const layer = editor?.selectedLayer;
+    if (!editor || !layer) return;
+    editor.setProp(layer.id, 'rotation', -3, false);
+    editor.addKeyframe(layer.id, 'rotation', 0);
+    editor.addKeyframe(layer.id, 'rotation', 1.5);
+    const frames = editor.getAnim(layer, 'rotation').keyframes;
+    if (frames[0]) editor.updateKeyframe(layer.id, 'rotation', frames[0].id, { value: -3, easing: 'cubic(0.25,0.25,0.75,0.75)' });
+    if (frames[1]) editor.updateKeyframe(layer.id, 'rotation', frames[1].id, { value: 3 });
+    window.__ui.setActivePropKey('rotation');
+  });
+  if (name === 'edit-shape') await page.evaluate(() => {
+    const editor = window.__editor;
+    const layer = editor?.selectedLayer;
+    if (!editor || !layer) return;
+    editor.clearPropertyKeyframes(layer.id, 'rotation');
+    editor.setProp(layer.id, 'rotation', 0, false);
+    window.__ui.setActivePropKey('x');
+  });
+  const tile = page.locator('.um-prop-tile').filter({ hasText: label }).first();
+  if (await tile.count()) {
+    await tile.click(); await page.waitForTimeout(220); await shot(name);
+    if (name === 'move') {
+      const size = page.getByTitle('Size & scale').first();
+      if (await size.count()) { await size.click(); await page.waitForTimeout(180); await shot('move-size'); }
+      const skew = page.getByTitle('Skew').first();
+      if (await skew.count()) { await skew.click(); await page.waitForTimeout(180); await shot('move-skew'); }
+      const rotation = page.getByTitle('Rotation dial').first();
+      if (await rotation.count()) { await rotation.click(); await page.waitForTimeout(180); await shot('move-rotation'); }
+      const easing = page.getByTitle('Cubic bezier easing').first();
+      if (await easing.count()) { await easing.click(); await page.waitForTimeout(180); await shot('move-easing'); }
+      const backToMove = page.getByTitle('Back to Move & Transform').first();
+      if (await backToMove.count()) { await backToMove.click(); await page.waitForTimeout(180); }
+      const position = page.getByTitle('Position').first();
+      if (await position.count()) { await position.click(); await page.waitForTimeout(180); }
+    }
+    if (name === 'edit-shape') {
+      const dimensions = page.getByTitle('Dimensions').first();
+      if (await dimensions.count()) { await dimensions.click(); await page.waitForTimeout(180); await shot('edit-shape-dimensions'); }
+    }
+    if (name === 'border') {
+      const addBorderRail = page.getByTitle('Add Border').first();
+      if (await addBorderRail.count()) {
+        await addBorderRail.click(); await page.waitForTimeout(180); await shot('border-add');
+        const addBorder = page.getByText('+ Add Border', { exact: true }).first();
+        if (await addBorder.count()) {
+          await addBorder.click(); await page.waitForTimeout(180); await shot('border-stroke-enabled');
+          const shadow = page.getByTitle('Shadow').first();
+          if (await shadow.count()) { await shadow.click(); await page.waitForTimeout(180); await shot('border-shadow'); }
+          await page.evaluate(() => {
+            const layer = window.__editor?.selectedLayer;
+            if (layer) window.__editor.setProp(layer.id, 'strokeWidth', 0, false);
+          });
+        }
+      }
+    }
+    const back = page.getByTitle('Back to properties').first();
+    if (await back.count()) { await back.click(); await page.waitForTimeout(180); }
+  }
+}
+await ui('setSheet', 'none');
+await page.evaluate(() => window.__editor.newProject(1080, 1920, true));
+await page.waitForTimeout(250);
 await ui('setEffectBrowser', true); await shot('fx');
 await ui('setEffectBrowser', false);
 await ui('setPresetsDialog', true); await shot('presets');

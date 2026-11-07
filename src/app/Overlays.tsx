@@ -112,7 +112,7 @@ function CompositionForm({ onDone }: { onDone: () => void }) {
           <span className="um-bg-swatch" style={{ background: bg }} />
           <select value={bg} onChange={ev => setBg(ev.target.value)} aria-label="Background colour">
             <option value="#000000">Black</option><option value="#ffffff">White</option>
-            <option value="#121214">Charcoal</option><option value="#0b1d3a">Navy</option>
+            <option value="#121215">Charcoal</option><option value="#0b1d3a">Navy</option>
           </select>
           <ChevronDown size={14} />
           <input type="color" value={/^#[0-9a-f]{6}$/i.test(bg) ? bg : '#000000'}
@@ -195,7 +195,7 @@ function ProjectSettingsBody() {
         <span>Background</span>
         <label className="um-select"><select value={e.project.background} aria-label="Background colour"
           onChange={ev => patch({ background: ev.target.value })}>
-          {[['#000000', 'Black'], ['#ffffff', 'White'], ['#121214', 'Charcoal'], ['#0b1d3a', 'Navy']].map(([v, l]) =>
+          {[['#000000', 'Black'], ['#ffffff', 'White'], ['#121215', 'Charcoal'], ['#0b1d3a', 'Navy']].map(([v, l]) =>
             <option key={v} value={v}>{l}</option>)}
         </select></label>
         <i className="um-ps-swatch" style={{ background: e.project.background }} />

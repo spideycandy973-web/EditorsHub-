@@ -1,11 +1,11 @@
 /* EditorsHub — offline shell cache for the web/PWA build only.
  *
- * v4.4.0: this must NEVER serve a stale index.html. Navigation requests are
+ * v4.5.0: this must NEVER serve a stale index.html. Navigation requests are
  * network-first; only immutable hashed assets are served from the cache, and
  * the cache name is tied to the build so an update always replaces the shell.
  * The native Capacitor build does not register this worker at all (see
  * src/main.tsx): its assets ship inside the APK and need no HTTP cache. */
-const CACHE = 'editorshub-v18';
+const CACHE = 'editorshub-v19';
 const SHELL = [
   './', './index.html', './manifest.json',
   './icon.svg', './logo.svg',

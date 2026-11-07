@@ -10,6 +10,7 @@ import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RadialGradient
@@ -206,23 +207,60 @@ class CanvasCompositor @Inject constructor(
 
     private fun drawShape(c: Canvas, resolved: ResolvedLayer) {
         val spec = resolved.layer.shape ?: return
-        val w = spec.width
-        val h = spec.height
+        val w = spec.width.coerceAtLeast(1f)
+        val h = spec.height.coerceAtLeast(1f)
         val path = shapePath(spec, w, h)
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            shader = gradient(spec.fillColor, resolved.color, spec.gradient, spec.gradientAngle, w, h)
+        val openPath = spec.kind in setOf(ShapeKind.LINE, ShapeKind.ARC)
+        if (!openPath) {
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                shader = gradient(spec.fillColor, resolved.color, spec.gradient, spec.gradientAngle, w, h)
+                if (spec.shadowEnabled && spec.shadowSize > 0f) {
+                    val a = (spec.shadowAlpha.coerceIn(0f, 1f) * 255).toInt()
+                    val base = ColorUtil.parse(spec.shadowColor)
+                    setShadowLayer(spec.shadowSize, spec.shadowX, spec.shadowY,
+                        (base and 0x00FFFFFF) or (a shl 24))
+                }
+            }
+            c.drawPath(path, fill)
+            fill.clearShadowLayer()
         }
-        c.drawPath(path, fill)
-        if (spec.strokeWidth > 0f) {
+        if ((spec.strokeEnabled || openPath) && spec.strokeWidth > 0f) {
             val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
-                strokeWidth = spec.strokeWidth
-                color = ColorUtil.parse(spec.strokeColor)
-                strokeJoin = Paint.Join.ROUND
+                strokeWidth = spec.strokeWidth.coerceAtLeast(0.1f)
+                color = if (openPath && !spec.strokeEnabled) ColorUtil.parse(spec.fillColor)
+                    else ColorUtil.parse(spec.strokeColor)
+                strokeCap = when (spec.strokeCap.coerceIn(0, 2)) {
+                    0 -> Paint.Cap.BUTT
+                    2 -> Paint.Cap.SQUARE
+                    else -> Paint.Cap.ROUND
+                }
+                strokeJoin = when (spec.strokeJoin.coerceIn(0, 2)) {
+                    1 -> Paint.Join.ROUND
+                    2 -> Paint.Join.BEVEL
+                    else -> Paint.Join.MITER
+                }
             }
-            c.drawPath(path, stroke)
+            c.drawPath(trimmedShapePath(path, spec.strokeStart, spec.strokeEnd), stroke)
         }
+    }
+
+    private fun trimmedShapePath(path: Path, startPercent: Float, endPercent: Float): Path {
+        val start = startPercent.coerceIn(0f, 100f) / 100f
+        val end = endPercent.coerceIn(0f, 100f) / 100f
+        if (start <= 0f && end >= 1f) return path
+        val measure = PathMeasure(path, false)
+        val length = measure.length
+        if (length <= 0f) return path
+        val out = Path()
+        if (end >= start) {
+            measure.getSegment(length * start, length * end, out, true)
+        } else {
+            measure.getSegment(length * start, length, out, true)
+            measure.getSegment(0f, length * end, out, true)
+        }
+        return out
     }
 
     private fun drawVector(c: Canvas, spec: VectorSpec?) {
@@ -641,27 +679,89 @@ class CanvasCompositor @Inject constructor(
 
     private fun shapePath(spec: ShapeSpec, w: Float, h: Float): Path {
         val p = Path()
-        when (spec.kind) {
-            ShapeKind.RECTANGLE -> p.addRoundRect(
-                RectF(-w / 2, -h / 2, w / 2, h / 2),
-                spec.cornerRadius.coerceAtMost(min(w, h) / 2),
-                spec.cornerRadius.coerceAtMost(min(w, h) / 2), Path.Direction.CW
-            )
-            ShapeKind.CIRCLE -> p.addCircle(0f, 0f, min(w, h) / 2f, Path.Direction.CW)
-            ShapeKind.TRIANGLE -> {
-                p.moveTo(0f, -h / 2); p.lineTo(w / 2, h / 2); p.lineTo(-w / 2, h / 2); p.close()
+        val rect = RectF(-w / 2f, -h / 2f, w / 2f, h / 2f)
+        fun polygon(points: List<Pair<Float, Float>>) {
+            points.forEachIndexed { i, point ->
+                if (i == 0) p.moveTo(point.first, point.second) else p.lineTo(point.first, point.second)
             }
+            p.close()
+        }
+        fun radial(points: Int, inner: Float = 0.48f) {
+            val n = points.coerceIn(3, 32) * 2
+            for (i in 0 until n) {
+                val a = -Math.PI / 2.0 + i * Math.PI * 2.0 / n
+                val r = if (i % 2 == 0) 1f else inner
+                val x = (cos(a) * w * 0.5 * r).toFloat()
+                val y = (sin(a) * h * 0.5 * r).toFloat()
+                if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
+            }
+            p.close()
+        }
+        when (spec.kind) {
+            ShapeKind.RECTANGLE -> p.addRoundRect(rect,
+                spec.cornerRadius.coerceAtMost(min(w, h) / 2f),
+                spec.cornerRadius.coerceAtMost(min(w, h) / 2f), Path.Direction.CW)
+            ShapeKind.ROUNDED_RECTANGLE -> p.addRoundRect(rect,
+                if (spec.cornerRadius > 0f) spec.cornerRadius.coerceAtMost(min(w, h) / 2f) else min(w, h) * 0.12f,
+                if (spec.cornerRadius > 0f) spec.cornerRadius.coerceAtMost(min(w, h) / 2f) else min(w, h) * 0.12f,
+                Path.Direction.CW)
+            ShapeKind.CIRCLE -> p.addCircle(0f, 0f, min(w, h) / 2f, Path.Direction.CW)
+            ShapeKind.TRIANGLE -> polygon(listOf(0f to -h / 2f, w / 2f to h / 2f, -w / 2f to h / 2f))
             ShapeKind.POLYGON, ShapeKind.STAR -> {
-                val n = if (spec.kind == ShapeKind.STAR) spec.starPoints * 2 else spec.sides.coerceAtLeast(3)
+                val n = if (spec.kind == ShapeKind.STAR) spec.starPoints.coerceIn(3, 20) * 2
+                    else spec.sides.coerceIn(3, 32)
                 for (i in 0 until n) {
                     val a = -Math.PI / 2 + i * Math.PI * 2 / n
-                    val r = if (spec.kind == ShapeKind.STAR && i % 2 == 1) spec.innerRadius else 1f
+                    val r = if (spec.kind == ShapeKind.STAR && i % 2 == 1) spec.innerRadius.coerceIn(0.05f, 0.95f) else 1f
                     val x = (cos(a) * w / 2 * r).toFloat(); val y = (sin(a) * h / 2 * r).toFloat()
                     if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
                 }
                 p.close()
             }
-            ShapeKind.LINE -> { p.moveTo(-w / 2, 0f); p.lineTo(w / 2, 0f) }
+            ShapeKind.LINE -> { p.moveTo(-w / 2f, 0f); p.lineTo(w / 2f, 0f) }
+            ShapeKind.ARC -> p.arcTo(rect, -55f, 290f, true)
+            ShapeKind.CROSS -> {
+                p.addRect(-w * 0.17f, -h / 2f, w * 0.17f, h / 2f, Path.Direction.CW)
+                p.addRect(-w / 2f, -h * 0.17f, w / 2f, h * 0.17f, Path.Direction.CW)
+            }
+            ShapeKind.CALLOUT -> {
+                p.addRoundRect(RectF(-w * 0.45f, -h * 0.42f, w * 0.45f, h * 0.28f),
+                    min(w, h) * 0.08f, min(w, h) * 0.08f, Path.Direction.CW)
+                p.moveTo(-w * 0.20f, h * 0.26f); p.lineTo(-w * 0.28f, h * 0.48f)
+                p.lineTo(0f, h * 0.27f); p.close()
+            }
+            ShapeKind.PIE, ShapeKind.SECTOR -> {
+                p.moveTo(0f, 0f); p.arcTo(rect, -90f, if (spec.kind == ShapeKind.PIE) 275f else 90f, false); p.close()
+            }
+            ShapeKind.HEXAGON -> polygon((0 until 6).map { i ->
+                val a = -Math.PI / 2 + i * Math.PI / 3
+                (cos(a) * w / 2).toFloat() to (sin(a) * h / 2).toFloat()
+            })
+            ShapeKind.FLOWER -> {
+                val r = min(w, h) * 0.25f
+                p.addCircle(0f, -h * 0.22f, r, Path.Direction.CW)
+                p.addCircle(w * 0.22f, 0f, r, Path.Direction.CW)
+                p.addCircle(0f, h * 0.22f, r, Path.Direction.CW)
+                p.addCircle(-w * 0.22f, 0f, r, Path.Direction.CW)
+                p.addCircle(0f, 0f, r * 0.62f, Path.Direction.CW)
+            }
+            ShapeKind.ARROW -> polygon(listOf(
+                -w / 2f to -h * 0.16f, w * 0.12f to -h * 0.16f, w * 0.12f to -h * 0.40f,
+                w / 2f to 0f, w * 0.12f to h * 0.40f, w * 0.12f to h * 0.16f,
+                -w / 2f to h * 0.16f))
+            ShapeKind.TRAPEZOID -> polygon(listOf(-w * 0.32f to -h / 2f, w * 0.32f to -h / 2f,
+                w / 2f to h / 2f, -w / 2f to h / 2f))
+            ShapeKind.CRESCENT -> {
+                p.addCircle(0f, 0f, min(w, h) * 0.48f, Path.Direction.CW)
+                val cut = Path().apply { addCircle(w * 0.20f, -h * 0.08f, min(w, h) * 0.42f, Path.Direction.CW) }
+                p.op(cut, Path.Op.DIFFERENCE)
+            }
+            ShapeKind.BEAM -> polygon(listOf(-w * 0.48f to h * 0.30f, -w * 0.28f to h * 0.48f,
+                w * 0.48f to -h * 0.30f, w * 0.28f to -h * 0.48f))
+            ShapeKind.FLAG -> polygon(listOf(-w * 0.38f to h * 0.48f, -w * 0.38f to -h * 0.48f,
+                w * 0.40f to -h * 0.48f, w * 0.18f to 0f, w * 0.02f to h * 0.16f,
+                -w * 0.12f to h * 0.48f))
+            ShapeKind.SEAL, ShapeKind.BURST -> radial(if (spec.kind == ShapeKind.SEAL) 16 else 12, 0.82f)
             ShapeKind.HEART -> {
                 val s = min(w, h) / 2f
                 p.moveTo(0f, s * 0.75f)
@@ -669,11 +769,46 @@ class CanvasCompositor @Inject constructor(
                 p.cubicTo(s * 0.6f, -s * 1.1f, s * 1.4f, -s * 0.1f, 0f, s * 0.75f)
                 p.close()
             }
-            ShapeKind.ARROW -> {
-                p.moveTo(-w / 2, -h * 0.15f); p.lineTo(w * 0.18f, -h * 0.15f)
-                p.lineTo(w * 0.18f, -h * 0.38f); p.lineTo(w / 2, 0f)
-                p.lineTo(w * 0.18f, h * 0.38f); p.lineTo(w * 0.18f, h * 0.15f)
-                p.lineTo(-w / 2, h * 0.15f); p.close()
+            ShapeKind.RING -> {
+                p.addCircle(0f, 0f, min(w, h) / 2f, Path.Direction.CW)
+                val cut = Path().apply { addCircle(0f, 0f, min(w, h) * 0.28f, Path.Direction.CW) }
+                p.op(cut, Path.Op.DIFFERENCE)
+            }
+            ShapeKind.HALF_CIRCLE -> {
+                p.moveTo(-w / 2f, 0f); p.arcTo(rect, 180f, 180f, false); p.close()
+            }
+            ShapeKind.DIAMOND -> polygon(listOf(0f to -h / 2f, w / 2f to 0f, 0f to h / 2f, -w / 2f to 0f))
+            ShapeKind.PENTAGON -> polygon((0 until 5).map { i ->
+                val a = -Math.PI / 2 + i * Math.PI * 2 / 5
+                (cos(a) * w / 2).toFloat() to (sin(a) * h / 2).toFloat()
+            })
+            ShapeKind.SPARKLE -> radial(4, 0.10f)
+            ShapeKind.OCTAGON -> polygon((0 until 8).map { i ->
+                val a = -Math.PI / 8 + i * Math.PI / 4
+                (cos(a) * w / 2).toFloat() to (sin(a) * h / 2).toFloat()
+            })
+            ShapeKind.LEAF -> {
+                p.moveTo(-w / 2f, h / 2f)
+                p.cubicTo(-w * 0.45f, -h * 0.45f, w * 0.35f, -h * 0.55f, w / 2f, -h / 2f)
+                p.cubicTo(w * 0.45f, h * 0.38f, -w * 0.10f, h * 0.55f, -w / 2f, h / 2f)
+                p.close()
+            }
+            ShapeKind.ARROWHEAD -> polygon(listOf(-w / 2f to -h * 0.23f, w * 0.10f to -h * 0.23f,
+                w * 0.10f to -h / 2f, w / 2f to 0f, w * 0.10f to h / 2f,
+                w * 0.10f to h * 0.23f, -w / 2f to h * 0.23f))
+            ShapeKind.CROWN -> polygon(listOf(-w / 2f to -h * 0.30f, -w * 0.25f to 0f,
+                0f to -h / 2f, w * 0.25f to 0f, w / 2f to -h * 0.30f,
+                w * 0.42f to h / 2f, -w * 0.42f to h / 2f))
+            ShapeKind.HOURGLASS -> polygon(listOf(-w / 2f to -h / 2f, w / 2f to -h / 2f,
+                w * 0.12f to 0f, w / 2f to h / 2f, -w / 2f to h / 2f, -w * 0.12f to 0f))
+            ShapeKind.NOTCHED_SQUARE -> polygon(listOf(-w / 2f to -h / 2f, w / 2f to -h / 2f,
+                w / 2f to h / 2f, w * 0.15f to h / 2f, 0f to h * 0.28f,
+                -w * 0.15f to h / 2f, -w / 2f to h / 2f))
+            ShapeKind.WAVE -> {
+                p.moveTo(-w / 2f, -h * 0.20f)
+                p.cubicTo(-w * 0.25f, -h * 0.50f, -w * 0.15f, h * 0.20f, 0f, -h * 0.08f)
+                p.cubicTo(w * 0.20f, -h * 0.42f, w * 0.30f, h * 0.14f, w / 2f, -h * 0.14f)
+                p.lineTo(w / 2f, h / 2f); p.lineTo(-w / 2f, h / 2f); p.close()
             }
         }
         return p

@@ -91,8 +91,8 @@ export function Root() {
     const fit = () => {
       const p = editor.project;
       const ratio = p.width / p.height;
-      // Measured from the reference editor JPGs: 269x480 at x=80, y=113.
-      const availW = Math.max(60, (stageW - 8) * 0.635);
+      // Measured from the reference editor JPGs: a 270x480 portrait canvas at x=80, y=113.
+      const availW = Math.max(60, (stageW - 8) * 0.64);
       const availH = Math.max(60, stageH);
       let cssW = Math.min(availW, availH * ratio);
       let cssH = cssW / ratio;

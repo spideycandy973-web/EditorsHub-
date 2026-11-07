@@ -2,6 +2,9 @@ package com.editorshub.ui.feature.editor
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
@@ -28,6 +31,7 @@ import com.editorshub.core.domain.model.ExportConfig
 import com.editorshub.core.domain.model.ExportResolution
 import com.editorshub.core.domain.model.VideoCodec
 import com.editorshub.core.domain.timeline.TimelineMath
+import com.editorshub.core.importer.NativeXmlExporter
 import com.editorshub.ui.components.LabeledSelect
 import com.editorshub.ui.components.SliderRow
 
@@ -38,85 +42,82 @@ fun EditorScreen(
     onBack: () -> Unit
 ) {
     val state by vm.ui.collectAsState()
+    val context = LocalContext.current
     var showExport by remember { mutableStateOf(false) }
     var fullscreen by remember { mutableStateOf(false) }
-
-    Scaffold(
-        containerColor = EditorPalette.Black,
-        topBar = {
-            var moreExpanded by remember { mutableStateOf(false) }
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(state.project?.name ?: "Loading…", fontSize = 16.sp,
-                            color = EditorPalette.TextPrimary)
-                        state.project?.let {
-                            Text("${it.width}×${it.height} · ${it.fps}fps · ${it.layers.size} layers",
-                                fontSize = 9.sp, color = EditorPalette.TextSecondary)
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = EditorPalette.TextPrimary)
-                    }
-                },
-                actions = {
-                    GuidesMenu(state, vm)
-                    IconButton(onClick = { moreExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, "More", tint = EditorPalette.TextPrimary)
-                    }
-                    DropdownMenu(expanded = moreExpanded, onDismissRequest = { moreExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Undo", fontSize = 11.sp) },
-                            enabled = state.undoAvailable,
-                            onClick = { vm.undo(); moreExpanded = false })
-                        DropdownMenuItem(text = { Text("Redo", fontSize = 11.sp) },
-                            enabled = state.redoAvailable,
-                            onClick = { vm.redo(); moreExpanded = false })
-                        DropdownMenuItem(text = { Text("Zoom to fit", fontSize = 11.sp) },
-                            onClick = { vm.zoomToFit(); moreExpanded = false })
-                        DropdownMenuItem(text = { Text("Zoom to selection", fontSize = 11.sp) },
-                            onClick = { vm.zoomToSelection(); moreExpanded = false })
-                        DropdownMenuItem(text = { Text("Save project", fontSize = 11.sp) },
-                            onClick = { vm.saveNow(); moreExpanded = false })
-                        DropdownMenuItem(text = { Text("Fullscreen preview", fontSize = 11.sp) },
-                            onClick = { fullscreen = true; moreExpanded = false })
-                        DropdownMenuItem(text = { Text(if (state.gpuPreview) "GPU preview: ON" else "GPU preview: OFF", fontSize = 11.sp) },
-                            onClick = { vm.setGpuPreview(!state.gpuPreview); moreExpanded = false })
-                        DropdownMenuItem(text = { Text(if (state.snapping) "Snapping: ON" else "Snapping: OFF", fontSize = 11.sp) },
-                            onClick = { vm.setSnapping(!state.snapping); moreExpanded = false })
-                    }
-                    IconButton(onClick = { showExport = true }) {
-                        Icon(Icons.Default.Share, "Export", tint = EditorPalette.Purple)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = EditorPalette.Charcoal,
-                    titleContentColor = EditorPalette.TextPrimary,
-                    navigationIconContentColor = EditorPalette.TextPrimary,
-                    actionIconContentColor = EditorPalette.TextPrimary
-                )
-            )
-        }
-    ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize().background(EditorPalette.Black)) {
-            PreviewSurface(state, Modifier.fillMaxWidth().weight(1f))
-            PlayerBar(state, vm)
-            Box(Modifier.fillMaxWidth().height(180.dp)) {
-                TimelineEditor(state, vm, Modifier.fillMaxSize())
-                FloatingActionButton(
-                    onClick = { vm.setTab(EditorTab.ADD) },
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).size(48.dp),
-                    containerColor = EditorPalette.Purple,
-                    contentColor = EditorPalette.Black,
-                    shape = RoundedCornerShape(13.dp)
-                ) { Icon(Icons.Default.Add, "Add layer") }
+    var showShapePicker by remember { mutableStateOf(false) }
+    val xmlExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/xml")
+    ) { uri ->
+        if (uri != null) {
+            val result = runCatching {
+                val project = state.project ?: error("Project is not ready")
+                val output = context.contentResolver.openOutputStream(uri) ?: error("Cannot open destination")
+                output.use { it.write(NativeXmlExporter.encode(project).toByteArray(Charsets.UTF_8)) }
             }
-            Inspector(state, vm, Modifier.fillMaxWidth().weight(1f))
+            Toast.makeText(context,
+                if (result.isSuccess) "Project XML exported" else "XML export failed: ${result.exceptionOrNull()?.message}",
+                Toast.LENGTH_LONG).show()
+        }
+    }
+
+    Box(Modifier.fillMaxSize().background(EditorPalette.Black)) {
+        Column(Modifier.fillMaxSize().background(EditorPalette.Black)) {
+            // The reference has an intentional dark breathing strip above its short toolbar.
+            Spacer(Modifier.height(34.dp))
+            EditorTopBar(
+                state = state,
+                vm = vm,
+                onBack = {
+                    if (state.tab in setOf(EditorTab.BORDER, EditorTab.BLEND, EditorTab.COLOR,
+                            EditorTab.TRANSFORM, EditorTab.SHAPE, EditorTab.KEYFRAMES,
+                            EditorTab.EFFECTS, EditorTab.TEXT, EditorTab.VECTOR, EditorTab.MASKS)) {
+                        vm.setTab(EditorTab.PROPERTIES)
+                    } else onBack()
+                },
+                onExport = { showExport = true },
+                onXmlExport = {
+                    val name = (state.project?.name ?: "Project").replace(Regex("[^A-Za-z0-9_-]"), "_")
+                    xmlExportLauncher.launch("$name.xml")
+                },
+                onFullscreen = { fullscreen = true }
+            )
+            Box(Modifier.weight(1f).fillMaxWidth().background(EditorPalette.Black)) {
+                PreviewSurface(state, Modifier.fillMaxSize())
+                IconButton(
+                    onClick = {
+                        vm.setPreviewZoom(if (state.previewZoom > 1.25f) 1f else state.previewZoom + 0.25f)
+                    },
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                        .size(38.dp).background(EditorPalette.SurfaceRaised, RoundedCornerShape(6.dp))
+                ) { Icon(Icons.Default.ZoomIn, "Zoom preview", tint = EditorPalette.TextPrimary) }
+            }
+            PlayerBar(state, vm)
+            TimelineEditor(state, vm, Modifier.fillMaxWidth().height(86.dp))
+            Inspector(state, vm, Modifier.fillMaxWidth().height(228.dp),
+                onShapePicker = { showShapePicker = true })
         }
         state.message?.let { msg ->
-            Snackbar(modifier = Modifier.padding(8.dp)) { Text(msg, fontSize = 11.sp) }
+            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 236.dp, start = 10.dp, end = 10.dp)) {
+                Text(msg, fontSize = 11.sp)
+            }
         }
+    }
+
+    if (showShapePicker) {
+        ShapePickerDialog(
+            onDismiss = { showShapePicker = false },
+            onPick = { choice ->
+                vm.addLayer(com.editorshub.core.domain.model.LayerType.SHAPE, choice.kind)
+                if (choice.sides != null || choice.starPoints != null) {
+                    vm.updateShape { shape -> shape.copy(
+                        sides = choice.sides ?: shape.sides,
+                        starPoints = choice.starPoints ?: shape.starPoints
+                    ) }
+                }
+                showShapePicker = false
+            }
+        )
     }
 
     if (fullscreen) {
@@ -135,72 +136,112 @@ fun EditorScreen(
     if (showExport) ExportDialog(state, vm) { showExport = false }
 }
 
-/** Alight-Motion-style control bar: transport icons, ruler and timecode. */
+@Composable
+private fun EditorTopBar(
+    state: EditorUiState,
+    vm: EditorViewModel,
+    onBack: () -> Unit,
+    onExport: () -> Unit,
+    onXmlExport: () -> Unit,
+    onFullscreen: () -> Unit
+) {
+    var moreExpanded by remember { mutableStateOf(false) }
+    val title = when (state.tab) {
+        EditorTab.BORDER -> "Border & Shadow"
+        EditorTab.BLEND -> "Blending & Opacity"
+        EditorTab.TRANSFORM -> "Move & Transform"
+        EditorTab.SHAPE -> "Edit Shape"
+        EditorTab.COLOR -> "Color & Fill"
+        EditorTab.KEYFRAMES -> "Keyframes"
+        EditorTab.EFFECTS -> "Effects"
+        EditorTab.TEXT -> "Text"
+        EditorTab.VECTOR -> "Vector Path"
+        EditorTab.MASKS -> "Masks"
+        EditorTab.AUDIO -> "Audio"
+        EditorTab.TRANSITIONS -> "Transitions"
+        EditorTab.PROJECT -> "Project Settings"
+        else -> state.project?.name ?: "Loading…"
+    }
+    Row(
+        Modifier.fillMaxWidth().height(42.dp).background(EditorPalette.SurfaceRaised),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
+            Icon(Icons.Default.ArrowBack, "Back", tint = EditorPalette.TextPrimary)
+        }
+        Text(title, modifier = Modifier.weight(1f), fontSize = 13.sp,
+            color = EditorPalette.TextPrimary, maxLines = 1)
+        GuidesMenu(state, vm)
+        IconButton(onClick = { vm.setTab(EditorTab.PROJECT) }, modifier = Modifier.size(38.dp)) {
+            Icon(Icons.Default.Settings, "Project settings", Modifier.size(19.dp), tint = EditorPalette.TextSecondary)
+        }
+        Box {
+            IconButton(onClick = { moreExpanded = true }, modifier = Modifier.size(38.dp)) {
+                Icon(Icons.Default.MoreVert, "More", Modifier.size(19.dp), tint = EditorPalette.TextSecondary)
+            }
+            DropdownMenu(expanded = moreExpanded, onDismissRequest = { moreExpanded = false }) {
+                DropdownMenuItem(text = { Text("Undo", fontSize = 11.sp) }, enabled = state.undoAvailable,
+                    onClick = { vm.undo(); moreExpanded = false })
+                DropdownMenuItem(text = { Text("Redo", fontSize = 11.sp) }, enabled = state.redoAvailable,
+                    onClick = { vm.redo(); moreExpanded = false })
+                DropdownMenuItem(text = { Text("Zoom to fit", fontSize = 11.sp) },
+                    onClick = { vm.zoomToFit(); moreExpanded = false })
+                DropdownMenuItem(text = { Text("Zoom to selection", fontSize = 11.sp) },
+                    onClick = { vm.zoomToSelection(); moreExpanded = false })
+                DropdownMenuItem(text = { Text("Save project", fontSize = 11.sp) },
+                    onClick = { vm.saveNow(); moreExpanded = false })
+                DropdownMenuItem(text = { Text("Export project XML", fontSize = 11.sp) },
+                    onClick = { onXmlExport(); moreExpanded = false })
+                DropdownMenuItem(text = { Text("Fullscreen preview", fontSize = 11.sp) },
+                    onClick = { onFullscreen(); moreExpanded = false })
+                DropdownMenuItem(text = { Text(if (state.gpuPreview) "GPU preview: ON" else "GPU preview: OFF", fontSize = 11.sp) },
+                    onClick = { vm.setGpuPreview(!state.gpuPreview); moreExpanded = false })
+                DropdownMenuItem(text = { Text(if (state.snapping) "Snapping: ON" else "Snapping: OFF", fontSize = 11.sp) },
+                    onClick = { vm.setSnapping(!state.snapping); moreExpanded = false })
+            }
+        }
+        IconButton(onClick = onExport, modifier = Modifier.size(42.dp)) {
+            Icon(Icons.Default.Share, "Export video", tint = EditorPalette.Purple)
+        }
+    }
+}
+
+/** Compact transport row matching the supplied editor. */
 @Composable
 private fun PlayerBar(state: EditorUiState, vm: EditorViewModel) {
     val p = state.project ?: return
-    val pad = { v: Long -> v.toString().padStart(2, '0') }
-    val totalSeconds = state.playheadMs / 1000L
-    val frames = ((state.playheadMs % 1000L) * p.fps / 1000L).coerceAtLeast(0L)
-    val timecode = "${pad(totalSeconds / 60)}:${pad(totalSeconds % 60)}:${pad(frames)}"
-
-    Column(
-        Modifier.fillMaxWidth().height(64.dp).background(EditorPalette.Charcoal)
+    Row(
+        Modifier.fillMaxWidth().height(48.dp).background(EditorPalette.Charcoal),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        Row(
-            Modifier.fillMaxWidth().height(38.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            IconButton(onClick = { vm.undo() }, enabled = state.undoAvailable, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.Undo, "Undo", Modifier.size(17.dp), tint = EditorPalette.TextPrimary)
-            }
-            IconButton(onClick = { vm.redo() }, enabled = state.redoAvailable, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.Redo, "Redo", Modifier.size(17.dp), tint = EditorPalette.TextPrimary)
-            }
-            Spacer(Modifier.width(8.dp))
-            IconButton(onClick = { vm.seek(0L) }, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.SkipPrevious, "Go to start", Modifier.size(18.dp), tint = EditorPalette.TextPrimary)
-            }
-            IconButton(onClick = { vm.togglePlay() }, modifier = Modifier.size(36.dp)) {
-                AnimatedContent(targetState = state.playing, transitionSpec = {
-                    scaleIn(animationSpec = spring()) + fadeIn() togetherWith
-                        scaleOut(animationSpec = spring()) + fadeOut()
-                }, label = "play-pause") { playing ->
-                    Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        "Play / pause", Modifier.size(20.dp),
-                        tint = if (playing) EditorPalette.Purple else EditorPalette.TextPrimary)
-                }
-            }
-            IconButton(onClick = { vm.seek(p.durationMs) }, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.SkipNext, "Go to end", Modifier.size(18.dp), tint = EditorPalette.TextPrimary)
-            }
-            Spacer(Modifier.width(8.dp))
-            IconButton(onClick = { state.selectedLayerId?.let { vm.duplicateLayer(it) } }, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.ContentCopy, "Duplicate layer", Modifier.size(16.dp), tint = EditorPalette.TextPrimary)
-            }
-            IconButton(onClick = { vm.setPreviewZoom(1f) }, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.FitScreen, "Fit preview", Modifier.size(17.dp), tint = EditorPalette.TextPrimary)
+        IconButton(onClick = { vm.undo() }, enabled = state.undoAvailable, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.Undo, "Undo", Modifier.size(21.dp), tint = EditorPalette.TextPrimary)
+        }
+        IconButton(onClick = { vm.redo() }, enabled = state.redoAvailable, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.Redo, "Redo", Modifier.size(21.dp), tint = EditorPalette.TextMuted)
+        }
+        IconButton(onClick = { vm.seek(0L) }, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.SkipPrevious, "Go to start", Modifier.size(23.dp), tint = EditorPalette.TextPrimary)
+        }
+        IconButton(onClick = { vm.togglePlay() }, modifier = Modifier.size(40.dp)) {
+            AnimatedContent(targetState = state.playing, transitionSpec = {
+                scaleIn(animationSpec = spring()) + fadeIn() togetherWith
+                    scaleOut(animationSpec = spring()) + fadeOut()
+            }, label = "play-pause") { playing ->
+                Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    "Play / pause", Modifier.size(25.dp),
+                    tint = if (playing) EditorPalette.Purple else EditorPalette.TextPrimary)
             }
         }
-        Box(Modifier.fillMaxWidth().height(26.dp).background(EditorPalette.SurfaceRaised)) {
-            Canvas(Modifier.fillMaxSize()) {
-                val step = 18.dp.toPx()
-                var x = 0f
-                while (x < size.width) {
-                    drawLine(Color(0xFF5A6684), Offset(x, 0f), Offset(x, 10f), strokeWidth = 1f)
-                    drawLine(Color(0xFF3D4860), Offset(x, 10f), Offset(x, 15f), strokeWidth = 1f)
-                    x += step
-                }
-            }
-            Text(
-                timecode,
-                fontSize = 11.sp,
-                color = EditorPalette.TextPrimary,
-                modifier = Modifier.align(Alignment.Center)
-                    .background(Color(0xFF303A50), RoundedCornerShape(5.dp))
-                    .padding(horizontal = 9.dp, vertical = 2.dp)
-            )
+        IconButton(onClick = { vm.seek(p.durationMs) }, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.SkipNext, "Go to end", Modifier.size(23.dp), tint = EditorPalette.TextPrimary)
+        }
+        IconButton(onClick = { state.selectedLayerId?.let { vm.duplicateLayer(it) } }, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.LibraryAdd, "Duplicate layer", Modifier.size(22.dp), tint = EditorPalette.TextPrimary)
+        }
+        IconButton(onClick = { vm.setTab(EditorTab.ADD) }, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.AddBox, "Add layer", Modifier.size(22.dp), tint = EditorPalette.TextPrimary)
         }
     }
 }

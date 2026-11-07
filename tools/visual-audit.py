@@ -4,7 +4,7 @@
     python3 tools/visual-audit.py [--mine DIR]
 
 The reference JPGs are 1220x2712. This script scales them to the 430x956
-phone canvas, finds the exact bounding rows of the card colour (#1c1c1e),
+phone canvas, finds the exact bounding rows of the card colour (#1c1c1f),
 the lavender button colour (#d8dcff) and the dominant palette, then reports
 the same measurements for optional `--mine` screenshots and the deltas.
 
@@ -105,8 +105,8 @@ def main() -> None:
           "card", palette["pixels"]["card"], "lavender", LAV)
     print("\nCSS tokens used by v4.1.0:")
     for k, v in {
-        "--um-home": "#121214", "--um-card": "#1c1c1e", "--um-card-2": "#262628",
-        "--um-lav": "#d8dcff", "--um-teal": "#01ffa7", "--um-radius": "18px",
+        "--um-home": "#121215", "--um-card": "#1c1c1f", "--um-card-2": "#262629",
+        "--um-lav": "#d8dcff", "--um-teal": "#00ffa8", "--um-radius": "18px",
     }.items():
         print(f"  {k:14s} {v}")
 
