@@ -138,26 +138,27 @@ jobs:
             smoke-diagnostics.txt
           if-no-files-found: ignore
 
-      - name: Mirror failure details to the branch for diagnosis
+      - name: Save emulator failure details for diagnosis
         if: failure()
-        run: |
-          set -e
-          mkdir -p ci-logs
-          {
-            echo "Workflow run $GITHUB_RUN_ID"
-            if [ -f android-test.log ]; then
-              echo '--- instrumentation ---'
-              tail -n 300 android-test.log
-            fi
-            if [ -f smoke-diagnostics.txt ]; then
-              echo '--- launch smoke ---'
-              tail -n 120 smoke-diagnostics.txt
-            fi
-          } > ci-logs/android-emulator-debug.txt
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ci-logs/android-emulator-debug.txt
-          git commit -m "ci: capture Android emulator failure details [skip ci]"
-          git fetch origin arena/be31b8e1-editorshub
-          git rebase origin/arena/be31b8e1-editorshub
-          git push origin HEAD:arena/be31b8e1-editorshub
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const sections = [`Workflow run ${context.runId}`];
+            for (const [path, label, lines] of [
+              ['android-test.log', 'instrumentation', 500],
+              ['smoke-diagnostics.txt', 'launch smoke', 160],
+            ]) {
+              if (fs.existsSync(path)) {
+                const text = fs.readFileSync(path, 'utf8').split(/\r?\n/).slice(-lines).join('\n');
+                sections.push(`--- ${label} ---`, text);
+              }
+            }
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: `ci-logs/android-emulator-debug-${context.runId}.txt`,
+              message: `ci: capture Android emulator failure ${context.runId} [skip ci]`,
+              content: Buffer.from(sections.join('\n\n'), 'utf8').toString('base64'),
+              branch: 'arena/be31b8e1-editorshub',
+            });
