@@ -1,15 +1,9 @@
 name: Build Android APK
 
 on:
+  # This legacy Capacitor wrapper is separate from the native Compose app.
+  # Keep its build manual so a native editor change cannot publish the wrong APK.
   workflow_dispatch:
-  push:
-    branches:
-      - arena/be31b8e1-editorshub
-    # Narrow trigger so a web/Capacitor rebuild does not race the native CI push.
-    paths:
-      - '.github/workflows/build-apk.yml'
-      - 'ci/smoke-capacitor.sh'
-      - 'rebuild-capacitor-apk.txt'
 
 permissions:
   contents: write
@@ -79,49 +73,6 @@ jobs:
           name: EditorsHub-Motion-apk
           path: EditorsHub-Motion.apk
           if-no-files-found: error
-
-      - name: Publish APK to GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! gh release view apk-latest >/dev/null 2>&1; then
-            gh release create apk-latest \
-              --title 'EditorsHub — Android APK' \
-              --notes 'Installable debug-signed Android APK for EditorsHub. Built from the Capacitor Android wrapper by GitHub Actions.'
-          fi
-          gh release upload apk-latest EditorsHub-Motion.apk --clobber
-
-      - name: Attach APK to versioned and rolling releases
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # The native workflow creates v4.5.0. Wait for it instead of racing it.
-          for i in $(seq 1 30); do
-            if gh release view v4.5.0 >/dev/null 2>&1; then echo "v4.5.0 release is live"; break; fi
-            echo "waiting for v4.5.0 release ($i/30)…"
-            sleep 20
-          done
-          gh release upload v4.5.0 EditorsHub-Motion.apk --clobber || true
-          gh release upload editorshub-latest EditorsHub-Motion.apk --clobber || true
-
-      - name: Add APK to repository
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f EditorsHub-Motion.apk
-          git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
-          git pull origin arena/be31b8e1-editorshub --no-rebase || true
-          pushed=0
-          for attempt in 1 2 3; do
-            if git push origin HEAD:arena/be31b8e1-editorshub; then pushed=1; break; fi
-            echo "push attempt $attempt failed; retrying"
-            sleep 10
-            git fetch origin arena/be31b8e1-editorshub
-            git pull origin arena/be31b8e1-editorshub --no-rebase || true
-          done
-          [ "$pushed" = "1" ]
 
   # Installs and launches the actual Capacitor APK on a real Android image.
   smoke:
