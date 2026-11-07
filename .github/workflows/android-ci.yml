@@ -8,6 +8,7 @@ on:
     paths:
       - 'EditorsHub/**'
       - 'ci/smoke.sh'
+      - 'ci/android-smoke.sh'
       - '.github/workflows/android-ci.yml'
 
 permissions:
@@ -124,17 +125,15 @@ jobs:
           arch: x86_64
           profile: pixel_5
           disable-animations: true
-          # Run XML round-trip instrumentation, then install/launch the packaged APK.
-          # Keep the Gradle invocation on one line because the action runs each line separately.
-          script: |
-            chmod +x EditorsHub/gradlew
-            cd EditorsHub && ./gradlew :app:connectedDebugAndroidTest --stacktrace
-            sh ci/smoke.sh
+          # The script logs instrumentation output and then installs/launches the packaged APK.
+          script: sh ci/android-smoke.sh
 
-      - name: Upload smoke diagnostics on failure
+      - name: Upload emulator diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: android-smoke-diagnostics
-          path: smoke-diagnostics.txt
+          path: |
+            android-test.log
+            smoke-diagnostics.txt
           if-no-files-found: ignore
