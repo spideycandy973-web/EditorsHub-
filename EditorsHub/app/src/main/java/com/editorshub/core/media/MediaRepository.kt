@@ -97,6 +97,11 @@ class MediaRepository @Inject constructor(
             mime.startsWith("audio/") -> MediaKind.AUDIO
             else -> MediaKind.UNKNOWN
         }
+        if (kind == MediaKind.IMAGE) {
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(path, opts)
+            return MediaInfo(path, File(path).name, kind, mime, opts.outWidth, opts.outHeight)
+        }
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(path)
@@ -104,13 +109,7 @@ class MediaRepository @Inject constructor(
             val h = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
             val d = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
             val rot = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
-            if (kind == MediaKind.IMAGE) {
-                val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(path, opts)
-                MediaInfo(path, File(path).name, MediaKind.IMAGE, mime, opts.outWidth, opts.outHeight)
-            } else {
-                MediaInfo(path, File(path).name, kind, mime, w, h, d, rot)
-            }
+            MediaInfo(path, File(path).name, kind, mime, w, h, d, rot)
         } catch (e: Exception) {
             MediaInfo(path, File(path).name, kind, mime)
         } finally {
