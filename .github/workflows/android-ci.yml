@@ -2,6 +2,12 @@ name: Build Android (EditorsHub)
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_debug_prerelease:
+        description: Publish this tested debug APK as a clearly labeled pre-release
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - arena/be31b8e1-editorshub
@@ -162,3 +168,39 @@ jobs:
               content: Buffer.from(sections.join('\n\n'), 'utf8').toString('base64'),
               branch: 'arena/be31b8e1-editorshub',
             });
+
+  # Optional, explicitly labeled debug pre-release. A stable signed release still
+  # goes through android-release.yml and its production signing secrets.
+  publish-debug-prerelease:
+    name: Publish tested debug pre-release
+    needs: [build, smoke]
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_debug_prerelease) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-debug-prerelease]')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tested APK
+        uses: actions/download-artifact@v4
+        with:
+          name: editorshub-android
+          path: release-assets
+
+      - name: Verify release asset
+        run: |
+          test -s release-assets/EditorsHub-debug.apk
+          sha256sum release-assets/EditorsHub-debug.apk
+
+      - name: Publish GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v4.5.0-debug
+          target_commitish: ${{ github.sha }}
+          name: EditorsHub v4.5.0 — Debug pre-release
+          prerelease: true
+          body: |
+            **Tested debug-signed build — not the official production-signed release.**
+
+            Built from commit `${{ github.sha }}` after the Android build, instrumentation tests, and emulator install/launch smoke check passed.
+
+            **Install/update notice:** This APK uses a CI debug signing key. Android may refuse to update an existing installation signed with a different key. Back up projects before uninstalling. This pre-release does not replace the stable v4.4.0 release.
+          files: release-assets/EditorsHub-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
