@@ -6,7 +6,7 @@ on:
       version:
         description: 'Release tag (e.g. v4.5.0)'
         required: true
-        default: 'v4.5.0'
+        default: 'v4.6.0'
 
 permissions:
   contents: write
@@ -25,18 +25,25 @@ jobs:
       - name: Decode release keystore from secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::KEYSTORE_BASE64 secret is not configured. Debug keys are not used for releases."
-            exit 1
-          fi
-          echo "$KEYSTORE_BASE64" | base64 -d > EditorsHub/app/release.jks
-          cat > EditorsHub/app/keystore.properties <<PROPS
-          storeFile=release.jks
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          PROPS
+          set -eu
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            eval "value=\${$name}"
+            if [ -z "$value" ]; then
+              echo "::error::$name secret is not configured. Debug keys are not used for releases."
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > EditorsHub/app/release.jks
+          printf '%s\n' \
+            'storeFile=release.jks' \
+            "storePassword=$KEYSTORE_PASSWORD" \
+            "keyAlias=$KEY_ALIAS" \
+            "keyPassword=$KEY_PASSWORD" \
+            > EditorsHub/app/keystore.properties
 
       - name: Build signed APK + AAB
         run: |
