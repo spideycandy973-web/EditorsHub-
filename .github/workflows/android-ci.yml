@@ -65,6 +65,23 @@ jobs:
           path: android-build.log
           if-no-files-found: ignore
 
+      - name: Surface Gradle errors in check annotations
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('android-build.log')) {
+              core.error('Gradle build failed before the diagnostic log was created.');
+              return;
+            }
+            const lines = fs.readFileSync('android-build.log', 'utf8').split(/\r?\n/);
+            const matches = lines.filter(line =>
+              /^(e:|w:|FAILURE:|\* What went wrong|Execution failed|.*Unresolved reference|.*Type mismatch|.*Overload resolution ambiguity|.*No value passed|.*Cannot infer)/i.test(line)
+            ).slice(-80);
+            const detail = matches.length ? matches.join('\n') : lines.slice(-100).join('\n');
+            core.error(`Gradle failure details:\n${detail}`.slice(0, 9000));
+
       - name: Collect artifacts
         if: success()
         run: |
