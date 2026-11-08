@@ -10,6 +10,11 @@ underlying editor/render/export engine remains the existing native implementatio
 this candidate is not a claim of complete Alight Motion parity and is not a
 production-signed release.
 
+## v4.6.0 verification
+
+- GitHub Actions Android build (debug APK, release APK/AAB tasks and unit tests) passed.
+- Compose instrumentation test and Android emulator install/launch smoke check passed in [run 42514390984](https://github.com/spideycandy973-web/EditorsHub-/actions/runs/42514390984).
+
 ## Previous v4.5.0 notes — measured reference alignment
 
 Package `com.editorshub` (version code 18). The reference screenshots and fresh

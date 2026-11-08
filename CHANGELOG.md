@@ -8,7 +8,7 @@
 - Added a waveform-visible audio row to the multitrack timeline, with drag-to-position, frame/magnetic snapping, mute control and tap-to-scrub playhead interaction.
 - Kept the existing native project, timeline, keyframe/easing, effect, mask/blend, media and export engine; this is an original workflow enhancement, not a claim of complete Alight Motion parity.
 - Recorded public-source findings and a clean-room product target in `docs/REFERENCE_RESEARCH.md`.
-- Android candidate version: 4.6.0 / version code 19. The final timeline additions must pass CI before being offered as an installable build; this is not a production-signed stable release.
+- Android candidate version: 4.6.0 / version code 19. GitHub Actions Android build, instrumentation test and emulator install/launch smoke check passed in [run 42514390984](https://github.com/spideycandy973-web/EditorsHub-/actions/runs/42514390984). It remains a debug candidate, not a production-signed stable release.
 
 ## 4.5.0 — measured Ultra Motion editor alignment (2026-11-06)
 
