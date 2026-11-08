@@ -772,6 +772,30 @@ class EditorViewModel @Inject constructor(
         p.copy(audioTracks = p.audioTracks.map { if (it.id == id) transform(it) else it })
     }
 
+    fun moveAudioTrack(id: String, deltaMs: Long) = commit { p ->
+        val current = p.audioTracks.firstOrNull { it.id == id } ?: return@commit p
+        var nextStart = TimelineMath.snapExact(
+            current.startMs + deltaMs,
+            p.fpsExact,
+            _ui.value.snapping
+        ).coerceAtLeast(0L)
+        if (_ui.value.magneticSnapping) {
+            val edges = p.layers.flatMap { listOf(it.startMs, it.startMs + it.durationMs) } +
+                p.audioTracks.filterNot { it.id == id }
+                    .flatMap { listOf(it.startMs, it.startMs + it.durationMs) }
+            for (target in listOf(nextStart, nextStart + current.durationMs)) {
+                val near = edges.minByOrNull { kotlin.math.abs(it - target) }
+                if (near != null && kotlin.math.abs(near - target) < 120L) {
+                    nextStart = (nextStart + near - target).coerceAtLeast(0L)
+                    break
+                }
+            }
+        }
+        p.copy(audioTracks = p.audioTracks.map {
+            if (it.id == id) it.copy(startMs = nextStart) else it
+        })
+    }
+
     fun removeAudioTrack(id: String) = commit { p ->
         p.copy(audioTracks = p.audioTracks.filterNot { it.id == id })
     }

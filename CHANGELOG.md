@@ -5,9 +5,10 @@
 - Reworked the Android landing screen into an editor-first dashboard: create a composition, import multiple media items, open project packages, browse templates, and resume recent edits without starting in an XML-import form.
 - Added touch-scale feedback to the home actions, recent project cards, bottom navigation and inspector options; tab navigation already slides/fades between destinations and now has animated selection feedback.
 - Inspector panels and toolbar titles now transition instead of switching abruptly; expandable property sections animate open/closed.
-- Kept the existing native project, timeline, keyframe/easing, effect, mask/blend, media and export engine; this is a UI/workflow correction, not a claim of complete Alight Motion parity.
+- Added a waveform-visible audio row to the multitrack timeline, with drag-to-position, frame/magnetic snapping, mute control and tap-to-scrub playhead interaction.
+- Kept the existing native project, timeline, keyframe/easing, effect, mask/blend, media and export engine; this is an original workflow enhancement, not a claim of complete Alight Motion parity.
 - Recorded public-source findings and a clean-room product target in `docs/REFERENCE_RESEARCH.md`.
-- Android candidate version: 4.6.0 / version code 19. It must pass CI before it is offered as an installable build; no stable release is made by this change.
+- Android candidate version: 4.6.0 / version code 19. The final timeline additions must pass CI before being offered as an installable build; this is not a production-signed stable release.
 
 ## 4.5.0 — measured Ultra Motion editor alignment (2026-11-06)
 

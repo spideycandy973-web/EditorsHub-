@@ -68,7 +68,7 @@ fun Inspector(
             IconButton(onClick = {
                 if (state.tab in setOf(EditorTab.BORDER, EditorTab.BLEND, EditorTab.COLOR,
                         EditorTab.SHAPE, EditorTab.TRANSFORM, EditorTab.EFFECTS, EditorTab.TEXT,
-                        EditorTab.VECTOR, EditorTab.MASKS, EditorTab.KEYFRAMES)) {
+                        EditorTab.VECTOR, EditorTab.MASKS, EditorTab.KEYFRAMES, EditorTab.AUDIO)) {
                     vm.setTab(EditorTab.PROPERTIES)
                 } else vm.setTab(EditorTab.ADD)
             }, modifier = Modifier.size(48.dp)) {

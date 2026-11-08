@@ -2,11 +2,13 @@
 
 Android candidate package `com.editorshub` (version code 19). The landing flow now
 opens as a video-editing workspace: create a composition, bring in multiple clips,
-resume recent projects, or browse project imports and templates. Tab selection,
-inspector panels, expandable sections, and important touch targets have deliberate
-motion feedback. The underlying editor/render/export engine remains the existing
-native implementation; this candidate is not a claim of complete Alight Motion
-parity and is not a production-signed release.
+resume recent projects, or browse project imports and templates. The multitrack
+timeline now shows audio clips with waveforms, supports drag-to-position, and lets
+you scrub from the ruler or playhead. Tab selection, inspector panels, expandable
+sections, and important touch targets have deliberate motion feedback. The
+underlying editor/render/export engine remains the existing native implementation;
+this candidate is not a claim of complete Alight Motion parity and is not a
+production-signed release.
 
 ## Previous v4.5.0 notes — measured reference alignment
 

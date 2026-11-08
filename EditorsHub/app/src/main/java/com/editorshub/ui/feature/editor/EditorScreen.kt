@@ -72,7 +72,8 @@ fun EditorScreen(
                 onBack = {
                     if (state.tab in setOf(EditorTab.BORDER, EditorTab.BLEND, EditorTab.COLOR,
                             EditorTab.TRANSFORM, EditorTab.SHAPE, EditorTab.KEYFRAMES,
-                            EditorTab.EFFECTS, EditorTab.TEXT, EditorTab.VECTOR, EditorTab.MASKS)) {
+                            EditorTab.EFFECTS, EditorTab.TEXT, EditorTab.VECTOR, EditorTab.MASKS,
+                            EditorTab.AUDIO)) {
                         vm.setTab(EditorTab.PROPERTIES)
                     } else onBack()
                 },
