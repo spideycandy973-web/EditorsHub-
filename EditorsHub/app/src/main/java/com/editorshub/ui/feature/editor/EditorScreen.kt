@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -169,8 +170,17 @@ private fun EditorTopBar(
         IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
             Icon(Icons.Default.ArrowBack, "Back", tint = EditorPalette.TextPrimary)
         }
-        Text(title, modifier = Modifier.weight(1f), fontSize = 13.sp,
-            color = EditorPalette.TextPrimary, maxLines = 1)
+        AnimatedContent(
+            targetState = title,
+            modifier = Modifier.weight(1f),
+            transitionSpec = {
+                (fadeIn(tween(AppMotion.Fast)) + slideInVertically(tween(AppMotion.Fast)) { it / 4 }) togetherWith
+                    (fadeOut(tween(AppMotion.Fast)) + slideOutVertically(tween(AppMotion.Fast)) { -it / 4 })
+            },
+            label = "editor-toolbar-title"
+        ) { animatedTitle ->
+            Text(animatedTitle, fontSize = 13.sp, color = EditorPalette.TextPrimary, maxLines = 1)
+        }
         GuidesMenu(state, vm)
         IconButton(onClick = { vm.setTab(EditorTab.PROJECT) }, modifier = Modifier.size(38.dp)) {
             Icon(Icons.Default.Settings, "Project settings", Modifier.size(19.dp), tint = EditorPalette.TextSecondary)

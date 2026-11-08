@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.6.0 — motion-first native studio (2026-11-02)
+
+- Reworked the Android landing screen into an editor-first dashboard: create a composition, import multiple media items, open project packages, browse templates, and resume recent edits without starting in an XML-import form.
+- Added touch-scale feedback to the home actions, recent project cards, bottom navigation and inspector options; tab navigation already slides/fades between destinations and now has animated selection feedback.
+- Inspector panels and toolbar titles now transition instead of switching abruptly; expandable property sections animate open/closed.
+- Kept the existing native project, timeline, keyframe/easing, effect, mask/blend, media and export engine; this is a UI/workflow correction, not a claim of complete Alight Motion parity.
+- Recorded public-source findings and a clean-room product target in `docs/REFERENCE_RESEARCH.md`.
+- Android candidate version: 4.6.0 / version code 19. It must pass CI before it is offered as an installable build; no stable release is made by this change.
+
 ## 4.5.0 — measured Ultra Motion editor alignment (2026-11-06)
 
 - **Rechecked the screenshots and RE evidence instead of guessing.** Fresh

@@ -1,4 +1,14 @@
-# EditorsHub v4.5.0 — measured Ultra Motion editor alignment
+# EditorsHub v4.6.0 — motion-first studio pass
+
+Android candidate package `com.editorshub` (version code 19). The landing flow now
+opens as a video-editing workspace: create a composition, bring in multiple clips,
+resume recent projects, or browse project imports and templates. Tab selection,
+inspector panels, expandable sections, and important touch targets have deliberate
+motion feedback. The underlying editor/render/export engine remains the existing
+native implementation; this candidate is not a claim of complete Alight Motion
+parity and is not a production-signed release.
+
+## Previous v4.5.0 notes — measured reference alignment
 
 Package `com.editorshub` (version code 18). The reference screenshots and fresh
 REA/Ghidra structural measurements were used as the visual targets. This is an

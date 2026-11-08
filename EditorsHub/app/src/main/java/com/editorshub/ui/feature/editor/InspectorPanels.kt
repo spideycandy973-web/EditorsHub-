@@ -49,6 +49,7 @@ private val TRANSFORM_PROPS = listOf(
     Triple("skewX", "Skew X", -80f..80f)
 )
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Inspector(
     state: EditorUiState,
@@ -86,27 +87,54 @@ fun Inspector(
             }
         }
         Box(Modifier.weight(1f).fillMaxHeight().padding(horizontal = 6.dp, vertical = 4.dp)) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                when (state.tab) {
-                    EditorTab.ADD -> AddPanel(state, vm, onShapePicker)
-                    EditorTab.PROPERTIES -> PropertiesPanel(vm, layer)
-                    EditorTab.BORDER -> BorderPanel(state, vm, layer)
-                    EditorTab.BLEND -> BlendPanel(vm, layer)
-                    EditorTab.COLOR -> ColorPanel(vm, layer)
-                    EditorTab.TRANSFORM -> TransformPanel(state, vm, layer, project)
-                    EditorTab.KEYFRAMES -> KeyframesPanel(state, vm, layer)
-                    EditorTab.EFFECTS -> EffectsPanel(state, vm, layer)
-                    EditorTab.TEXT -> TextPanel(state, vm, layer)
-                    EditorTab.SHAPE -> ShapePanel(state, vm, layer)
-                    EditorTab.VECTOR -> VectorPanel(state, vm, layer)
-                    EditorTab.MASKS -> MasksPanel(state, vm, layer)
-                    EditorTab.AUDIO -> AudioPanel(state, vm, project)
-                    EditorTab.TRANSITIONS -> TransitionsPanel(state, vm, layer, project)
-                    EditorTab.PROJECT -> ProjectPanel(state, vm, project)
+            AnimatedContent(
+                targetState = state.tab,
+                modifier = Modifier.fillMaxSize(),
+                transitionSpec = {
+                    val direction = if (targetState.ordinal >= initialState.ordinal) 1 else -1
+                    (fadeIn(tween(AppMotion.Fast, easing = AppMotion.Standard)) +
+                        slideInHorizontally(
+                            initialOffsetX = { width -> direction * width / 14 },
+                            animationSpec = tween(AppMotion.Normal, easing = AppMotion.Emphasized)
+                        )) togetherWith
+                        (fadeOut(tween(AppMotion.Fast)) +
+                            slideOutHorizontally(
+                                targetOffsetX = { width -> -direction * width / 18 },
+                                animationSpec = tween(AppMotion.Fast, easing = AppMotion.Standard)
+                            ))
+                },
+                label = "inspector-panel-transition"
+            ) { panelTab ->
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    when (panelTab) {
+                        EditorTab.ADD -> AddPanel(state, vm, onShapePicker)
+                        EditorTab.PROPERTIES -> PropertiesPanel(vm, layer)
+                        EditorTab.BORDER -> BorderPanel(state, vm, layer)
+                        EditorTab.BLEND -> BlendPanel(vm, layer)
+                        EditorTab.COLOR -> ColorPanel(vm, layer)
+                        EditorTab.TRANSFORM -> TransformPanel(state, vm, layer, project)
+                        EditorTab.KEYFRAMES -> KeyframesPanel(state, vm, layer)
+                        EditorTab.EFFECTS -> EffectsPanel(state, vm, layer)
+                        EditorTab.TEXT -> TextPanel(state, vm, layer)
+                        EditorTab.SHAPE -> ShapePanel(state, vm, layer)
+                        EditorTab.VECTOR -> VectorPanel(state, vm, layer)
+                        EditorTab.MASKS -> MasksPanel(state, vm, layer)
+                        EditorTab.AUDIO -> AudioPanel(state, vm, project)
+                        EditorTab.TRANSITIONS -> TransitionsPanel(state, vm, layer, project)
+                        EditorTab.PROJECT -> ProjectPanel(state, vm, project)
+                    }
                 }
             }
         }
-        if (state.tab == EditorTab.BORDER) {
+        AnimatedVisibility(
+            visible = state.tab == EditorTab.BORDER,
+            enter = fadeIn(tween(AppMotion.Fast)) + slideInHorizontally(
+                initialOffsetX = { it / 3 }, animationSpec = tween(AppMotion.Normal, easing = AppMotion.Emphasized)
+            ),
+            exit = fadeOut(tween(AppMotion.Fast)) + slideOutHorizontally(
+                targetOffsetX = { it / 3 }, animationSpec = tween(AppMotion.Fast, easing = AppMotion.Standard)
+            )
+        ) {
             Column(
                 Modifier.width(62.dp).fillMaxHeight().background(EditorPalette.Charcoal),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -137,8 +165,11 @@ private fun PropertiesPanel(vm: EditorViewModel, layer: Layer?) {
         entries.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth().height(62.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 row.forEach { (title, icon, tab) ->
+                    val interaction = remember(title) { androidx.compose.foundation.interaction.MutableInteractionSource() }
                     Card(
-                        Modifier.weight(1f).fillMaxHeight().clickable { vm.setTab(tab) },
+                        Modifier.weight(1f).fillMaxHeight().pressScale(interaction, 0.95f)
+                            .clickable(interactionSource = interaction,
+                                indication = androidx.compose.foundation.LocalIndication.current) { vm.setTab(tab) },
                         shape = RoundedCornerShape(9.dp),
                         colors = CardDefaults.cardColors(containerColor = EditorPalette.SurfaceRaised)
                     ) {
@@ -162,10 +193,12 @@ private fun BorderModeButton(mode: String, label: String,
                              icon: androidx.compose.ui.graphics.vector.ImageVector,
                              state: EditorUiState, vm: EditorViewModel) {
     val selected = state.selectedProperty == mode
+    val interaction = remember(mode) { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Column(
-        Modifier.width(52.dp).height(58.dp).background(
+        Modifier.width(52.dp).height(58.dp).pressScale(interaction, 0.94f).background(
             if (selected) EditorPalette.SurfaceRaised else Color.Transparent, RoundedCornerShape(8.dp)
-        ).clickable { vm.setSelectedProperty(mode) },
+        ).clickable(interactionSource = interaction,
+            indication = androidx.compose.foundation.LocalIndication.current) { vm.setSelectedProperty(mode) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

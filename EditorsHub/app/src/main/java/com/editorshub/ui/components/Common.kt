@@ -1,5 +1,13 @@
 package com.editorshub.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,17 +19,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.editorshub.ui.theme.AppMotion
 
 @Composable
 fun PanelSection(title: String, expanded: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     var open by remember { mutableStateOf(expanded) }
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (open) 180f else 0f,
+        animationSpec = tween(AppMotion.Fast),
+        label = "panel-arrow-$title"
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 10.dp, vertical = 4.dp)
+            .animateContentSize(tween(AppMotion.Normal, easing = AppMotion.Emphasized))
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
             .padding(8.dp)
     ) {
@@ -32,10 +48,18 @@ fun PanelSection(title: String, expanded: Boolean = true, content: @Composable C
             Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Icon(
                 Icons.Default.KeyboardArrowDown, null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp).rotate(arrowRotation)
             )
         }
-        if (open) content()
+        AnimatedVisibility(
+            visible = open,
+            enter = expandVertically(animationSpec = tween(AppMotion.Normal, easing = AppMotion.Emphasized)) +
+                fadeIn(animationSpec = tween(AppMotion.Fast)),
+            exit = shrinkVertically(animationSpec = tween(AppMotion.Fast, easing = AppMotion.Standard)) +
+                fadeOut(animationSpec = tween(AppMotion.Fast))
+        ) {
+            Column { content() }
+        }
     }
 }
 

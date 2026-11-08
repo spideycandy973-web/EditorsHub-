@@ -1,12 +1,16 @@
 package com.editorshub.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -29,6 +33,7 @@ import com.editorshub.ui.feature.effects.EffectsLibraryScreen
 import com.editorshub.ui.feature.home.*
 import com.editorshub.ui.feature.importer.ImportScreen
 import com.editorshub.ui.feature.node.NodeEditorScreen
+import com.editorshub.ui.components.pressScale
 import com.editorshub.ui.navigation.MainTab
 import com.editorshub.ui.navigation.Routes
 import com.editorshub.ui.theme.AppMotion
@@ -167,6 +172,8 @@ private fun TabHost(
                 onOpenProject = openProject,
                 onSettings = { tabNav.navigate(MainTab.SETTINGS.route) },
                 onImport = goImport,
+                onProjects = { navigateToTab(tabNav, MainTab.PROJECTS) },
+                onTemplates = { navigateToTab(tabNav, MainTab.TEMPLATES) },
                 createRequest = createRequest
             )
         }
@@ -219,9 +226,12 @@ private fun AnimatedNavigationBar(
             MainNavItem(MainTab.HOME, current == MainTab.HOME, Modifier.weight(1f)) {
                 navigateToTab(nav, MainTab.HOME)
             }
+            val createInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
             Box(
-                Modifier.size(54.dp).clip(CircleShape).background(EditorPalette.Purple)
-                    .clickable(onClick = onCreate),
+                Modifier.size(54.dp).pressScale(createInteraction, 0.9f)
+                    .clip(CircleShape).background(EditorPalette.Purple)
+                    .clickable(interactionSource = createInteraction, indication = LocalIndication.current,
+                        onClick = onCreate),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Add, "Create project", Modifier.size(30.dp), tint = EditorPalette.Black)
@@ -235,16 +245,37 @@ private fun AnimatedNavigationBar(
 
 @Composable
 private fun MainNavItem(tab: MainTab, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val iconColor by animateColorAsState(
+        if (selected) EditorPalette.Purple else EditorPalette.TextMuted,
+        animationSpec = tween(AppMotion.Fast), label = "${tab.route}-icon-color"
+    )
+    val labelColor by animateColorAsState(
+        if (selected) EditorPalette.TextPrimary else EditorPalette.TextMuted,
+        animationSpec = tween(AppMotion.Fast), label = "${tab.route}-label-color"
+    )
+    val itemBackground by animateColorAsState(
+        if (selected) EditorPalette.SurfaceRaised else Color.Transparent,
+        animationSpec = tween(AppMotion.Fast), label = "${tab.route}-item-background"
+    )
+    val indicatorWidth by animateDpAsState(
+        if (selected) 16.dp else 0.dp,
+        animationSpec = tween(AppMotion.Normal, easing = AppMotion.Emphasized),
+        label = "${tab.route}-indicator"
+    )
     Column(
-        modifier.fillMaxHeight().clickable(onClick = onClick),
+        modifier.fillMaxHeight().pressScale(interaction, 0.93f)
+            .clip(RoundedCornerShape(18.dp))
+            .background(itemBackground)
+            .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(tab.icon, tab.label, Modifier.size(23.dp),
-            tint = if (selected) Color.White else EditorPalette.TextSecondary)
+        Icon(tab.icon, tab.label, Modifier.size(23.dp), tint = iconColor)
         Spacer(Modifier.height(2.dp))
-        Text(tab.label, fontSize = 11.sp,
-            color = if (selected) Color.White else EditorPalette.TextSecondary, maxLines = 1)
+        Text(tab.label, fontSize = 10.sp, color = labelColor, maxLines = 1)
+        Spacer(Modifier.height(3.dp))
+        Box(Modifier.width(indicatorWidth).height(2.dp).clip(CircleShape).background(EditorPalette.Purple))
     }
 }
 

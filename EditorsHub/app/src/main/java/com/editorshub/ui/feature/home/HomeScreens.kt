@@ -2,6 +2,7 @@ package com.editorshub.ui.feature.home
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -36,6 +37,7 @@ import com.editorshub.core.domain.model.*
 import com.editorshub.ui.components.ColorSwatchRow
 import com.editorshub.ui.components.LabeledSelect
 import com.editorshub.ui.components.SliderRow
+import com.editorshub.ui.components.pressScale
 import com.editorshub.ui.theme.*
 import java.io.File
 import kotlin.math.roundToInt
@@ -48,11 +50,30 @@ fun HomeScreen(
     onOpenProject: (String) -> Unit,
     onSettings: () -> Unit,
     onImport: () -> Unit,
+    onProjects: () -> Unit,
+    onTemplates: () -> Unit,
     createRequest: Int = 0
 ) {
     val settings by vm.appSettings.collectAsState()
+    val projects by vm.projects.collectAsState()
     var showCreate by remember { mutableStateOf(false) }
-    var packageUrl by remember { mutableStateOf("") }
+    val recent = remember(projects) { projects.sortedByDescending { it.updatedAt }.take(4) }
+
+    val context = LocalContext.current
+    val mediaPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) {
+            val names = uris.map { uri ->
+                runCatching {
+                    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                        ?.use { cursor ->
+                            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            if (cursor.moveToFirst() && index >= 0) cursor.getString(index) else null
+                        }
+                }.getOrNull()
+            }
+            vm.importMedia(uris, names)
+        }
+    }
     LaunchedEffect(Unit) { vm.openProject.collect { onOpenProject(it) } }
     LaunchedEffect(createRequest) { if (createRequest > 0) showCreate = true }
 
@@ -60,77 +81,215 @@ fun HomeScreen(
     LaunchedEffect(Unit) { vm.message.collect { snackbar.showSnackbar(it) } }
 
     Scaffold(containerColor = EditorPalette.Black, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().background(EditorPalette.Black)
-                .verticalScroll(rememberScrollState())
+        LazyColumn(
+            modifier = Modifier.padding(padding).fillMaxSize().background(EditorPalette.Black),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Spacer(Modifier.height(42.dp))
-            HomeBrandHeader(settings.brandName, settings.brandSubtitle, onSettings)
-            Spacer(Modifier.height(16.dp))
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Card(shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
-                    Row(Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.FolderOpen, null, Modifier.size(34.dp), tint = EditorPalette.TextPrimary)
-                        Spacer(Modifier.width(12.dp))
-                        Text("Upload XML file", Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium, color = EditorPalette.TextPrimary)
-                        Button(onClick = onImport, shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EditorPalette.Cyan,
-                                contentColor = EditorPalette.Black), modifier = Modifier.height(48.dp)) {
-                            Text("Upload", fontSize = 14.sp)
-                        }
-                    }
+            item(key = "brand") { HomeBrandHeader(settings.brandName, settings.brandSubtitle, onSettings) }
+            item(key = "hero") {
+                HomeHeroCard(
+                    onNew = { showCreate = true },
+                    onMedia = { mediaPicker.launch(arrayOf("video/*", "image/*", "audio/*")) }
+                )
+            }
+            item(key = "quick-actions") {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    DashboardAction(
+                        title = "Import project",
+                        subtitle = "XML · ZIP · project",
+                        icon = Icons.Default.FileOpen,
+                        modifier = Modifier.weight(1f),
+                        onClick = onImport
+                    )
+                    DashboardAction(
+                        title = "Templates",
+                        subtitle = "Start from a design",
+                        icon = Icons.Default.Dashboard,
+                        modifier = Modifier.weight(1f),
+                        onClick = onTemplates
+                    )
                 }
-                Card(shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Layers, null, Modifier.size(30.dp), tint = EditorPalette.TextPrimary)
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text("Import Project Package", style = MaterialTheme.typography.titleMedium,
-                                    color = EditorPalette.TextPrimary)
-                                Text("Paste a link to a shared project package.",
-                                    style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextMuted)
-                            }
-                        }
-                        OutlinedTextField(
-                            value = packageUrl,
-                            onValueChange = { packageUrl = it },
-                            placeholder = { Text("https://…") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = EditorPalette.SurfaceRaised,
-                                focusedContainerColor = EditorPalette.SurfaceRaised
-                            )
-                        )
-                        Button(onClick = { vm.importPackageLink(packageUrl) },
-                            enabled = packageUrl.isNotBlank(), shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EditorPalette.Cyan,
-                                contentColor = EditorPalette.Black), modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                            Text("Import", fontSize = 14.sp)
-                        }
-                        OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth().height(46.dp),
-                            shape = RoundedCornerShape(14.dp)) {
-                            Icon(Icons.Default.Upload, null, Modifier.size(17.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Choose a package file instead", color = EditorPalette.TextPrimary)
-                        }
+            }
+            item(key = "recent-heading") {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Recent projects", style = MaterialTheme.typography.titleLarge,
+                            color = EditorPalette.TextPrimary)
+                        Text(if (recent.isEmpty()) "Your edits will appear here" else "Pick up where you left off",
+                            style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextMuted)
+                    }
+                    TextButton(onClick = onProjects) {
+                        Text("View all", color = EditorPalette.Purple, fontSize = 12.sp)
+                        Icon(Icons.Default.ChevronRight, null, Modifier.size(16.dp), tint = EditorPalette.Purple)
                     }
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            if (recent.isEmpty()) {
+                item(key = "recent-empty") {
+                    EmptyRecentProjects(onCreate = { showCreate = true }, onImportMedia = {
+                        mediaPicker.launch(arrayOf("video/*", "image/*", "audio/*"))
+                    })
+                }
+            } else {
+                items(recent, key = { "recent-${it.id}" }) { project ->
+                    RecentProjectCard(project, vm) { onOpenProject(project.id) }
+                }
+            }
         }
     }
 
     if (showCreate) ProjectCreationSheet(vm, onDismiss = { showCreate = false },
         onCreated = { showCreate = false })
+}
+
+@Composable
+private fun HomeHeroCard(onNew: () -> Unit, onMedia: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)
+    ) {
+        Box(Modifier.fillMaxWidth().background(EditorPalette.HeroBrush)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(32.dp).clip(CircleShape).background(EditorPalette.Purple.copy(alpha = 0.16f)),
+                        contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.AutoAwesome, null, Modifier.size(17.dp), tint = EditorPalette.Purple)
+                    }
+                    Spacer(Modifier.width(9.dp))
+                    Text("MOTION STUDIO", fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp, color = EditorPalette.Purple)
+                }
+                Text("Create your next edit", style = MaterialTheme.typography.headlineMedium,
+                    color = EditorPalette.TextPrimary)
+                Text("Build with video, images, text, shapes and audio on a layered timeline.",
+                    style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextSecondary)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val createInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    Box(
+                        Modifier.weight(1.2f).height(48.dp).pressScale(createInteraction, 0.96f)
+                            .clip(RoundedCornerShape(14.dp)).background(EditorPalette.Purple)
+                            .clickable(interactionSource = createInteraction, indication = androidx.compose.foundation.LocalIndication.current,
+                                role = androidx.compose.ui.semantics.Role.Button, onClick = onNew),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Add, null, Modifier.size(20.dp), tint = EditorPalette.Black)
+                            Spacer(Modifier.width(6.dp))
+                            Text("New project", fontWeight = FontWeight.Bold, color = EditorPalette.Black)
+                        }
+                    }
+                    val mediaInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    Box(
+                        Modifier.weight(1f).height(48.dp).pressScale(mediaInteraction, 0.96f)
+                            .clip(RoundedCornerShape(14.dp)).background(EditorPalette.SurfaceRaised)
+                            .clickable(interactionSource = mediaInteraction, indication = androidx.compose.foundation.LocalIndication.current,
+                                role = androidx.compose.ui.semantics.Role.Button, onClick = onMedia),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.VideoLibrary, null, Modifier.size(18.dp), tint = EditorPalette.TextPrimary)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Add media", fontWeight = FontWeight.SemiBold, color = EditorPalette.TextPrimary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardAction(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Card(
+        modifier = modifier.pressScale(interaction, 0.97f)
+            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick),
+        shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)
+    ) {
+        Row(Modifier.fillMaxWidth().height(72.dp).padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(EditorPalette.SurfaceRaised),
+                contentAlignment = Alignment.Center) {
+                Icon(icon, null, Modifier.size(19.dp), tint = EditorPalette.Purple)
+            }
+            Spacer(Modifier.width(9.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.labelLarge, color = EditorPalette.TextPrimary,
+                    maxLines = 1)
+                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextMuted,
+                    maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyRecentProjects(onCreate: () -> Unit, onImportMedia: () -> Unit) {
+    Card(shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
+        Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.size(54.dp).clip(CircleShape).background(EditorPalette.SurfaceRaised),
+                contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.MovieCreation, null, Modifier.size(25.dp), tint = EditorPalette.Purple)
+            }
+            Text("Your studio is ready", style = MaterialTheme.typography.titleMedium,
+                color = EditorPalette.TextPrimary)
+            Text("Create a project or bring in clips from your device to start editing.",
+                style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextMuted)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onCreate) { Text("Create project", color = EditorPalette.Purple) }
+                TextButton(onClick = onImportMedia) { Text("Choose media", color = EditorPalette.TextPrimary) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentProjectCard(project: ProjectSummary, vm: HomeViewModel, onClick: () -> Unit) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Card(
+        modifier = Modifier.fillMaxWidth().pressScale(interaction, 0.98f)
+            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)
+    ) {
+        Row(Modifier.fillMaxWidth().height(94.dp).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(94.dp).fillMaxHeight().clip(RoundedCornerShape(11.dp))) {
+                val thumb = project.thumbnailPath?.let(::File)?.takeIf { it.exists() }
+                if (thumb != null) {
+                    AsyncImage(model = thumb, contentDescription = "${project.name} preview",
+                        contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                } else {
+                    Box(Modifier.fillMaxSize().background(Brush.linearGradient(
+                        listOf(EditorPalette.SurfaceRaised, EditorPalette.SurfaceVariant))),
+                        contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Movie, null, Modifier.size(26.dp), tint = EditorPalette.Purple)
+                    }
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(project.name, style = MaterialTheme.typography.titleSmall, color = EditorPalette.TextPrimary,
+                    maxLines = 1)
+                Text("${project.width} × ${project.height} · ${vm.formatFps(project.fpsExact)} fps",
+                    style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextSecondary, maxLines = 1)
+                Text("${vm.formatDuration(project.durationMs)} · ${project.layerCount} layers",
+                    style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextMuted, maxLines = 1)
+            }
+            Icon(Icons.Default.ChevronRight, null, Modifier.size(21.dp), tint = EditorPalette.TextMuted)
+        }
+    }
 }
 
 @Composable
@@ -156,58 +315,12 @@ private fun HomeBrandHeader(brand: String, subtitle: String, onSettings: () -> U
 }
 
 @Composable
-private fun HeroCard(onNew: () -> Unit, onImport: () -> Unit, onMedia: () -> Unit) {
-    Card(Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
-        Box(Modifier.fillMaxWidth().background(EditorPalette.HeroBrush)) {
-            Column(Modifier.padding(EditorDimens.Space4)) {
-                EditorsHubBrand()
-                Spacer(Modifier.height(EditorDimens.Space3))
-                Text("What will you create?", style = MaterialTheme.typography.headlineMedium,
-                    color = EditorPalette.TextPrimary)
-                Text("Layers · keyframes · effects · real MP4 export",
-                    style = MaterialTheme.typography.bodySmall, color = EditorPalette.TextSecondary)
-                Spacer(Modifier.height(EditorDimens.Space3))
-                Button(
-                    onClick = onNew,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = EditorPalette.Purple,
-                        contentColor = EditorPalette.Black
-                    )
-                ) {
-                    Icon(Icons.Default.Add, null, Modifier.size(EditorDimens.IconSmall))
-                    Spacer(Modifier.width(EditorDimens.Space1))
-                    Text("Create New Project")
-                }
-                Spacer(Modifier.height(EditorDimens.Space2))
-                Row(horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2)) {
-                    OutlinedButton(onClick = onImport) { Text("Import XML") }
-                    OutlinedButton(onClick = onMedia) { Text("Add media") }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RowScope.QuickAction(label: String,
-                                 icon: androidx.compose.ui.graphics.vector.ImageVector,
-                                 onClick: () -> Unit) {
-    Card(Modifier.weight(1f).clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
-        Column(Modifier.padding(EditorDimens.Space2).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, Modifier.size(EditorDimens.Icon), tint = EditorPalette.Purple)
-            Spacer(Modifier.height(EditorDimens.Space1))
-            Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1)
-        }
-    }
-}
-
-@Composable
 private fun ProjectCard(summary: ProjectSummary, vm: HomeViewModel,
                         onClick: () -> Unit, onAction: () -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(onClick = onClick),
+    val interaction = remember(summary.id) { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Card(Modifier.fillMaxWidth().pressScale(interaction, 0.98f)
+        .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current,
+            onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = EditorPalette.Surface)) {
         Box {
             if (summary.thumbnailPath != null && File(summary.thumbnailPath).exists()) {
@@ -421,7 +534,10 @@ private fun ProjectActionsDialog(
 @Composable
 private fun ActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String,
                       tint: Color = EditorPalette.TextPrimary, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
+    val interaction = remember(label) { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Row(Modifier.fillMaxWidth().pressScale(interaction, 0.97f)
+        .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current,
+            onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, Modifier.size(18.dp), tint = tint)
         Spacer(Modifier.width(EditorDimens.Space3))
