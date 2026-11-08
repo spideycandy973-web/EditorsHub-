@@ -31,33 +31,33 @@ object EditorDimens {
 }
 
 object EditorPalette {
-    // Surfaces: deep navy → slate navy, like the Alight Motion editor.
-    val Black = Color(0xFF0B0B0D)
-    val Charcoal = Color(0xFF121214)
-    val Surface = Color(0xFF1C1C1E)
-    val SurfaceRaised = Color(0xFF262628)
-    val SurfaceVariant = Color(0xFF2A2A2D)
-    val Outline = Color(0xFF3A3A40)
-    val OutlineSoft = Color(0xFF303036)
+    // Graphite workspace with cool blue controls, inspired by pro motion editors.
+    val Black = Color(0xFF090B10)
+    val Charcoal = Color(0xFF11151C)
+    val Surface = Color(0xFF191F29)
+    val SurfaceRaised = Color(0xFF222B38)
+    val SurfaceVariant = Color(0xFF293444)
+    val Outline = Color(0xFF394657)
+    val OutlineSoft = Color(0xFF2A3543)
     val TextPrimary = Color(0xFFF3F3F6)
     val TextSecondary = Color(0xFFC8C8D2)
     val TextMuted = Color(0xFF92929C)
 
     // Legacy names kept so every existing screen picks up the new skin.
-    val Purple = Color(0xFF02FFA7)       // primary mint/teal accent
-    val PurpleDeep = Color(0xFF00C987)   // darker teal
-    val Cyan = Color(0xFFD8DCFF)         // media blue
-    val Pink = Color(0xFFD9A15B)         // text amber
-    val Amber = Color(0xFFFBBF24)
-    val Green = Color(0xFF02FFA7)
-    val Red = Color(0xFFFF6B6B)
-    val Blue = Color(0xFFD8DCFF)
-    val Coral = Color(0xFFFF6B6B)
-    val Violet = Color(0xFFD8DCFF)
+    val Purple = Color(0xFF159BFF)       // primary electric-blue accent
+    val PurpleDeep = Color(0xFF0875D1)
+    val Cyan = Color(0xFF39C8FF)
+    val Pink = Color(0xFFFFB65C)
+    val Amber = Color(0xFFFFB547)
+    val Green = Color(0xFF40D6A2)
+    val Red = Color(0xFFFF657A)
+    val Blue = Color(0xFF399CFF)
+    val Coral = Color(0xFFFF7B70)
+    val Violet = Color(0xFF9C82FF)
 
-    val AccentBrush = Brush.linearGradient(listOf(Color(0xFF02FFA7), Color(0xFF00C987)))
-    val HeroBrush = Brush.linearGradient(listOf(Color(0xFF1C1C1E), Color(0xFF121214), Color(0xFF262628)))
-    val GlowBrush = Brush.radialGradient(listOf(Color(0x3310E0A0), Color.Transparent))
+    val AccentBrush = Brush.linearGradient(listOf(Color(0xFF38B6FF), Color(0xFF0875D1)))
+    val HeroBrush = Brush.linearGradient(listOf(Color(0xFF1C2B3D), Color(0xFF111923), Color(0xFF202B3A)))
+    val GlowBrush = Brush.radialGradient(listOf(Color(0x3338B6FF), Color.Transparent))
 }
 
 /** Shared motion specs so every screen/tab transition feels identical. */
