@@ -125,7 +125,12 @@ class AudioMixer @Inject constructor(
                     outIdx >= 0 -> {
                         if (info.size > 0 && info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0) {
                             codec.getOutputBuffer(outIdx)?.let { buf ->
-                                val sb = buf.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                                // MediaCodec may return a buffer with a non-zero payload offset.
+                                val end = (info.offset + info.size).coerceAtMost(buf.capacity())
+                                val start = info.offset.coerceIn(0, end)
+                                buf.position(start)
+                                buf.limit(end)
+                                val sb = buf.slice().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
                                 val n = min(sb.remaining(), limit - total)
                                 val arr = FloatArray(n)
                                 for (i in 0 until n) arr[i] = sb.get(i).toFloat() / Short.MAX_VALUE
