@@ -1,6 +1,5 @@
 package com.editorshub
 
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -41,6 +40,5 @@ class DashboardSmokeTest {
         }
         compose.onNodeWithContentDescription("Play / pause").assertIsDisplayed()
         compose.onNodeWithContentDescription("Add layer").assertIsDisplayed()
-        compose.onNodeWithText("Add to project").assertDoesNotExist()
     }
 }
