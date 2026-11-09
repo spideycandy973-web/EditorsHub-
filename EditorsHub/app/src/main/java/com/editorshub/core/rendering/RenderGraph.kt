@@ -76,6 +76,7 @@ object RenderGraph {
         val layers = mutableListOf<ResolvedLayer>()
         for (layer in project.layers) {
             if (!layer.visible || !layer.enabled || !TimelineMath.active(layer, timeMs)) continue
+            if (!parentChainRenderable(project, layer, timeMs)) continue
             val local = timeMs - layer.startMs
             val base = transforms.getValue(layer.id)
             val world = worldMatrix(project, layer, transforms)
@@ -116,6 +117,19 @@ object RenderGraph {
             layers.add(ResolvedLayer(layer, transform, effects, masks, transition, color))
         }
         return RenderFrame(project, timeMs, layers, crossfades)
+    }
+
+    private fun parentChainRenderable(project: Project, layer: Layer, timeMs: Long): Boolean {
+        val byId = project.layers.associateBy { it.id }
+        val visited = mutableSetOf<String>()
+        var parentId = layer.parentId
+        while (parentId != null) {
+            if (!visited.add(parentId)) return false // reject malformed parenting cycles
+            val parent = byId[parentId] ?: return false
+            if (!parent.visible || !parent.enabled || !TimelineMath.active(parent, timeMs)) return false
+            parentId = parent.parentId
+        }
+        return true
     }
 
     private fun resolveCrossfades(project: Project, timeMs: Long): Map<String, Float> {
