@@ -79,10 +79,9 @@ fun PreviewSurface(state: EditorUiState, modifier: Modifier = Modifier) {
                     },
                     uniformsProvider = {
                         val pair = holder.get() ?: return@GlPreviewRenderer GlUniforms()
-                        runCatching {
-                            val frame = RenderGraph.resolve(pair.first, pair.second)
-                            EffectUniformBuilder.from(frame.layers.flatMap { it.effects }, pair.second)
-                        }.getOrDefault(GlUniforms())
+                        // Layer effects are already rendered by CanvasCompositor per layer.
+                        // Re-applying an aggregate stack here incorrectly affected every layer twice.
+                        GlUniforms(time = pair.second / 1000f)
                     }
                 )
             }
