@@ -1,0 +1,104 @@
+name: Publish EditorsHub v4.4.0 native release
+
+on:
+  push:
+    branches:
+      - arena/be31b8e1-editorshub
+    paths:
+      - '.github/workflows/publish-v4.4.0.yml'
+      - '.github/release-notes/v4.4.0.md'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-editorshub-v4.4.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'spideycandy973-web/EditorsHub-' && contains(github.event.head_commit.message, '[publish-v4.4.0]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v4.4.0
+      TITLE: You released EditorsHub V4.4.0
+      RELEASE_COMMIT: 97702d00b71d5fc7b3bad716286477ea356bacd7
+      SOURCE_RUN_ID: '42677408773'
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download rebuilt Android artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: editorshub-android
+          run-id: 42677408773
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release-assets
+
+      - name: Verify APK version and prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${RELEASE_COMMIT}^{commit}"
+          test -s release-assets/EditorsHub-debug.apk
+          test -s release-assets/EditorsHub-source-v4.4.0.zip
+          ls -lh release-assets
+          ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt 2>/dev/null | sort -V | tail -1)
+          test -n "$AAPT"
+          "$AAPT" dump badging release-assets/EditorsHub-debug.apk | tee apk-badging.txt
+          grep -q "versionName='4.4.0'" apk-badging.txt
+          grep -q "versionCode='20'" apk-badging.txt
+          head -1 apk-badging.txt > release-assets/APK_BADGING.txt
+          (cd release-assets && sha256sum EditorsHub-debug.apk EditorsHub-source-v4.4.0.zip APK_BADGING.txt > SHA256SUMS.txt)
+          cp .github/release-notes/v4.4.0.md release-notes.md
+          {
+            echo
+            echo "Source CI run: ${SOURCE_RUN_ID}"
+            echo
+            echo "Release commit: \`${RELEASE_COMMIT}\`"
+            echo
+            echo '## APK manifest'
+            echo
+            echo '```text'
+            cat release-assets/APK_BADGING.txt
+            echo '```'
+            echo
+            echo '## Checksums'
+            echo
+            echo '```text'
+            cat release-assets/SHA256SUMS.txt
+            echo '```'
+          } >> release-notes.md
+
+      - name: Replace superseded releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          for tag in v4.4.0 v4.6.0; do
+            gh release delete "$tag" --yes --cleanup-tag >/dev/null 2>&1 || true
+            gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${tag}" >/dev/null 2>&1 || true
+          done
+
+      - name: Create corrected v4.4.0 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            release-assets/EditorsHub-debug.apk \
+            release-assets/EditorsHub-source-v4.4.0.zip \
+            release-assets/APK_BADGING.txt \
+            release-assets/SHA256SUMS.txt \
+            --target "$RELEASE_COMMIT" \
+            --title "$TITLE" \
+            --notes-file release-notes.md \
+            --latest
+          gh release view "$TAG" --json name,tagName,targetCommitish,url,isDraft,isPrerelease,assets

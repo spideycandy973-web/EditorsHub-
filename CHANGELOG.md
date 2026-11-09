@@ -6,7 +6,7 @@
 - Added generated `APP_VERSION_NAME` / `APP_VERSION_CODE` fields, made Settings → About display them, and added `AppVersionTest`.
 - Aligned the Android CI source archive and optional debug-prerelease labels with 4.4.0.
 - Rebuilt the debug APK from the same verified native editor implementation; project/effects thumbnails and keyframe editing remain functional.
-- This is a debug-signed GitHub release build, not a production-signed Play Store artifact and not a claim of exact reference parity.
+- Full Android CI, 14 emulator instrumentation tests, and launch smoke passed in [42677408773](https://github.com/spideycandy973-web/EditorsHub-/actions/runs/42677408773). This is a debug-signed GitHub release build, not a production-signed Play Store artifact and not a claim of exact reference parity.
 
 ## 4.5.0 — measured Ultra Motion editor alignment (2026-11-06)
 

@@ -8,9 +8,9 @@ production-signed Play Store artifact.
 
 ## v4.4.0 verification
 
-- The rebuilt APK is produced by the Android CI run linked in the GitHub
-  release notes. Unit tests, emulator instrumentation tests, and emulator
-  install/launch smoke checks run on that same commit.
+- The rebuilt APK was verified in GitHub Actions run [42677408773](https://github.com/spideycandy973-web/EditorsHub-/actions/runs/42677408773):
+  unit tests, 14 emulator instrumentation tests, packaging, and emulator
+  install/launch smoke checks passed on release commit `97702d00b71d5fc7b3bad716286477ea356bacd7`.
 - A new unit test asserts `APP_VERSION_NAME = 4.4.0` and
   `APP_VERSION_CODE = 20`.
 - The earlier successful native regression run 42642800416 covered the
