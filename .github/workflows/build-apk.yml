@@ -80,48 +80,9 @@ jobs:
           path: EditorsHub-Motion.apk
           if-no-files-found: error
 
-      - name: Publish APK to GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! gh release view apk-latest >/dev/null 2>&1; then
-            gh release create apk-latest \
-              --title 'EditorsHub — Android APK' \
-              --notes 'Installable debug-signed Android APK for EditorsHub. Built from the Capacitor Android wrapper by GitHub Actions.'
-          fi
-          gh release upload apk-latest EditorsHub-Motion.apk --clobber
-
-      - name: Attach APK to versioned and rolling releases
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # The native workflow creates v4.4.0. Wait for it instead of racing it.
-          for i in $(seq 1 30); do
-            if gh release view v4.4.0 >/dev/null 2>&1; then echo "v4.4.0 release is live"; break; fi
-            echo "waiting for v4.4.0 release ($i/30)…"
-            sleep 20
-          done
-          gh release upload v4.4.0 EditorsHub-Motion.apk --clobber || true
-          gh release upload editorshub-latest EditorsHub-Motion.apk --clobber || true
-
-      - name: Add APK to repository
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f EditorsHub-Motion.apk
-          git commit -m "build: add Android APK [skip ci]" || echo "APK already committed"
-          git pull origin arena/8990b65d-editorshub --no-rebase || true
-          pushed=0
-          for attempt in 1 2 3; do
-            if git push origin HEAD:arena/8990b65d-editorshub; then pushed=1; break; fi
-            echo "push attempt $attempt failed; retrying"
-            sleep 10
-            git fetch origin arena/8990b65d-editorshub
-            git pull origin arena/8990b65d-editorshub --no-rebase || true
-          done
-          [ "$pushed" = "1" ]
+      # Debug builds are CI artifacts only. Stable version tags are
+      # published exclusively by android-release.yml after assembleRelease,
+      # signing, unit tests and apksigner verification.
 
   # Installs and launches the actual Capacitor APK on a real Android image.
   smoke:
