@@ -24,6 +24,7 @@ class EglCore {
             EGL14.EGL_BLUE_SIZE, 8,
             EGL14.EGL_ALPHA_SIZE, 8,
             EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+            0x3142, 1, // EGL_RECORDABLE_ANDROID: required for MediaCodec input surfaces.
             EGL14.EGL_NONE
         )
         val configs = arrayOfNulls<EGLConfig>(1)
