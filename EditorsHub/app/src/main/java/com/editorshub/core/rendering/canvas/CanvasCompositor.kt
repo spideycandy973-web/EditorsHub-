@@ -177,7 +177,7 @@ class CanvasCompositor @Inject constructor(
         drawContent(layerCanvas, frame, resolved)
         layerCanvas.restore()
 
-        applyMasks(layerCanvas, layerBitmap, resolved, width, height, matrix)
+        applyMasks(layerCanvas, resolved, width, height, matrix)
 
         var processed = applyEffects(layerBitmap, resolved.effects, width, height, frame.timeMs)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -369,7 +369,6 @@ class CanvasCompositor @Inject constructor(
     // ------------------------------------------------------------------- masks
     private fun applyMasks(
         c: Canvas,
-        bmp: Bitmap,
         resolved: ResolvedLayer,
         width: Int,
         height: Int,
@@ -393,7 +392,7 @@ class CanvasCompositor @Inject constructor(
         for (mask in resolved.masks) {
             // Build a full-frame alpha mask. Drawing DST_IN only over the path itself does not
             // clear pixels outside that path, so masks must be composited as a full bitmap.
-            val maskBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val maskBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
             val maskCanvas = Canvas(maskBitmap)
             if (mask.mask.inverted) maskCanvas.drawColor(Color.WHITE)
 
