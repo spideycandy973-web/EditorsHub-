@@ -299,10 +299,12 @@ class EditorViewModel @Inject constructor(
             strokeWidth = if (isOpenStroke) 8f else 4f,
             strokeEnabled = isOpenStroke
         ) else null
+        val layerStartMs = _ui.value.playheadMs.coerceAtLeast(0L)
+        val layerDurationMs = minOf(5000L, (p.durationMs - layerStartMs).coerceAtLeast(500L))
         val layer = Layer(
             id = id, name = name, type = type,
-            startMs = _ui.value.playheadMs,
-            durationMs = minOf(5000L, (p.durationMs - _ui.value.playheadMs).coerceAtLeast(500L)),
+            startMs = layerStartMs,
+            durationMs = layerDurationMs,
             text = if (type == LayerType.TEXT) TextSpec() else null,
             shape = shapeSpec,
             vector = if (type == LayerType.VECTOR) VectorSpec(
@@ -314,7 +316,7 @@ class EditorViewModel @Inject constructor(
                 )
             ) else null
         )
-        commit { it.copy(layers = listOf(layer) + it.layers) }
+        commit { it.copy(durationMs = maxOf(it.durationMs, layer.startMs + layer.durationMs), layers = listOf(layer) + it.layers) }
         _ui.value = _ui.value.copy(selectedLayerId = id, tab = when (type) {
             LayerType.TEXT -> EditorTab.TEXT
             LayerType.SHAPE, LayerType.SOLID -> EditorTab.PROPERTIES
@@ -372,23 +374,30 @@ class EditorViewModel @Inject constructor(
         if (imported == null) { message("Could not import media"); return@launch }
         val info = imported.info
         val path = "file://${info.path}"
+        val insertAtMs = _ui.value.playheadMs.coerceAtLeast(0L)
         if (info.kind == MediaKind.AUDIO) {
             val track = AudioTrack(
                 id = UUID.randomUUID().toString(), uri = path, name = info.name,
-                startMs = _ui.value.playheadMs,
+                startMs = insertAtMs,
                 durationMs = info.durationMs.coerceAtLeast(1000L),
                 peaks = media.waveform(info.path)
             )
-            commit { it.copy(audioTracks = it.audioTracks + track) }
+            commit { it.copy(
+                durationMs = maxOf(it.durationMs, track.startMs + track.durationMs),
+                audioTracks = it.audioTracks + track
+            ) }
             _ui.value = _ui.value.copy(tab = EditorTab.AUDIO)
         } else {
             val type = if (info.kind == MediaKind.VIDEO) LayerType.VIDEO else LayerType.IMAGE
             val layer = Layer(
                 id = UUID.randomUUID().toString(), name = info.name, type = type,
-                startMs = _ui.value.playheadMs, sourceUri = path,
+                startMs = insertAtMs, sourceUri = path,
                 durationMs = if (info.durationMs > 0) info.durationMs.coerceAtMost(30_000L) else 5000L
             )
-            commit { it.copy(layers = listOf(layer) + it.layers) }
+            commit { it.copy(
+                durationMs = maxOf(it.durationMs, layer.startMs + layer.durationMs),
+                layers = listOf(layer) + it.layers
+            ) }
             _ui.value = _ui.value.copy(selectedLayerId = layer.id, tab = EditorTab.TRANSFORM)
         }
         message("${info.name} imported")
