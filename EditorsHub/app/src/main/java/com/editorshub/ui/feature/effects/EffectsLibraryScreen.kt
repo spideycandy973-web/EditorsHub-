@@ -63,18 +63,20 @@ class EffectsLibraryViewModel @Inject constructor(
             id = "demo_$type", name = EffectCatalog.spec(type).label,
             width = 480, height = 480, fps = 30, durationMs = 2000L,
             background = "#FF12142A",
+            // Layer 0 is topmost in the compositor. Keep preview subjects above
+            // the solid background so the effect is actually visible.
             layers = listOf(
-                Layer(id = "bg", name = "Background", type = LayerType.SOLID,
-                    startMs = 0, durationMs = 2000L),
+                Layer(id = "label", name = "Label", type = LayerType.TEXT,
+                    startMs = 0, durationMs = 2000L,
+                    text = TextSpec(text = EffectCatalog.spec(type).label, fontSize = 42f),
+                    effects = listOf(effect.copy(id = UUID.randomUUID().toString()))),
                 Layer(id = "shape", name = "Preview shape", type = LayerType.SHAPE,
                     startMs = 0, durationMs = 2000L,
                     shape = ShapeSpec(kind = ShapeKind.STAR, width = 260f, height = 260f,
                         gradient = GradientType.RADIAL, fillColor = "#FFFFFFFF", fillColor2 = "#FF22D3EE"),
                     effects = listOf(effect)),
-                Layer(id = "label", name = "Label", type = LayerType.TEXT,
-                    startMs = 0, durationMs = 2000L,
-                    text = TextSpec(text = EffectCatalog.spec(type).label, fontSize = 42f),
-                    effects = listOf(effect.copy(id = UUID.randomUUID().toString())))
+                Layer(id = "bg", name = "Background", type = LayerType.SOLID,
+                    startMs = 0, durationMs = 2000L)
             )
         )
     }

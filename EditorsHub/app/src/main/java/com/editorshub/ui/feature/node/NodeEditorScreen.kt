@@ -193,15 +193,16 @@ class NodeEditorViewModel @Inject constructor(
     fun demoProject() = Project(
         id = "node_demo", name = _ui.value.graph.name, width = 480, height = 480,
         fps = 30, durationMs = 4000L, background = "#FF101228",
+        // Layer 0 is topmost in the compositor; the subject must precede the background.
         layers = listOf(
-            Layer(id = "bg", name = "Background", type = LayerType.SOLID,
-                startMs = 0, durationMs = 4000L),
             Layer(id = "subject", name = "Subject", type = LayerType.SHAPE,
                 startMs = 0, durationMs = 4000L,
                 shape = ShapeSpec(kind = ShapeKind.CIRCLE, width = 300f, height = 300f,
                     gradient = GradientType.RADIAL, fillColor = "#FFF472B6", fillColor2 = "#FF22D3EE"),
                 effects = NodeEvaluator.toEffects(_ui.value.graph),
-                keyframes = NodeEvaluator.animationTracks(_ui.value.graph, 4000L))
+                keyframes = NodeEvaluator.animationTracks(_ui.value.graph, 4000L)),
+            Layer(id = "bg", name = "Background", type = LayerType.SOLID,
+                startMs = 0, durationMs = 4000L)
         )
     )
 }

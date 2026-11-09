@@ -196,15 +196,16 @@ class AiViewModel @Inject constructor(
         return Project(
             id = "ai_demo", name = "AI preview", width = 480, height = 480,
             fps = 30, durationMs = 4000L, background = "#FF101228",
+            // Layer 0 is topmost in the compositor; the subject must precede the background.
             layers = listOf(
-                Layer(id = "bg", name = "Background", type = LayerType.SOLID,
-                    startMs = 0, durationMs = 4000L),
                 Layer(id = "subject", name = "Subject", type = LayerType.SHAPE,
                     startMs = 0, durationMs = 4000L,
                     shape = ShapeSpec(kind = ShapeKind.STAR, width = 300f, height = 300f,
                         gradient = GradientType.RADIAL, fillColor = "#FF8B7BFF", fillColor2 = "#FF22D3EE"),
                     effects = _ui.value.effects,
-                    keyframes = g?.let { NodeEvaluator.animationTracks(it, 4000L) } ?: emptyList())
+                    keyframes = g?.let { NodeEvaluator.animationTracks(it, 4000L) } ?: emptyList()),
+                Layer(id = "bg", name = "Background", type = LayerType.SOLID,
+                    startMs = 0, durationMs = 4000L)
             )
         )
     }

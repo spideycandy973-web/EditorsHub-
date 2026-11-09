@@ -183,12 +183,6 @@ class CanvasCompositor @Inject constructor(
             matrix.postRotate(tr.rotation, projectWidth / 2f, projectHeight / 2f)
             matrix.postTranslate(tr.dx * projectWidth, tr.dy * projectHeight)
         }
-        // The mask is built in output pixels, while its geometry is in project space.
-        val maskMatrix = Matrix().apply {
-            setScale(scaleX, scaleY)
-            preConcat(matrix)
-        }
-
         layerCanvas.save()
         layerCanvas.scale(scaleX, scaleY)
         layerCanvas.concat(matrix)
@@ -200,11 +194,9 @@ class CanvasCompositor @Inject constructor(
             resolved,
             projectWidth,
             projectHeight,
-            width,
-            height,
             scaleX,
             scaleY,
-            maskMatrix
+            matrix
         )
 
         var processed = applyEffects(layerBitmap, resolved.effects, width, height, frame.timeMs, renderScale)
@@ -402,8 +394,6 @@ class CanvasCompositor @Inject constructor(
         resolved: ResolvedLayer,
         projectWidth: Float,
         projectHeight: Float,
-        width: Int,
-        height: Int,
         scaleX: Float,
         scaleY: Float,
         layerMatrix: Matrix
@@ -422,12 +412,16 @@ class CanvasCompositor @Inject constructor(
             LayerType.TEXT -> (layer.text?.fontSize ?: 96f) * 2f
             else -> projectHeight
         }.coerceAtLeast(1f)
-        val renderScale = min(scaleX, scaleY)
+        val maskPixelWidth = projectWidth.toInt().coerceIn(1, 4096)
+        val maskPixelHeight = projectHeight.toInt().coerceIn(1, 4096)
+        // Scale the project-space alpha mask into the output viewport when compositing.
+        val outputMatrix = Matrix().apply { setScale(scaleX, scaleY) }
 
         for (mask in resolved.masks) {
             // Build a full-frame alpha mask. Drawing DST_IN only over the path
             // itself does not clear pixels outside that path.
-            val maskBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
+            val maskBitmap = Bitmap.createBitmap(
+                maskPixelWidth, maskPixelHeight, Bitmap.Config.ALPHA_8)
             val maskCanvas = Canvas(maskBitmap)
             if (mask.mask.inverted) maskCanvas.drawColor(Color.WHITE)
 
@@ -451,7 +445,7 @@ class CanvasCompositor @Inject constructor(
                 if (mask.feather > 0f) {
                     try {
                         maskFilter = android.graphics.BlurMaskFilter(
-                            mask.feather * renderScale,
+                            mask.feather,
                             android.graphics.BlurMaskFilter.Blur.NORMAL
                         )
                     } catch (e: Exception) { /* unsupported on this GPU */ }
@@ -466,7 +460,7 @@ class CanvasCompositor @Inject constructor(
             val composite = Paint().apply {
                 xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
             }
-            c.drawBitmap(maskBitmap, 0f, 0f, composite)
+            c.drawBitmap(maskBitmap, outputMatrix, composite)
             maskBitmap.recycle()
         }
     }

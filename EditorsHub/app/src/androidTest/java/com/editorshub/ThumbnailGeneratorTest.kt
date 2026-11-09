@@ -91,13 +91,8 @@ class ThumbnailGeneratorTest {
             height = 480,
             durationMs = 2_000L,
             background = "#FF101228",
+            // Layer 0 is topmost, so keep the subject above the solid background.
             layers = listOf(
-                Layer(
-                    id = "bg",
-                    name = "Background",
-                    type = LayerType.SOLID,
-                    durationMs = 2_000L
-                ),
                 Layer(
                     id = "subject",
                     name = "Subject",
@@ -118,6 +113,12 @@ class ThumbnailGeneratorTest {
                             params = EffectCatalog.defaults(EffectType.GAUSSIAN_BLUR)
                         )
                     )
+                ),
+                Layer(
+                    id = "bg",
+                    name = "Background",
+                    type = LayerType.SOLID,
+                    durationMs = 2_000L
                 )
             )
         )
