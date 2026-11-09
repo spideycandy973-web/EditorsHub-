@@ -120,6 +120,22 @@ fun TimelineEditor(
             }
             Box(Modifier.weight(1f).horizontalScroll(hScroll)) {
                 Box(Modifier.width(contentWidth).height(rowHeight * rows)) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val secondPx = zoom * density
+                        if (secondPx > 0f) {
+                            val count = (size.width / secondPx).toInt().coerceAtMost(5000)
+                            for (second in 0..count) {
+                                val x = second * secondPx
+                                val major = second % 5 == 0
+                                drawLine(
+                                    color = if (major) Color(0x334F6782) else Color(0x1D4F6782),
+                                    start = Offset(x, 0f),
+                                    end = Offset(x, size.height),
+                                    strokeWidth = if (major) 1.25f else 0.7f
+                                )
+                            }
+                        }
+                    }
                     Column {
                         if (totalTracks == 0) {
                             Box(Modifier.fillMaxWidth().height(rowHeight).border(0.5.dp, EditorPalette.OutlineSoft))
