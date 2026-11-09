@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -40,6 +41,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.editorshub.ui.feature.importer.ImportResultDialog
 import com.editorshub.ui.feature.importer.ImportViewModel
 import com.editorshub.core.ai.AiKeyStore
@@ -79,6 +82,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) { vm.openProject.collect { onOpenProject(it) } }
     LaunchedEffect(Unit) { vm.message.collect { snackbar.showSnackbar(it) } }
     LaunchedEffect(createRequest) { if (createRequest > 0) showCreate = true }
+    LaunchedEffect(projects) { vm.ensureThumbnails(projects) }
 
     val xmlPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importVm.start(uri, displayName(context, uri))
@@ -499,10 +503,11 @@ private fun ReferenceRecentProject(project: ProjectSummary, vm: HomeViewModel, o
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(ReferencePalette.Input),
-            contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Movie, null, Modifier.size(21.dp), tint = ReferencePalette.Lavender)
-        }
+        ProjectThumbnail(
+            project = project,
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)),
+            iconSize = 20.dp
+        )
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(project.name, color = ReferencePalette.Text, fontSize = 13.sp,
@@ -555,6 +560,66 @@ private suspend fun decodeQrImage(context: android.content.Context, uri: Uri): S
     }
 }
 
+/** Loads a real thumbnail file with a visible fallback for missing/corrupt files. */
+@Composable
+private fun ProjectThumbnail(
+    project: ProjectSummary,
+    modifier: Modifier,
+    iconSize: Dp = 22.dp,
+    showInitial: Boolean = false
+) {
+    val context = LocalContext.current
+    val file = remember(project.thumbnailPath) {
+        project.thumbnailPath?.let(::File)?.takeIf { it.isFile && it.length() > 0L }
+    }
+    var loadFailed by remember(project.thumbnailPath, project.updatedAt) { mutableStateOf(false) }
+    val request = remember(file, project.updatedAt) {
+        file?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                // Thumbnails are overwritten in place; never show a cached stale frame.
+                .memoryCachePolicy(CachePolicy.DISABLED)
+                .diskCachePolicy(CachePolicy.DISABLED)
+                .build()
+        }
+    }
+    Box(modifier, contentAlignment = Alignment.Center) {
+        ProjectThumbnailPlaceholder(project, Modifier.fillMaxSize(), iconSize, showInitial)
+        if (request != null && !loadFailed) {
+            AsyncImage(
+                model = request,
+                contentDescription = "${project.name} thumbnail",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+                onSuccess = { loadFailed = false },
+                onError = { loadFailed = true }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProjectThumbnailPlaceholder(
+    project: ProjectSummary,
+    modifier: Modifier,
+    iconSize: Dp,
+    showInitial: Boolean
+) {
+    Box(
+        modifier.background(Brush.linearGradient(listOf(Color(0xFF24263A), Color(0xFF1A2C3A)))),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Movie, null, Modifier.size(iconSize), tint = EditorPalette.Purple)
+            if (showInitial) {
+                Spacer(Modifier.height(4.dp))
+                Text(project.name.take(1).uppercase(), color = ReferencePalette.Text,
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ProjectCard(
@@ -576,17 +641,13 @@ private fun ProjectCard(
         ),
         colors = CardDefaults.cardColors(containerColor = ReferencePalette.Card)) {
         Box {
-            if (summary.thumbnailPath != null && File(summary.thumbnailPath).exists()) {
-                AsyncImage(model = File(summary.thumbnailPath), contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().height(110.dp).clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)))
-            } else {
-                Box(Modifier.fillMaxWidth().height(110.dp)
-                    .background(Brush.linearGradient(listOf(Color(0xFF24263A), Color(0xFF1A2C3A)))),
-                    contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Movie, null, tint = EditorPalette.Purple)
-                }
-            }
+            ProjectThumbnail(
+                project = summary,
+                modifier = Modifier.fillMaxWidth().height(110.dp)
+                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
+                iconSize = 30.dp,
+                showInitial = true
+            )
             if (selectionMode) {
                 IconButton(onClick = onSelect, modifier = Modifier.align(Alignment.TopEnd).size(34.dp)) {
                     Icon(
@@ -660,6 +721,8 @@ fun ProjectsScreen(
     var sortExpanded by remember { mutableStateOf(false) }
     var actionsExpanded by remember { mutableStateOf(false) }
     var aboutExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(visible) { vm.ensureThumbnails(visible) }
 
     val dateLabels = remember(visible, sort) {
         visible.map { project ->
@@ -933,17 +996,11 @@ private fun ReferenceProjectRow(
             .padding(start = 10.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val thumbnail = project.thumbnailPath?.let(::File)?.takeIf { it.exists() }
-        if (thumbnail != null) {
-            AsyncImage(thumbnail, "${project.name} thumbnail", Modifier.size(38.dp)
-                .clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
-        } else {
-            Box(Modifier.size(38.dp).clip(RoundedCornerShape(8.dp)).background(ReferencePalette.Input),
-                contentAlignment = Alignment.Center) {
-                Text(project.name.take(1).uppercase(), color = ReferencePalette.Text,
-                    fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            }
-        }
+        ProjectThumbnail(
+            project = project,
+            modifier = Modifier.size(38.dp).clip(RoundedCornerShape(8.dp)),
+            iconSize = 18.dp
+        )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(project.name, color = ReferencePalette.Text, fontSize = 12.sp,

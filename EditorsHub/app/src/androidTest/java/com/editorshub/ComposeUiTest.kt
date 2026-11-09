@@ -2,6 +2,7 @@ package com.editorshub
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.runtime.mutableStateOf
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.editorshub.ui.components.SliderRow
 import com.editorshub.ui.theme.EditorsHubTheme
@@ -36,5 +37,19 @@ class ComposeUiTest {
         }
         composeRule.onNodeWithText("◆").performClick()
         assertEquals(1, clicks)
+    }
+
+    @Test fun keyframeDiamondTogglesKeyedState() {
+        val keyed = mutableStateOf(false)
+        composeRule.setContent {
+            EditorsHubTheme {
+                SliderRow(label = "Opacity", value = 1f, range = 0f..1f,
+                    onChange = {}, onKeyframe = { keyed.value = !keyed.value },
+                    keyed = keyed.value)
+            }
+        }
+        composeRule.onNodeWithText("◆").performClick()
+        composeRule.waitForIdle()
+        assertEquals(true, keyed.value)
     }
 }

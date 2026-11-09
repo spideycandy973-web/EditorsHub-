@@ -74,6 +74,28 @@ class KeyframeInterpolationTest {
         assertEquals(255, alpha)
     }
 
+    @Test fun colorKeyframesUpsertAndResolve() {
+        var t = KeyframeEngine.upsertColor(
+            KeyframeTrack("color"), 0L, "#FFFF0000", Easing.LINEAR)
+        t = KeyframeEngine.upsertColor(t, 1000L, "#FF0000FF", Easing.LINEAR)
+        assertEquals(2, t.keyframes.size)
+        val start = KeyframeEngine.color(t, 0L, 0)
+        val mid = KeyframeEngine.color(t, 500L, 0)
+        assertEquals(255, (start ushr 24) and 0xFF)
+        assertTrue(((mid ushr 16) and 0xFF) in 126..129)
+        assertTrue((mid and 0xFF) in 126..129)
+    }
+
+    @Test fun keyframeAtHonorsFrameTolerance() {
+        val t = track(
+            Keyframe(id = "a", timeMs = 100L, value = 10f),
+            Keyframe(id = "b", timeMs = 500L, value = 50f)
+        )
+        assertEquals("a", KeyframeEngine.keyframeAt(t, 116L, 20L)?.id)
+        assertEquals("b", KeyframeEngine.keyframeAt(t, 490L, 20L)?.id)
+        assertEquals(null, KeyframeEngine.keyframeAt(t, 250L, 20L))
+    }
+
     @Test fun upsertAndRemove() {
         var t = KeyframeEngine.upsert(KeyframeTrack("x"), 100L, 5f, Easing.BEZIER)
         assertEquals(1, t.keyframes.size)

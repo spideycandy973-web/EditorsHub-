@@ -508,12 +508,88 @@ class EditorViewModel @Inject constructor(
         p.copy(durationMs = maxOf(p.durationMs, contentEnd), layers = layers)
     }
 
+    // ------------------------------------------------------------ keyframe helpers
+    private fun frameToleranceMs(): Long =
+        (1000.0 / project().fpsExact.coerceIn(1.0, 240.0)).toLong().coerceAtLeast(8L)
+
+    private fun localPlayhead(layer: Layer): Long {
+        val end = (layer.durationMs - 1L).coerceAtLeast(0L)
+        val raw = (_ui.value.playheadMs - layer.startMs).coerceIn(0L, end)
+        return TimelineMath.snapExact(raw, project().fpsExact, _ui.value.snapping)
+    }
+
+    private fun staticPropertyValue(layer: Layer, property: String): Float = when (property) {
+        "x" -> layer.transform.x; "y" -> layer.transform.y
+        "scaleX" -> layer.transform.scaleX; "scaleY" -> layer.transform.scaleY
+        "rotation" -> layer.transform.rotation; "opacity" -> layer.transform.opacity
+        "anchorX" -> layer.transform.anchorX; "anchorY" -> layer.transform.anchorY
+        "skewX" -> layer.transform.skewX
+        else -> 0f
+    }
+
+    private fun animatedPropertyValue(layer: Layer, property: String, localMs: Long): Float =
+        KeyframeEngine.trackValue(
+            layer.keyframes, property, localMs, staticPropertyValue(layer, property))
+
+    private fun fallbackLayerColor(layer: Layer, project: Project): Int = when (layer.type) {
+        LayerType.SHAPE -> ColorUtil.parse(layer.shape?.fillColor ?: "#FFFFFFFF")
+        LayerType.VECTOR -> ColorUtil.parse(layer.vector?.fillColor ?: "#FFFFFFFF")
+        LayerType.TEXT -> ColorUtil.parse(layer.text?.color ?: "#FFFFFFFF")
+        LayerType.SOLID -> ColorUtil.parse(project.background)
+        else -> 0xFFFFFFFF.toInt()
+    }
+
+    private fun animatedColorHex(layer: Layer, project: Project, localMs: Long): String =
+        ColorUtil.toHex(KeyframeEngine.trackColor(
+            layer.keyframes, "color", localMs, fallbackLayerColor(layer, project)))
+
+    /** Mutations must stay on the selected layer; keyframe IDs are not globally unique. */
+    private fun updateLayerKeyframes(
+        layerId: String?,
+        property: String,
+        transform: (KeyframeTrack) -> KeyframeTrack?
+    ) {
+        val id = layerId ?: return
+        commit { p -> p.copy(layers = p.layers.map { l ->
+            if (l.id != id) return@map l
+            val tracks = l.keyframes.toMutableList()
+            val idx = tracks.indexOfFirst { it.property == property }
+            if (idx >= 0) {
+                val updated = transform(tracks[idx])
+                if (updated == null) tracks.removeAt(idx) else tracks[idx] = updated
+            } else {
+                val created = transform(KeyframeTrack(property))
+                if (created != null && created.keyframes.isNotEmpty()) tracks.add(created)
+            }
+            l.copy(keyframes = tracks)
+        }) }
+    }
+
+    private fun addKeyframeForLayer(property: String, layerId: String?, announce: Boolean) {
+        val id = layerId ?: return
+        val layer = project().layers.firstOrNull { it.id == id } ?: return
+        if (layer.locked) { message("Unlock this layer before editing it"); return }
+        val local = localPlayhead(layer)
+        if (property == "color") {
+            val color = animatedColorHex(layer, project(), local)
+            updateLayerKeyframes(id, property) { track ->
+                KeyframeEngine.upsertColor(track, local, color, Easing.LINEAR)
+            }
+        } else {
+            val value = animatedPropertyValue(layer, property, local)
+            updateLayerKeyframes(id, property) { track ->
+                KeyframeEngine.upsert(track, local, value, Easing.LINEAR)
+            }
+        }
+        if (announce) message("Keyframe added")
+    }
+
     // ------------------------------------------------------------------ transform
     fun setTransform(property: String, value: Float) {
         val id = _ui.value.selectedLayerId ?: return
         val layer = selected() ?: return
         if (layer.locked) { message("Unlock this layer before editing it"); return }
-        val local = _ui.value.playheadMs - layer.startMs
+        val local = localPlayhead(layer)
         val animated = _ui.value.autoKey || layer.keyframes.any { it.property == property }
         commit { p ->
             p.copy(layers = p.layers.map { l ->
@@ -541,85 +617,71 @@ class EditorViewModel @Inject constructor(
         else -> t
     }
 
-    fun addKeyframe(property: String) {
-        val id = _ui.value.selectedLayerId ?: return
-        val layer = selected() ?: return
+    fun addKeyframe(property: String) =
+        addKeyframeForLayer(property, _ui.value.selectedLayerId, announce = true)
+
+    /** The diamond in the timeline/properties: adds at the playhead or removes there. */
+    fun toggleKeyframe(property: String) = toggleKeyframe(property, _ui.value.selectedLayerId)
+
+    fun toggleKeyframe(property: String, layerId: String?) {
+        val id = layerId ?: return
+        val layer = project().layers.firstOrNull { it.id == id } ?: return
         if (layer.locked) { message("Unlock this layer before editing it"); return }
-        val local = _ui.value.playheadMs - layer.startMs
-        val current = KeyframeEngine.trackValue(layer.keyframes, property, local,
-            when (property) {
-                "x" -> layer.transform.x; "y" -> layer.transform.y
-                "scaleX" -> layer.transform.scaleX; "scaleY" -> layer.transform.scaleY
-                "rotation" -> layer.transform.rotation; "opacity" -> layer.transform.opacity
-                else -> 0f
-            })
-        commit { p -> p.copy(layers = p.layers.map { l ->
-            if (l.id != id) return@map l
-            val tracks = l.keyframes.toMutableList()
-            val idx = tracks.indexOfFirst { it.property == property }
-            val track = if (idx >= 0) tracks[idx] else KeyframeTrack(property)
-            val updated = KeyframeEngine.upsert(track, local, current, Easing.LINEAR)
-            if (idx >= 0) tracks[idx] = updated else tracks.add(updated)
-            l.copy(keyframes = tracks)
-        }) }
-    }
-
-    fun removeKeyframe(property: String, keyframeId: String) = commit { p ->
-        p.copy(layers = p.layers.map { l -> l.copy(
-            keyframes = l.keyframes.map { if (it.property == property) KeyframeEngine.remove(it, keyframeId) else it }
-        ) })
-    }
-
-    fun moveKeyframe(property: String, keyframeId: String, timeMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { l -> l.copy(
-            keyframes = l.keyframes.map { track ->
-                if (track.property != property) track
-                else track.copy(keyframes = track.keyframes.map {
-                    if (it.id == keyframeId) it.copy(timeMs = timeMs.coerceAtLeast(0)) else it
-                }.sortedBy { it.timeMs })
+        if (_ui.value.selectedLayerId != id) {
+            _ui.value = _ui.value.copy(selectedLayerId = id)
+        }
+        val local = localPlayhead(layer)
+        val track = layer.keyframes.firstOrNull { it.property == property }
+        val existing = KeyframeEngine.keyframeAt(track, local, frameToleranceMs())
+        if (existing != null) {
+            updateLayerKeyframes(id, property) { current ->
+                current.copy(keyframes = current.keyframes.filterNot { it.id == existing.id })
+                    .takeIf { it.keyframes.isNotEmpty() }
             }
-        ) })
+            message("Keyframe removed")
+        } else {
+            addKeyframeForLayer(property, id, announce = true)
+        }
     }
 
-    fun setKeyframeValue(property: String, keyframeId: String, value: Float) = commit { p ->
-        p.copy(layers = p.layers.map { l -> l.copy(
-            keyframes = l.keyframes.map { track ->
-                if (track.property != property) track
-                else track.copy(keyframes = track.keyframes.map {
-                    if (it.id == keyframeId) it.copy(value = value) else it
-                }.sortedBy { it.timeMs })
-            }
-        ) })
-    }
+    fun removeKeyframe(property: String, keyframeId: String) =
+        updateLayerKeyframes(_ui.value.selectedLayerId, property) { track ->
+            KeyframeEngine.remove(track, keyframeId).takeIf { it.keyframes.isNotEmpty() }
+        }
+
+    fun moveKeyframe(property: String, keyframeId: String, timeMs: Long) =
+        updateLayerKeyframes(_ui.value.selectedLayerId, property) { track ->
+            track.copy(keyframes = track.keyframes.map {
+                if (it.id == keyframeId) it.copy(timeMs = timeMs.coerceAtLeast(0)) else it
+            }.sortedBy { it.timeMs })
+        }
+
+    fun setKeyframeValue(property: String, keyframeId: String, value: Float) =
+        updateLayerKeyframes(_ui.value.selectedLayerId, property) { track ->
+            track.copy(keyframes = track.keyframes.map {
+                if (it.id == keyframeId) it.copy(value = value) else it
+            }.sortedBy { it.timeMs })
+        }
 
     fun setKeyframeBezier(
         property: String, keyframeId: String,
         cp1x: Float, cp1y: Float, cp2x: Float, cp2y: Float
-    ) = commit { p ->
-        p.copy(layers = p.layers.map { l -> l.copy(
-            keyframes = l.keyframes.map { track ->
-                if (track.property != property) track
-                else track.copy(keyframes = track.keyframes.map {
-                    if (it.id == keyframeId) it.copy(
-                        easing = Easing.BEZIER,
-                        cp1x = cp1x.coerceIn(0f, 1f), cp1y = cp1y,
-                        cp2x = cp2x.coerceIn(0f, 1f), cp2y = cp2y
-                    ) else it
-                })
-            }
-        ) })
+    ) = updateLayerKeyframes(_ui.value.selectedLayerId, property) { track ->
+        track.copy(keyframes = track.keyframes.map {
+            if (it.id == keyframeId) it.copy(
+                easing = Easing.BEZIER,
+                cp1x = cp1x.coerceIn(0f, 1f), cp1y = cp1y,
+                cp2x = cp2x.coerceIn(0f, 1f), cp2y = cp2y
+            ) else it
+        })
     }
 
-    fun setKeyframeEasing(property: String, keyframeId: String, easing: Easing) = commit { p ->
-        p.copy(layers = p.layers.map { l -> l.copy(
-            keyframes = l.keyframes.map { track ->
-                if (track.property != property) track
-                else track.copy(keyframes = track.keyframes.map {
-                    if (it.id == keyframeId) it.copy(easing = easing) else it
-                })
-            }
-        ) })
-    }
+    fun setKeyframeEasing(property: String, keyframeId: String, easing: Easing) =
+        updateLayerKeyframes(_ui.value.selectedLayerId, property) { track ->
+            track.copy(keyframes = track.keyframes.map {
+                if (it.id == keyframeId) it.copy(easing = easing) else it
+            })
+        }
 
     fun copyKeyframes(property: String) {
         val track = selected()?.keyframes?.firstOrNull { it.property == property } ?: return
@@ -682,11 +744,8 @@ class EditorViewModel @Inject constructor(
         message("$name applied")
     }
 
-    fun clearKeyframes(property: String) = commit { p ->
-        p.copy(layers = p.layers.map { l -> l.copy(
-            keyframes = l.keyframes.filterNot { it.property == property }
-        ) })
-    }
+    fun clearKeyframes(property: String) =
+        updateLayerKeyframes(_ui.value.selectedLayerId, property) { null }
 
     // -------------------------------------------------------------------- effects
     fun addEffect(type: EffectType) {
@@ -723,7 +782,7 @@ class EditorViewModel @Inject constructor(
         val id = _ui.value.selectedLayerId ?: return
         val layer = selected() ?: return
         if (layer.locked) { message("Unlock this layer before editing it"); return }
-        val local = _ui.value.playheadMs - layer.startMs
+        val local = localPlayhead(layer)
         commit { p -> p.copy(layers = p.layers.map { l ->
             if (l.id != id) return@map l
             l.copy(effects = l.effects.map { e ->
@@ -735,6 +794,36 @@ class EditorViewModel @Inject constructor(
                 } else e.copy(params = e.params + (key to value))
             })
         }) }
+    }
+
+    /** Effect sliders' diamonds now add/remove a real parameter keyframe. */
+    fun toggleEffectParamKeyframe(effectId: String, key: String) {
+        val id = _ui.value.selectedLayerId ?: return
+        val layer = selected() ?: return
+        if (layer.locked) { message("Unlock this layer before editing it"); return }
+        val effect = layer.effects.firstOrNull { it.id == effectId } ?: return
+        val local = localPlayhead(layer)
+        val track = effect.animated[key]
+        val existing = KeyframeEngine.keyframeAt(track, local, frameToleranceMs())
+        commit { p -> p.copy(layers = p.layers.map { l ->
+            if (l.id != id) return@map l
+            l.copy(effects = l.effects.map { e ->
+                if (e.id != effectId) return@map e
+                val animated = e.animated.toMutableMap()
+                if (existing != null) {
+                    val updated = KeyframeEngine.remove(
+                        track ?: KeyframeTrack(key), existing.id)
+                    if (updated.keyframes.isEmpty()) animated.remove(key)
+                    else animated[key] = updated
+                } else {
+                    val value = EffectCatalog.paramValue(effect, key, local)
+                    animated[key] = KeyframeEngine.upsert(
+                        track ?: KeyframeTrack(key), local, value, Easing.LINEAR)
+                }
+                e.copy(animated = animated)
+            })
+        }) }
+        message(if (existing != null) "Effect keyframe removed" else "Effect keyframe added")
     }
 
     // -------------------------------------------------------- text / shape / vector

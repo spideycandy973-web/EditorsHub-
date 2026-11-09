@@ -66,18 +66,19 @@ class CanvasCompositor @Inject constructor(
     @Synchronized
     fun draw(canvas: Canvas, frame: RenderFrame, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
-        val projectWidth = frame.project.width.coerceIn(1, 4096)
-        val projectHeight = frame.project.height.coerceIn(1, 4096)
+        val projectWidth = frame.project.width.coerceIn(1, 4096).toFloat()
+        val projectHeight = frame.project.height.coerceIn(1, 4096).toFloat()
+        val scaleX = width / projectWidth
+        val scaleY = height / projectHeight
         canvas.save()
         try {
-            // Layer transforms and content are authored in project pixels. Scale the finished
-            // composition into the preview/output viewport instead of interpreting project
-            // coordinates as device pixels (which clipped almost every portrait composition).
-            canvas.scale(width.toFloat() / projectWidth, height.toFloat() / projectHeight)
-            drawBackground(canvas, frame.project, projectWidth, projectHeight)
+            // Content is authored in composition pixels. Scale each layer into the requested
+            // output viewport, including small thumbnail/preview targets. Rendering the layer
+            // scratch at the output size avoids allocating a second full-resolution bitmap.
+            drawBackground(canvas, frame.project, width, height)
             // Layer 0 is topmost, so paint bottom-to-top.
             for (resolved in frame.layers.asReversed()) {
-                drawLayer(canvas, frame, resolved, projectWidth, projectHeight)
+                drawLayer(canvas, frame, resolved, width, height, scaleX, scaleY)
             }
         } catch (e: OutOfMemoryError) {
             Log.w(TAG, "Out of memory while compositing; frame skipped")
@@ -119,7 +120,7 @@ class CanvasCompositor @Inject constructor(
         }
     }
 
-    /** Render the whole composition to a bitmap (used by GPU preview and GL export). */
+    /** Render the whole composition to a bitmap at the requested output size. */
     @Synchronized
     fun renderToBitmap(frame: RenderFrame, width: Int, height: Int, quality: Float? = null): Bitmap {
         val w = width.coerceIn(1, 4096)
@@ -156,30 +157,57 @@ class CanvasCompositor @Inject constructor(
         return bmp!! to c
     }
 
-    private fun drawLayer(canvas: Canvas, frame: RenderFrame, resolved: ResolvedLayer, width: Int, height: Int) {
+    private fun drawLayer(
+        canvas: Canvas,
+        frame: RenderFrame,
+        resolved: ResolvedLayer,
+        width: Int,
+        height: Int,
+        scaleX: Float,
+        scaleY: Float
+    ) {
         val (layerBitmap, layerCanvas) = obtain(width, height)
         layerCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+        val projectWidth = frame.project.width.coerceIn(1, 4096).toFloat()
+        val projectHeight = frame.project.height.coerceIn(1, 4096).toFloat()
+        val renderScale = min(scaleX, scaleY).coerceAtLeast(0.01f)
 
         val t = resolved.transform
         val matrix = Matrix().apply {
             setValues(floatArrayOf(t.matrix.a, t.matrix.c, t.matrix.e, t.matrix.b, t.matrix.d, t.matrix.f, 0f, 0f, 1f))
         }
-        // Transition transform around the composition centre.
+        // Transition transform around the composition centre, in project coordinates.
         val tr = resolved.transition
         if (tr.scale != 1f || tr.rotation != 0f || tr.dx != 0f || tr.dy != 0f) {
-            matrix.postScale(tr.scale, tr.scale, width / 2f, height / 2f)
-            matrix.postRotate(tr.rotation, width / 2f, height / 2f)
-            matrix.postTranslate(tr.dx * width, tr.dy * height)
+            matrix.postScale(tr.scale, tr.scale, projectWidth / 2f, projectHeight / 2f)
+            matrix.postRotate(tr.rotation, projectWidth / 2f, projectHeight / 2f)
+            matrix.postTranslate(tr.dx * projectWidth, tr.dy * projectHeight)
+        }
+        // The mask is built in output pixels, while its geometry is in project space.
+        val maskMatrix = Matrix().apply {
+            setScale(scaleX, scaleY)
+            preConcat(matrix)
         }
 
         layerCanvas.save()
+        layerCanvas.scale(scaleX, scaleY)
         layerCanvas.concat(matrix)
-        drawContent(layerCanvas, frame, resolved)
+        drawContent(layerCanvas, frame, resolved, renderScale)
         layerCanvas.restore()
 
-        applyMasks(layerCanvas, resolved, width, height, matrix)
+        applyMasks(
+            layerCanvas,
+            resolved,
+            projectWidth,
+            projectHeight,
+            width,
+            height,
+            scaleX,
+            scaleY,
+            maskMatrix
+        )
 
-        var processed = applyEffects(layerBitmap, resolved.effects, width, height, frame.timeMs)
+        var processed = applyEffects(layerBitmap, resolved.effects, width, height, frame.timeMs, renderScale)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         val alpha = RenderGraph.effectiveOpacity(frame, resolved)
         paint.alpha = (alpha * 255).toInt().coerceIn(0, 255)
@@ -190,7 +218,7 @@ class CanvasCompositor @Inject constructor(
             canvas.clipRect(0f, 0f, width * tr.wipe, height.toFloat())
         }
         if (tr.blur > 0f && processed != layerBitmap) {
-            processed = boxBlur(processed, tr.blur, width, height)
+            processed = boxBlur(processed, tr.blur * renderScale, width, height)
         }
         canvas.drawBitmap(processed, 0f, 0f, paint)
         canvas.restore()
@@ -199,15 +227,15 @@ class CanvasCompositor @Inject constructor(
     }
 
     // ------------------------------------------------------------------ content
-    private fun drawContent(c: Canvas, frame: RenderFrame, resolved: ResolvedLayer) {
+    private fun drawContent(c: Canvas, frame: RenderFrame, resolved: ResolvedLayer, renderScale: Float) {
         val layer = resolved.layer
         when (layer.type) {
             LayerType.SOLID -> drawSolid(c, frame, resolved)
             LayerType.SHAPE -> drawShape(c, resolved)
             LayerType.VECTOR -> drawVector(c, layer.vector)
             LayerType.TEXT -> drawText(c, layer.text, frame)
-            LayerType.IMAGE -> drawImage(c, layer.sourceUri, layer.fit, frame, resolved, false)
-            LayerType.VIDEO -> drawImage(c, layer.sourceUri, layer.fit, frame, resolved, true)
+            LayerType.IMAGE -> drawImage(c, layer.sourceUri, layer.fit, frame, resolved, false, renderScale)
+            LayerType.VIDEO -> drawImage(c, layer.sourceUri, layer.fit, frame, resolved, true, renderScale)
             LayerType.AUDIO, LayerType.EFFECT, LayerType.GROUP -> Unit
         }
     }
@@ -337,11 +365,13 @@ class CanvasCompositor @Inject constructor(
 
     private fun drawImage(
         c: Canvas, uri: String?, fit: FitMode, frame: RenderFrame,
-        resolved: ResolvedLayer, video: Boolean
+        resolved: ResolvedLayer, video: Boolean, renderScale: Float
     ) {
         if (uri == null) return
         val path = uri.removePrefix("file://")
-        val maxSize = (max(frame.project.width, frame.project.height) * previewQuality.coerceIn(0.2f, 1f)).toInt().coerceAtLeast(256)
+        // Decode only as many source pixels as the output viewport can display.
+        val maxSize = (max(frame.project.width, frame.project.height) *
+            previewQuality.coerceIn(0.2f, 1f) * renderScale).toInt().coerceIn(256, 4096)
         val bmp = if (video) {
             val localMs = (frame.timeMs - resolved.layer.startMs + resolved.layer.inPointMs).coerceAtLeast(0L)
             media.videoFrame(path, localMs, maxSize)
@@ -370,28 +400,33 @@ class CanvasCompositor @Inject constructor(
     private fun applyMasks(
         c: Canvas,
         resolved: ResolvedLayer,
+        projectWidth: Float,
+        projectHeight: Float,
         width: Int,
         height: Int,
+        scaleX: Float,
+        scaleY: Float,
         layerMatrix: Matrix
     ) {
         if (resolved.masks.isEmpty()) return
         val layer = resolved.layer
         val maskWidth = when (layer.type) {
-            LayerType.SHAPE -> layer.shape?.width ?: width.toFloat()
-            LayerType.VECTOR -> width * 0.5f
-            LayerType.TEXT -> width * 0.8f
-            else -> width.toFloat()
+            LayerType.SHAPE -> layer.shape?.width ?: projectWidth
+            LayerType.VECTOR -> projectWidth * 0.5f
+            LayerType.TEXT -> projectWidth * 0.8f
+            else -> projectWidth
         }.coerceAtLeast(1f)
         val maskHeight = when (layer.type) {
-            LayerType.SHAPE -> layer.shape?.height ?: height.toFloat()
-            LayerType.VECTOR -> width * 0.5f
+            LayerType.SHAPE -> layer.shape?.height ?: projectHeight
+            LayerType.VECTOR -> projectWidth * 0.5f
             LayerType.TEXT -> (layer.text?.fontSize ?: 96f) * 2f
-            else -> height.toFloat()
+            else -> projectHeight
         }.coerceAtLeast(1f)
+        val renderScale = min(scaleX, scaleY)
 
         for (mask in resolved.masks) {
-            // Build a full-frame alpha mask. Drawing DST_IN only over the path itself does not
-            // clear pixels outside that path, so masks must be composited as a full bitmap.
+            // Build a full-frame alpha mask. Drawing DST_IN only over the path
+            // itself does not clear pixels outside that path.
             val maskBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
             val maskCanvas = Canvas(maskBitmap)
             if (mask.mask.inverted) maskCanvas.drawColor(Color.WHITE)
@@ -404,7 +439,8 @@ class CanvasCompositor @Inject constructor(
                     maskWidth / 2f - expand, maskHeight / 2f - expand, Path.Direction.CW
                 )
                 MaskKind.CIRCLE -> path.addCircle(
-                    0f, 0f, (min(maskWidth, maskHeight) / 2f - expand).coerceAtLeast(0f), Path.Direction.CW
+                    0f, 0f, (min(maskWidth, maskHeight) / 2f - expand).coerceAtLeast(0f),
+                    Path.Direction.CW
                 )
                 MaskKind.PATH -> mask.mask.path?.let { path.addPath(vectorPath(it)) }
             }
@@ -415,7 +451,8 @@ class CanvasCompositor @Inject constructor(
                 if (mask.feather > 0f) {
                     try {
                         maskFilter = android.graphics.BlurMaskFilter(
-                            mask.feather, android.graphics.BlurMaskFilter.Blur.NORMAL
+                            mask.feather * renderScale,
+                            android.graphics.BlurMaskFilter.Blur.NORMAL
                         )
                     } catch (e: Exception) { /* unsupported on this GPU */ }
                 }
@@ -440,16 +477,31 @@ class CanvasCompositor @Inject constructor(
         effects: List<ResolvedEffect>,
         width: Int,
         height: Int,
-        timeMs: Long
+        timeMs: Long,
+        renderScale: Float
     ): Bitmap {
         if (effects.isEmpty()) return src
         var current = src
         for (effect in effects) {
-            val p = effect.params
-            current = when (effect.effect.type) {
+            // Pixel-based effect radii and offsets are authored in composition pixels.
+            // Scale them with the viewport so a thumbnail looks like the full-size frame.
+            val pixelParams = when (effect.effect.type) {
+                EffectType.GAUSSIAN_BLUR, EffectType.MOTION_BLUR, EffectType.DIRECTIONAL_BLUR,
+                EffectType.GLOW, EffectType.RGB_SPLIT, EffectType.CHROMATIC_ABERRATION,
+                EffectType.PIXELATION, EffectType.WAVE_DISTORTION -> setOf("amount")
+                EffectType.SHADOW -> setOf("amount", "offsetX", "offsetY")
+                else -> emptySet()
+            }
+            val scaled = if (renderScale != 1f && pixelParams.isNotEmpty()) {
+                effect.copy(params = effect.params.mapValues { (key, value) ->
+                    if (key in pixelParams) value * renderScale else value
+                })
+            } else effect
+            val p = scaled.params
+            current = when (scaled.effect.type) {
                 EffectType.BRIGHTNESS, EffectType.CONTRAST, EffectType.SATURATION,
                 EffectType.HUE, EffectType.EXPOSURE, EffectType.SHARPEN, EffectType.COLOR_GRADING ->
-                    colorGrade(current, effect, width, height)
+                    colorGrade(current, scaled, width, height)
                 EffectType.GAUSSIAN_BLUR -> boxBlur(current, p["amount"] ?: 12f, width, height)
                 EffectType.MOTION_BLUR, EffectType.DIRECTIONAL_BLUR ->
                     directionalBlur(current, p["amount"] ?: 20f, p["angle"] ?: 0f, width, height)

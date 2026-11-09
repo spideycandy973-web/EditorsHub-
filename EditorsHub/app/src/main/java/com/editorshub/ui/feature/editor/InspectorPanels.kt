@@ -74,7 +74,11 @@ fun Inspector(
             }, modifier = Modifier.size(48.dp)) {
                 Icon(Icons.Default.ArrowBack, "Back to properties", tint = EditorPalette.TextPrimary)
             }
-            IconButton(onClick = { vm.setTab(EditorTab.KEYFRAMES) }, modifier = Modifier.size(42.dp)) {
+            IconButton(
+                onClick = { vm.addKeyframe(state.selectedProperty) },
+                enabled = layer != null && !layer.locked,
+                modifier = Modifier.size(42.dp)
+            ) {
                 Icon(Icons.Default.Add, "Add keyframe", tint = EditorPalette.TextSecondary)
             }
             IconButton(onClick = { vm.setTab(EditorTab.TRANSFORM) }, modifier = Modifier.size(42.dp)) {
@@ -387,6 +391,7 @@ private fun AddPanel(state: EditorUiState, vm: EditorViewModel, onShapePicker: (
 private fun TransformPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?, project: Project) {
     if (layer == null) { Hint("Select a layer"); return }
     val local = state.playheadMs - layer.startMs
+    val frameTolerance = (1000.0 / project.fpsExact.coerceIn(1.0, 240.0)).toLong().coerceAtLeast(8L)
     val rt = RenderGraph.resolvedTransform(layer, state.playheadMs)
     PanelSection("Layer: ${layer.name}") {
         OutlinedTextField(value = layer.name, onValueChange = { vm.renameLayer(layer.id, it) },
@@ -430,12 +435,9 @@ private fun TransformPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
                 else -> 0f
             }
             val track = layer.keyframes.firstOrNull { it.property == key }
-            val keyed = track?.keyframes?.any { abs(it.timeMs - local) < 40L } ?: false
+            val keyed = track?.keyframes?.any { abs(it.timeMs - local) <= frameTolerance } ?: false
             SliderRow(label, value, range, { vm.setTransform(key, it) },
-                onKeyframe = {
-                    val existing = track?.keyframes?.firstOrNull { abs(it.timeMs - local) < 40L }
-                    if (existing != null) vm.removeKeyframe(key, existing.id) else vm.addKeyframe(key)
-                }, keyed = keyed)
+                onKeyframe = { vm.toggleKeyframe(key) }, keyed = keyed)
         }
     }
     PanelSection("Blend & hierarchy") {
@@ -467,33 +469,40 @@ private fun TransformPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
 @Composable
 private fun KeyframesPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?) {
     if (layer == null) { Hint("Select a layer"); return }
-    val properties = TRANSFORM_PROPS.map { it.first } + listOf("color", "blur", "feather", "volume")
-    val track = layer.keyframes.firstOrNull { it.property == state.selectedProperty } ?: KeyframeTrack(state.selectedProperty)
+    // Only expose properties the render engine actually evaluates. Effect parameters
+    // have their own keyframe diamonds in the Effects panel.
+    val properties = TRANSFORM_PROPS.map { it.first }
+    val property = state.selectedProperty.takeIf { it in properties } ?: properties.first()
+    val track = layer.keyframes.firstOrNull { it.property == property } ?: KeyframeTrack(property)
     val local = state.playheadMs - layer.startMs
     PanelSection("Keyframe engine") {
-        LabeledSelect("Property", state.selectedProperty, properties.map { it to it }) { vm.setSelectedProperty(it) }
+        LabeledSelect("Property", property, properties.map { it to it }) { vm.setSelectedProperty(it) }
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Button(onClick = { vm.addKeyframe(state.selectedProperty) }, modifier = Modifier.weight(1f)) {
+            Button(onClick = { vm.addKeyframe(property) }, modifier = Modifier.weight(1f)) {
                 Text("◆ Add", fontSize = 10.sp)
             }
-            Button(onClick = { vm.copyKeyframes(state.selectedProperty) }, modifier = Modifier.weight(1f)) {
+            Button(onClick = { vm.copyKeyframes(property) }, modifier = Modifier.weight(1f)) {
                 Text("Copy", fontSize = 10.sp)
             }
-            Button(onClick = { vm.pasteKeyframes(state.selectedProperty) }, modifier = Modifier.weight(1f)) {
+            Button(onClick = { vm.pasteKeyframes(property) }, modifier = Modifier.weight(1f)) {
                 Text("Paste", fontSize = 10.sp)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            OutlinedButton(onClick = { vm.clearKeyframes(state.selectedProperty) }, modifier = Modifier.weight(1f)) {
+            OutlinedButton(onClick = { vm.clearKeyframes(property) }, modifier = Modifier.weight(1f)) {
                 Text("Clear", fontSize = 10.sp)
             }
             OutlinedButton(onClick = { vm.stepFrames(-1) }, modifier = Modifier.weight(1f)) { Text("◀", fontSize = 10.sp) }
             OutlinedButton(onClick = { vm.stepFrames(1) }, modifier = Modifier.weight(1f)) { Text("▶", fontSize = 10.sp) }
         }
         Text("${track.keyframes.size} keyframes · local playhead ${local}ms", fontSize = 10.sp)
+        if (track.keyframes.size < 2) {
+            Text("Keyframes Required — add another point to animate this property.",
+                fontSize = 9.sp, color = EditorPalette.Amber)
+        }
     }
     PanelSection("Graph editor") {
-        KeyframeGraph(track, state.selectedProperty, vm, Modifier.fillMaxWidth().height(150.dp))
+        KeyframeGraph(track, property, vm, Modifier.fillMaxWidth().height(150.dp))
         Text("Drag a diamond to change its time and value.", fontSize = 9.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -504,31 +513,31 @@ private fun KeyframesPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("@ ${kf.timeMs}ms = ${"%.2f".format(kf.value)}", fontSize = 10.sp,
                             modifier = Modifier.weight(1f))
-                        IconButton(onClick = { vm.removeKeyframe(state.selectedProperty, kf.id) },
+                        IconButton(onClick = { vm.removeKeyframe(property, kf.id) },
                             modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, null, Modifier.size(13.dp)) }
                     }
                     LabeledSelect("Easing", kf.easing.name,
                         Easing.entries.map { it.name to it.name }) { v ->
-                        vm.setKeyframeEasing(state.selectedProperty, kf.id, Easing.valueOf(v))
+                        vm.setKeyframeEasing(property, kf.id, Easing.valueOf(v))
                     }
                     if (kf.easing == Easing.BEZIER) {
                         SliderRow("Control 1 X", kf.cp1x, 0f..1f, {
-                            vm.setKeyframeBezier(state.selectedProperty, kf.id, it, kf.cp1y, kf.cp2x, kf.cp2y)
+                            vm.setKeyframeBezier(property, kf.id, it, kf.cp1y, kf.cp2x, kf.cp2y)
                         })
                         SliderRow("Control 1 Y", kf.cp1y, -0.5f..1.5f, {
-                            vm.setKeyframeBezier(state.selectedProperty, kf.id, kf.cp1x, it, kf.cp2x, kf.cp2y)
+                            vm.setKeyframeBezier(property, kf.id, kf.cp1x, it, kf.cp2x, kf.cp2y)
                         })
                         SliderRow("Control 2 X", kf.cp2x, 0f..1f, {
-                            vm.setKeyframeBezier(state.selectedProperty, kf.id, kf.cp1x, kf.cp1y, it, kf.cp2y)
+                            vm.setKeyframeBezier(property, kf.id, kf.cp1x, kf.cp1y, it, kf.cp2y)
                         })
                         SliderRow("Control 2 Y", kf.cp2y, -0.5f..1.5f, {
-                            vm.setKeyframeBezier(state.selectedProperty, kf.id, kf.cp1x, kf.cp1y, kf.cp2x, it)
+                            vm.setKeyframeBezier(property, kf.id, kf.cp1x, kf.cp1y, kf.cp2x, it)
                         })
                     }
                     SliderRow("Time", kf.timeMs.toFloat(), 0f..layer.durationMs.toFloat(),
-                        { vm.moveKeyframe(state.selectedProperty, kf.id, it.toLong()) })
+                        { vm.moveKeyframe(property, kf.id, it.toLong()) })
                     SliderRow("Value", kf.value, -2000f..2000f,
-                        { vm.setKeyframeValue(state.selectedProperty, kf.id, it) })
+                        { vm.setKeyframeValue(property, kf.id, it) })
                 }
             }
         }
@@ -541,28 +550,51 @@ private fun KeyframeGraph(track: KeyframeTrack, property: String, vm: EditorView
     val maxT = (kfs.maxOfOrNull { it.timeMs } ?: 1000L).coerceAtLeast(1000L).toFloat()
     val minV = (kfs.minOfOrNull { it.value } ?: 0f) - 0.5f
     val maxV = (kfs.maxOfOrNull { it.value } ?: 1f) + 0.5f
-    var dragging by remember { mutableStateOf<String?>(null) }
+    // Keep the gesture alive while ViewModel updates recompose this graph. Using the
+    // track as the pointer key would cancel the drag after the first update.
+    val currentKfs = rememberUpdatedState(kfs)
+    val bounds = rememberUpdatedState(Triple(maxT, minV, maxV))
     Canvas(modifier.background(Color(0xFF10121B)).border(1.dp, Color(0xFF2A2E40))
-        .pointerInput(track) {
+        .pointerInput(property) {
+            var activeId: String? = null
+            var originTimeMs = 0L
+            var originValue = 0f
+            var startMaxT = 1000f
+            var startMinV = 0f
+            var startMaxV = 1f
+            var totalX = 0f
+            var totalY = 0f
             detectDragGestures(
                 onDragStart = { off ->
-                    val nearest = kfs.minByOrNull {
-                        val x = it.timeMs / maxT * size.width
-                        val y = size.height - (it.value - minV) / (maxV - minV) * size.height
+                    val (mt, min, max) = bounds.value
+                    startMaxT = mt
+                    startMinV = min
+                    startMaxV = max
+                    totalX = 0f
+                    totalY = 0f
+                    val nearest = currentKfs.value.minByOrNull {
+                        val x = it.timeMs / startMaxT * size.width
+                        val y = size.height - (it.value - startMinV) /
+                            (startMaxV - startMinV) * size.height
                         (x - off.x) * (x - off.x) + (y - off.y) * (y - off.y)
                     }
-                    dragging = nearest?.id
+                    activeId = nearest?.id
+                    originTimeMs = nearest?.timeMs ?: 0L
+                    originValue = nearest?.value ?: 0f
                 },
-                onDragEnd = { dragging = null },
-                onDrag = { _, drag ->
-                    val id = dragging ?: return@detectDragGestures
-                    val kf = kfs.firstOrNull { it.id == id } ?: return@detectDragGestures
-                    val newT = ((kf.timeMs / maxT * size.width + drag.x) / size.width * maxT)
-                        .toLong().coerceAtLeast(0L)
-                    val newV = kf.value - drag.y / size.height * (maxV - minV)
+                onDrag = { change, drag ->
+                    val id = activeId ?: return@detectDragGestures
+                    change.consume()
+                    totalX += drag.x
+                    totalY += drag.y
+                    val newT = (originTimeMs + totalX / size.width * startMaxT)
+                        .toLong().coerceIn(0L, startMaxT.toLong())
+                    val newV = originValue - totalY / size.height * (startMaxV - startMinV)
                     vm.moveKeyframe(property, id, newT)
                     vm.setKeyframeValue(property, id, newV)
-                }
+                },
+                onDragEnd = { activeId = null },
+                onDragCancel = { activeId = null }
             )
         }) {
         val w = size.width; val h = size.height
@@ -589,7 +621,12 @@ private fun KeyframeGraph(track: KeyframeTrack, property: String, vm: EditorView
         kfs.forEach { kf ->
             val x = kf.timeMs / maxT * w
             val y = h - (kf.value - minV) / (maxV - minV) * h
-            drawCircle(Color(0xFFFBBF24), radius = 9f, center = Offset(x, y))
+            val diamond = Path().apply {
+                moveTo(x, y - 9f); lineTo(x + 9f, y)
+                lineTo(x, y + 9f); lineTo(x - 9f, y); close()
+            }
+            drawPath(diamond, Color(0xFFFBBF24))
+            drawPath(diamond, Color.White, style = Stroke(width = 1.5f))
         }
     }
 }
@@ -598,6 +635,8 @@ private fun KeyframeGraph(track: KeyframeTrack, property: String, vm: EditorView
 private fun EffectsPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?) {
     if (layer == null) { Hint("Select a layer"); return }
     val local = state.playheadMs - layer.startMs
+    val frameTolerance = (1000.0 /
+        (state.project?.fpsExact ?: 30.0).coerceIn(1.0, 240.0)).toLong().coerceAtLeast(8L)
     PanelSection("Applied (${layer.effects.size})") {
         layer.effects.forEachIndexed { i, e ->
             val spec = EffectCatalog.spec(e.type)
@@ -621,10 +660,11 @@ private fun EffectsPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer
                     }
                     spec.params.forEach { p ->
                         val value = EffectCatalog.resolvedParams(e, local)[p.key] ?: p.default
-                        val keyed = e.animated[p.key]?.keyframes?.any { abs(it.timeMs - local) < 40L } ?: false
+                        val keyed = e.animated[p.key]?.keyframes
+                            ?.any { abs(it.timeMs - local) <= frameTolerance } ?: false
                         SliderRow(p.label, value, p.min..p.max,
                             { vm.setEffectParam(e.id, p.key, it) },
-                            onKeyframe = { /* animated params are keyframed via Auto-key */ },
+                            onKeyframe = { vm.toggleEffectParamKeyframe(e.id, p.key) },
                             keyed = keyed)
                     }
                 }

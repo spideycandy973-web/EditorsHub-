@@ -120,6 +120,10 @@ object KeyframeEngine {
     fun trackColor(tracks: List<KeyframeTrack>, property: String, timeMs: Long, fallback: Int): Int =
         color(tracks.firstOrNull { it.property == property }, timeMs, fallback)
 
+    /** Nearest existing point within a frame tolerance, used by diamond toggles. */
+    fun keyframeAt(track: KeyframeTrack?, timeMs: Long, toleranceMs: Long): Keyframe? =
+        sorted(track).firstOrNull { abs(it.timeMs - timeMs) <= toleranceMs.coerceAtLeast(0L) }
+
     fun upsert(track: KeyframeTrack, timeMs: Long, value: Float, easing: Easing): KeyframeTrack {
         val existing = track.keyframes.firstOrNull { kotlin.math.abs(it.timeMs - timeMs) < 2L }
         val kfs = track.keyframes.toMutableList()
@@ -128,6 +132,25 @@ object KeyframeEngine {
             kfs[idx] = existing.copy(value = value, easing = easing)
         } else {
             kfs.add(Keyframe(id = "kf_${timeMs}_${kfs.size}", timeMs = timeMs, value = value, easing = easing))
+        }
+        return track.copy(keyframes = kfs.sortedBy { it.timeMs })
+    }
+
+    /** Color tracks carry an ARGB hex string instead of a numeric value. */
+    fun upsertColor(track: KeyframeTrack, timeMs: Long, color: String, easing: Easing): KeyframeTrack {
+        val existing = keyframeAt(track, timeMs, 2L)
+        val kfs = track.keyframes.toMutableList()
+        if (existing != null) {
+            val idx = kfs.indexOf(existing)
+            kfs[idx] = existing.copy(value = 0f, color = color, easing = easing)
+        } else {
+            kfs.add(Keyframe(
+                id = "kf_color_${timeMs}_${kfs.size}",
+                timeMs = timeMs,
+                value = 0f,
+                color = color,
+                easing = easing
+            ))
         }
         return track.copy(keyframes = kfs.sortedBy { it.timeMs })
     }

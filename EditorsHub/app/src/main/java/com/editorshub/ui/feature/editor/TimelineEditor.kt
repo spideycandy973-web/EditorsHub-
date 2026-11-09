@@ -17,10 +17,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +33,7 @@ import com.editorshub.core.domain.model.LayerType
 import com.editorshub.core.domain.model.Project
 import com.editorshub.core.domain.timeline.TimelineMath
 import com.editorshub.ui.theme.EditorPalette
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 @Composable
@@ -78,6 +82,9 @@ fun TimelineEditor(
                             onClick = { vm.setAutoKey(!state.autoKey); menuExpanded = false })
                         DropdownMenuItem(text = { Text(if (state.snapping) "Frame snapping: ON" else "Frame snapping: OFF") },
                             onClick = { vm.setSnapping(!state.snapping); menuExpanded = false })
+                        DropdownMenuItem(text = { Text("Toggle keyframe at playhead") },
+                            enabled = state.selectedLayerId != null,
+                            onClick = { vm.toggleKeyframe(state.selectedProperty); menuExpanded = false })
                         DropdownMenuItem(text = { Text("Split at playhead") },
                             enabled = state.selectedLayerId != null,
                             onClick = { state.selectedLayerId?.let(vm::splitLayer); menuExpanded = false })
@@ -308,6 +315,15 @@ private fun ClipBar(
     val left = (layer.startMs / 1000f * zoom).dp
     val width = (layer.durationMs / 1000f * zoom).dp.coerceAtLeast(8.dp)
     val selected = layer.id == state.selectedLayerId
+    val frameTolerance = (1000.0 / project.fpsExact.coerceIn(1.0, 240.0)).toLong().coerceAtLeast(8L)
+    val localPlayhead = state.playheadMs - layer.startMs
+    val hasCurrentKeyframe = layer.keyframes
+        .firstOrNull { it.property == state.selectedProperty }
+        ?.keyframes
+        ?.any { abs(it.timeMs - localPlayhead) <= frameTolerance } ?: false
+    val markers = layer.keyframes.flatMap { track ->
+        track.keyframes.map { keyframe -> track.property to keyframe }
+    }
     val color = when (layer.type) {
         LayerType.TEXT -> Color(0xFFF5A623)
         LayerType.IMAGE, LayerType.VIDEO -> Color(0xFF3D8BEF)
@@ -345,19 +361,70 @@ private fun ClipBar(
             // Trim handles
             TrimHandle(Modifier.align(Alignment.CenterStart), zoom, density, enabled = !layer.locked) { d -> vm.trimStart(layer.id, d) }
             TrimHandle(Modifier.align(Alignment.CenterEnd), zoom, density, enabled = !layer.locked) { d -> vm.trimEnd(layer.id, d) }
+            if (selected && !layer.locked) {
+                KeyframeDiamond(
+                    active = hasCurrentKeyframe,
+                    modifier = Modifier.align(Alignment.CenterStart).offset(x = (-7).dp),
+                    contentDescription = if (hasCurrentKeyframe) "Remove keyframe" else "Toggle keyframe",
+                    onTap = { vm.toggleKeyframe(state.selectedProperty, layer.id) }
+                )
+            }
             if (selected) {
-                layer.keyframes.flatMap { it.keyframes }.forEach { kf ->
-                    Box(
-                        Modifier
-                            .offset(x = (kf.timeMs / 1000f * zoom).dp, y = (height - 14.dp))
-                            .size(7.dp)
-                            .background(EditorPalette.Cyan, RoundedCornerShape(1.dp))
-                            .border(0.5.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(1.dp))
+                markers.forEach { (property, keyframe) ->
+                    val removeMarker: (() -> Unit)? = if (!layer.locked) {
+                        { vm.removeKeyframe(property, keyframe.id) }
+                    } else null
+                    KeyframeDiamond(
+                        active = true,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                            .offset(x = (keyframe.timeMs / 1000f * zoom - 6f).dp),
+                        contentDescription = "Keyframe at ${layer.startMs + keyframe.timeMs} ms",
+                        onTap = {
+                            vm.selectLayer(layer.id)
+                            vm.setSelectedProperty(property)
+                            vm.setTab(EditorTab.KEYFRAMES)
+                            vm.seek(layer.startMs + keyframe.timeMs)
+                        },
+                        onLongPress = removeMarker
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun KeyframeDiamond(
+    active: Boolean,
+    modifier: Modifier,
+    contentDescription: String,
+    onTap: () -> Unit,
+    onLongPress: (() -> Unit)? = null
+) {
+    val label = contentDescription
+    val tap by rememberUpdatedState(onTap)
+    val longPress by rememberUpdatedState(onLongPress)
+    Box(
+        modifier
+            .size(12.dp)
+            .rotate(45f)
+            .background(
+                if (active) EditorPalette.Green else EditorPalette.SurfaceRaised,
+                RoundedCornerShape(2.dp)
+            )
+            .border(
+                1.dp,
+                if (active) Color.White else EditorPalette.TextMuted,
+                RoundedCornerShape(2.dp)
+            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { tap() },
+                    onLongPress = { longPress?.invoke() }
+                )
+            }
+            .semantics { this.contentDescription = label }
+    )
 }
 
 @Composable

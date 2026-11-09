@@ -214,6 +214,7 @@ fun NodeEditorScreen(
     onOpenProject: (String) -> Unit
 ) {
     val state by vm.ui.collectAsState()
+    val previewProject = remember(state.graph) { vm.demoProject() }
     val context = LocalContext.current
     val density = LocalDensity.current.density
     var showAdd by remember { mutableStateOf(false) }
@@ -300,7 +301,7 @@ fun NodeEditorScreen(
 
             Column(Modifier.height(230.dp).verticalScroll(rememberScrollState())
                 .padding(EditorDimens.Space3)) {
-                RenderPreview(vm.demoProject(), 1000L, Modifier.fillMaxWidth().height(110.dp))
+                RenderPreview(previewProject, 1000L, Modifier.fillMaxWidth().height(110.dp))
                 Spacer(Modifier.height(EditorDimens.Space2))
                 if (!state.validation.ok) {
                     state.validation.errors.forEach {

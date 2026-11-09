@@ -218,6 +218,7 @@ fun AiStudioScreen(
     onSettings: () -> Unit
 ) {
     val state by vm.ui.collectAsState()
+    val previewProject = remember(state.graph, state.effects) { vm.demoProject() }
     val context = LocalContext.current
     var showConfig by remember { mutableStateOf(false) }
     var url by remember { mutableStateOf("https://api.openai.com/v1") }
@@ -331,7 +332,7 @@ fun AiStudioScreen(
                             Text(state.graph?.name ?: "", style = MaterialTheme.typography.titleMedium)
                             Text(state.explanation, style = MaterialTheme.typography.bodySmall)
                             Spacer(Modifier.height(EditorDimens.Space2))
-                            RenderPreview(vm.demoProject(), 1000L,
+                            RenderPreview(previewProject, 1000L,
                                 Modifier.fillMaxWidth().height(190.dp))
                             Spacer(Modifier.height(EditorDimens.Space2))
                             Row(horizontalArrangement = Arrangement.spacedBy(EditorDimens.Space2)) {

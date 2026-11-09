@@ -2,6 +2,7 @@ package com.editorshub.ui.feature.home
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
@@ -78,6 +79,7 @@ class HomeViewModel @Inject constructor(
     val message = _message.asSharedFlow()
     private val _info = MutableStateFlow<ProjectSummary?>(null)
     val info: StateFlow<ProjectSummary?> = _info.asStateFlow()
+    private val thumbnailRepairs = Collections.synchronizedSet(mutableSetOf<String>())
 
     fun setQuery(v: String) { _query.value = v }
     fun setSort(v: ProjectSort) { _sort.value = v }
@@ -193,6 +195,31 @@ class HomeViewModel @Inject constructor(
             saveThumbnail(updated)
             _open.emit(updated.id)
         }.onFailure { _message.emit("Import failed: ${it.message}") }
+    }
+
+    /** Repairs missing, empty, or stale thumbnails for projects imported before this build. */
+    fun ensureThumbnails(summaries: List<ProjectSummary>) {
+        val repairs = summaries.filter { needsThumbnailRepair(it) && thumbnailRepairs.add(it.id) }
+        if (repairs.isEmpty()) return
+        viewModelScope.launch {
+            repairs.forEach { summary ->
+                try {
+                    val project = repository.load(summary.id) ?: return@forEach
+                    val path = withContext(Dispatchers.Default) { thumbnails.generate(project) }
+                    if (path != null) repository.save(project, thumbnailPath = path, autosaveOnly = true)
+                } catch (error: Exception) {
+                    Log.w("EditorsHubHome", "Could not repair thumbnail for ${summary.id}", error)
+                } finally {
+                    thumbnailRepairs.remove(summary.id)
+                }
+            }
+        }
+    }
+
+    private fun needsThumbnailRepair(summary: ProjectSummary): Boolean {
+        val file = summary.thumbnailPath?.let(::File) ?: return true
+        return !file.isFile || file.length() < 64L ||
+            file.lastModified() + 2_000L < summary.updatedAt
     }
 
     private suspend fun saveThumbnail(project: Project) {
