@@ -45,7 +45,12 @@ class GlPreviewRenderer(
         try {
             val bitmap = bitmapProvider() ?: return
             if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) return
-            program.draw(bitmap, uniformsProvider())
+            try {
+                program.draw(bitmap, uniformsProvider())
+            } finally {
+                // The compositor returns a fresh frame bitmap for every draw; release it after upload.
+                if (!bitmap.isRecycled) bitmap.recycle()
+            }
         } catch (e: Throwable) {
             Log.w(TAG, "OpenGL preview frame skipped", e)
         }
