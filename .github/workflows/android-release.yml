@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - uses: actions/checkout@v4
       - name: Validate stable release tag
         env:
           RELEASE_VERSION: ${{ inputs.version }}
@@ -28,7 +29,6 @@ jobs:
             echo "::error::Tag $RELEASE_VERSION already exists. Create a new version tag instead of replacing a release."
             exit 1
           fi
-      - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
