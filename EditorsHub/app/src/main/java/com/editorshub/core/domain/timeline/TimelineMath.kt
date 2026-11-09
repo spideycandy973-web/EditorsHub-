@@ -1,5 +1,9 @@
 package com.editorshub.core.domain.timeline
 
+import com.editorshub.core.domain.keyframe.KeyframeEngine
+import com.editorshub.core.domain.model.Easing
+import com.editorshub.core.domain.model.Keyframe
+import com.editorshub.core.domain.model.KeyframeTrack
 import com.editorshub.core.domain.model.Layer
 import kotlin.math.abs
 import kotlin.math.roundToLong
@@ -47,32 +51,113 @@ object TimelineMath {
         return layer.copy(durationMs = next)
     }
 
+    /** Rebase clip-local animation when the visible in-point changes. */
     fun trimStart(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer {
         val d = snap(deltaMs, fps, snapping).coerceIn(-layer.startMs, layer.durationMs - 33L)
+        if (d == 0L) return layer
+        val effects = layer.effects.map { effect ->
+            effect.copy(animated = effect.animated.mapValues { (_, track) -> rebaseTrack(track, d) })
+        }
+        val masks = layer.masks.map { mask ->
+            mask.copy(keyframes = mask.keyframes.map { rebaseTrack(it, d) })
+        }
+        val transitionIn = layer.transitionIn?.let { transition ->
+            if (d <= 0L) transition else {
+                val remaining = transition.durationMs - d
+                if (remaining > 0L) transition.copy(durationMs = remaining) else null
+            }
+        }
         return layer.copy(
             startMs = layer.startMs + d,
             durationMs = layer.durationMs - d,
-            inPointMs = (layer.inPointMs + d).coerceAtLeast(0)
+            inPointMs = (layer.inPointMs + d).coerceAtLeast(0L),
+            keyframes = layer.keyframes.map { rebaseTrack(it, d) },
+            effects = effects,
+            masks = masks,
+            transitionIn = transitionIn
         )
     }
 
     fun split(layer: Layer, atMs: Long, fps: Int, newId: String): Pair<Layer, Layer>? {
         if (atMs <= layer.startMs || atMs >= layer.startMs + layer.durationMs) return null
-        val cut = snap(atMs, fps, true)
-        val first = layer.copy(durationMs = cut - layer.startMs)
+        val cut = snap(atMs, fps, true).coerceIn(layer.startMs + 1L, layer.startMs + layer.durationMs - 1L)
+        val localCut = cut - layer.startMs
+        val layerTracks = layer.keyframes.map { splitTrack(it, localCut) }
+        val effectTracks = layer.effects.map { effect ->
+            val left = effect.animated.mapValues { (_, track) -> splitTrack(track, localCut).first }
+            val right = effect.animated.mapValues { (_, track) -> splitTrack(track, localCut).second }
+            effect.copy(animated = left) to effect.copy(animated = right)
+        }
+        val maskTracks = layer.masks.map { mask ->
+            val pairs = mask.keyframes.map { splitTrack(it, localCut) }
+            mask.copy(keyframes = pairs.map { it.first }) to mask.copy(keyframes = pairs.map { it.second })
+        }
+        val first = layer.copy(
+            durationMs = localCut,
+            keyframes = layerTracks.map { it.first },
+            effects = effectTracks.map { it.first },
+            masks = maskTracks.map { it.first },
+            transitionOut = null
+        )
         val second = layer.copy(
             id = newId,
             name = "${layer.name} (2)",
             startMs = cut,
-            durationMs = layer.startMs + layer.durationMs - cut,
-            inPointMs = layer.inPointMs + (cut - layer.startMs),
-            keyframes = layer.keyframes.map { track ->
-                val shifted = track.keyframes.filter { it.timeMs >= cut - layer.startMs }
-                    .map { it.copy(timeMs = it.timeMs - (cut - layer.startMs)) }
-                track.copy(keyframes = shifted)
-            }
+            durationMs = layer.durationMs - localCut,
+            inPointMs = layer.inPointMs + localCut,
+            keyframes = layerTracks.map { it.second },
+            effects = effectTracks.map { it.second },
+            masks = maskTracks.map { it.second },
+            transitionIn = null
         )
         return first to second
+    }
+
+    /** Insert an evaluated boundary keyframe so neither side jumps when a clip is split. */
+    private fun splitTrack(track: KeyframeTrack, cutMs: Long): Pair<KeyframeTrack, KeyframeTrack> {
+        val keys = track.keyframes.sortedBy { it.timeMs }
+        if (keys.isEmpty()) return track to track
+        val boundary = boundaryKeyframe(track, cutMs)
+        val left = (keys.filter { it.timeMs < cutMs } + boundary).distinctBy { it.timeMs }.sortedBy { it.timeMs }
+        val right = (listOf(boundary.copy(timeMs = 0L, id = "${boundary.id}_right")) +
+            keys.filter { it.timeMs > cutMs }.map { it.copy(timeMs = it.timeMs - cutMs) })
+            .distinctBy { it.timeMs }.sortedBy { it.timeMs }
+        return track.copy(keyframes = left) to track.copy(keyframes = right)
+    }
+
+    /** Shift keyframe clocks with the new clip head; positive trims preserve the value at t=0. */
+    private fun rebaseTrack(track: KeyframeTrack, deltaMs: Long): KeyframeTrack {
+        if (track.keyframes.isEmpty()) return track
+        if (deltaMs <= 0L) return track.copy(
+            keyframes = track.keyframes.map { it.copy(timeMs = it.timeMs - deltaMs) }.sortedBy { it.timeMs }
+        )
+        val boundary = boundaryKeyframe(track, deltaMs).copy(
+            timeMs = 0L, id = "${track.keyframes.first().id}_trim_$deltaMs"
+        )
+        val shifted = track.keyframes.filter { it.timeMs > deltaMs }
+            .map { it.copy(timeMs = it.timeMs - deltaMs) }
+        return track.copy(keyframes = (listOf(boundary) + shifted).distinctBy { it.timeMs }.sortedBy { it.timeMs })
+    }
+
+    private fun boundaryKeyframe(track: KeyframeTrack, timeMs: Long): Keyframe {
+        val exact = track.keyframes.firstOrNull { kotlin.math.abs(it.timeMs - timeMs) <= 1L }
+        if (exact != null) return exact.copy(timeMs = timeMs)
+        return if (track.keyframes.any { it.color != null }) {
+            val color = KeyframeEngine.color(track, timeMs, 0xFFFFFFFF.toInt())
+            Keyframe(
+                id = "${track.keyframes.firstOrNull()?.id ?: track.property}_boundary_$timeMs",
+                timeMs = timeMs,
+                color = String.format("#%08X", color),
+                easing = Easing.LINEAR
+            )
+        } else {
+            Keyframe(
+                id = "${track.keyframes.firstOrNull()?.id ?: track.property}_boundary_$timeMs",
+                timeMs = timeMs,
+                value = KeyframeEngine.value(track, timeMs, 0f),
+                easing = Easing.LINEAR
+            )
+        }
     }
 
     fun overlaps(a: Layer, b: Layer): Boolean =
