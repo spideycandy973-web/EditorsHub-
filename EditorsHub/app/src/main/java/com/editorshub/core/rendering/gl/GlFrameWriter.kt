@@ -20,9 +20,12 @@ class GlFrameWriter(surface: Surface, width: Int, height: Int) {
         program.viewport(width, height)
     }
 
-    fun draw(bitmap: Bitmap, uniforms: GlUniforms) {
+    fun draw(bitmap: Bitmap, uniforms: GlUniforms, presentationTimeNs: Long) {
         program.draw(bitmap, uniforms)
-        eglSurface?.let { egl.swap(it) }
+        eglSurface?.let { surface ->
+            egl.presentationTime(surface, presentationTimeNs.coerceAtLeast(0L))
+            check(egl.swap(surface)) { "eglSwapBuffers failed while writing video frame" }
+        }
     }
 
     fun release() {
