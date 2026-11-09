@@ -231,7 +231,12 @@ object WaveformExtractor {
                 if (outIndex >= 0) {
                     if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0 && info.size > 0) {
                         codec.getOutputBuffer(outIndex)?.let { buf ->
-                            val shorts = buf.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                            // BufferInfo.offset/size identify the valid PCM bytes in this output buffer.
+                            val end = (info.offset + info.size).coerceAtMost(buf.capacity())
+                            val start = info.offset.coerceIn(0, end)
+                            buf.position(start)
+                            buf.limit(end)
+                            val shorts = buf.slice().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
                             var peak = 0f
                             for (i in 0 until shorts.remaining()) {
                                 val v = abs(shorts.get(i).toFloat() / Short.MAX_VALUE)
