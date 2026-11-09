@@ -252,7 +252,11 @@ class EditorViewModel @Inject constructor(
 
     fun seek(ms: Long) {
         val end = project().durationMs.coerceAtLeast(0L)
+        val wasPlaying = _ui.value.playing
+        if (wasPlaying) pause()
         _ui.value = _ui.value.copy(playheadMs = ms.coerceIn(0L, end))
+        // Rebase the playback clock after a seek instead of snapping back to the old origin.
+        if (wasPlaying) play()
     }
 
     fun stepFrames(count: Int) {
