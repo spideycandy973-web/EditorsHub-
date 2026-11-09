@@ -53,7 +53,9 @@ object TimelineMath {
 
     /** Rebase clip-local animation when the visible in-point changes. */
     fun trimStart(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer {
-        val d = snap(deltaMs, fps, snapping).coerceIn(-layer.startMs, layer.durationMs - 33L)
+        val minDelta = if (layer.type == com.editorshub.core.domain.model.LayerType.VIDEO)
+            maxOf(-layer.startMs, -layer.inPointMs) else -layer.startMs
+        val d = snap(deltaMs, fps, snapping).coerceIn(minDelta, layer.durationMs - 33L)
         if (d == 0L) return layer
         val effects = layer.effects.map { effect ->
             effect.copy(animated = effect.animated.mapValues { (_, track) -> rebaseTrack(track, d) })
