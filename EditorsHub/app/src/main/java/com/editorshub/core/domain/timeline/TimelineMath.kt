@@ -17,7 +17,7 @@ object TimelineMath {
     fun snap(ms: Long, fps: Int, enabled: Boolean): Long {
         if (!enabled || fps <= 0) return ms
         val frame = 1000.0 / fps
-        return ((ms / frame).toLong() * frame).toLong()
+        return ((ms / frame).roundToLong() * frame).roundToLong()
     }
 
     fun frameCount(durationMs: Long, fps: Int): Int =
@@ -29,13 +29,13 @@ object TimelineMath {
     fun frameTime(index: Int, fps: Int): Long = frameTimeExact(index, fps.toDouble())
 
     fun frameTimeExact(index: Int, fpsExact: Double): Long =
-        (index * 1000.0 / fpsExact.coerceIn(1.0, 240.0)).toLong()
+        (index * 1000.0 / fpsExact.coerceIn(1.0, 240.0)).roundToLong()
 
     /** Snap to the exact rational frame rate (23.976 / 29.97 supported). */
     fun snapExact(ms: Long, fpsExact: Double, enabled: Boolean): Long {
         if (!enabled) return ms
         val frame = 1000.0 / fpsExact.coerceIn(1.0, 240.0)
-        return ((ms / frame).toLong() * frame).toLong()
+        return ((ms / frame).roundToLong() * frame).roundToLong()
     }
 
     fun active(layer: Layer, timeMs: Long): Boolean =
