@@ -276,8 +276,16 @@ class EditorViewModel @Inject constructor(
     fun setSelectedProperty(v: String) { _ui.value = _ui.value.copy(selectedProperty = v) }
 
     fun setProjectSettings(width: Int, height: Int, fps: Int, durationMs: Long, background: String) {
-        commit { p -> p.copy(width = width.coerceIn(16, 4096), height = height.coerceIn(16, 4096),
-            fps = fps.coerceIn(1, 120), durationMs = durationMs.coerceAtLeast(500L), background = background) }
+        val safeFps = fps.coerceIn(1, 120)
+        commit { p -> p.copy(
+            width = width.coerceIn(16, 4096),
+            height = height.coerceIn(16, 4096),
+            fps = safeFps,
+            fpsExact = safeFps.toDouble(),
+            timebase = "1/$safeFps",
+            durationMs = durationMs.coerceAtLeast(500L),
+            background = background
+        ) }
     }
 
     fun renameProject(name: String) { commit { it.copy(name = name) } }
@@ -455,7 +463,7 @@ class EditorViewModel @Inject constructor(
         val p = project()
         val layer = p.layers.firstOrNull { it.id == id } ?: return
         if (layer.locked) { message("Unlock this layer before splitting it"); return }
-        val result = TimelineMath.split(layer, _ui.value.playheadMs, p.fps, UUID.randomUUID().toString())
+        val result = TimelineMath.split(layer, _ui.value.playheadMs, p.fpsExact, UUID.randomUUID().toString())
         if (result == null) { message("Playhead is outside the layer"); return }
         commit { proj ->
             val index = proj.layers.indexOfFirst { it.id == id }
@@ -469,7 +477,7 @@ class EditorViewModel @Inject constructor(
     fun moveClip(id: String, deltaMs: Long) = commit { p ->
         val layers = p.layers.map { l ->
             if (l.id != id || l.locked) return@map l
-            var moved = TimelineMath.move(l, deltaMs, p.fps, _ui.value.snapping)
+            var moved = TimelineMath.move(l, deltaMs, p.fpsExact, _ui.value.snapping)
             if (_ui.value.magneticSnapping) {
                 val edges = p.layers.filter { it.id != id }
                     .flatMap { listOf(it.startMs, it.startMs + it.durationMs) }
@@ -489,12 +497,12 @@ class EditorViewModel @Inject constructor(
     }
 
     fun trimStart(id: String, deltaMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { if (it.id == id && !it.locked) TimelineMath.trimStart(it, deltaMs, p.fps, _ui.value.snapping) else it })
+        p.copy(layers = p.layers.map { if (it.id == id && !it.locked) TimelineMath.trimStart(it, deltaMs, p.fpsExact, _ui.value.snapping) else it })
     }
 
     fun trimEnd(id: String, deltaMs: Long) = commit { p ->
         val layers = p.layers.map {
-            if (it.id == id && !it.locked) TimelineMath.resizeEnd(it, deltaMs, p.fps, _ui.value.snapping) else it
+            if (it.id == id && !it.locked) TimelineMath.resizeEnd(it, deltaMs, p.fpsExact, _ui.value.snapping) else it
         }
         val contentEnd = layers.maxOfOrNull { it.startMs + it.durationMs } ?: 0L
         p.copy(durationMs = maxOf(p.durationMs, contentEnd), layers = layers)
