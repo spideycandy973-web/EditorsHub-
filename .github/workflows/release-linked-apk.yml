@@ -1,0 +1,100 @@
+name: Release exact linked APK
+
+on:
+  push:
+    branches:
+      - arena/be31b8e1-editorshub
+    paths:
+      - '.github/workflows/release-linked-apk.yml'
+      - '.github/release-notes/linked-apk.md'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: release-linked-apk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'spideycandy973-web/EditorsHub-' && contains(github.event.head_commit.message, '[release-linked-apk]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      LINKED_TAG: apk-latest
+      RELEASE_TAG: v4.4.0
+      TITLE: You released EditorsHub V4.4.0
+      OLD_COMMIT: 125160674b970d05a010e0d7b19c68216b4ebd67
+      SOURCE_RELEASE: editorshub-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download exact APK from the linked build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          gh release download "$SOURCE_RELEASE" -p EditorsHub-Motion.apk --dir release-assets --clobber
+          test -s release-assets/EditorsHub-Motion.apk
+          test "$(stat -c%s release-assets/EditorsHub-Motion.apk)" = 5975919
+          ROOT_HASH=$(sha256sum EditorsHub-Motion.apk | cut -d' ' -f1)
+          LINK_HASH=$(sha256sum release-assets/EditorsHub-Motion.apk | cut -d' ' -f1)
+          echo "repository copy: $ROOT_HASH"
+          echo "linked release asset: $LINK_HASH"
+          test "$ROOT_HASH" = "$LINK_HASH"
+          (cd release-assets && sha256sum EditorsHub-Motion.apk > SHA256SUMS.txt)
+          cp .github/release-notes/linked-apk.md release-notes.md
+          {
+            echo
+            echo '## SHA-256'
+            echo
+            echo '```text'
+            cat release-assets/SHA256SUMS.txt
+            echo '```'
+          } >> release-notes.md
+          ls -lh release-assets
+
+      - name: Restore the linked apk-latest release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${OLD_COMMIT}^{commit}"
+          gh api -X PATCH "repos/${GH_REPO}/git/refs/tags/${LINKED_TAG}" \
+            -f sha="$OLD_COMMIT" -F force=true >/dev/null
+          LINKED_ID=$(gh api "repos/${GH_REPO}/releases/tags/${LINKED_TAG}" --jq .id)
+          gh api -X PATCH "repos/${GH_REPO}/releases/${LINKED_ID}" \
+            -f target_commitish="$OLD_COMMIT" \
+            -f make_latest=false >/dev/null
+          printf '%s\n' 'Installable debug-signed Android APK for EditorsHub.' '' 'Built from the Capacitor Android wrapper by GitHub Actions.' > original-notes.md
+          gh release edit "$LINKED_TAG" \
+            --title 'EditorsHub — Android APK' \
+            --notes-file original-notes.md
+          for name in APK_BADGING.txt SHA256SUMS.txt; do
+            IDS=$(gh api "repos/${GH_REPO}/releases/tags/${LINKED_TAG}" --jq ".assets[] | select(.name == \"$name\") | .id")
+            for id in $IDS; do
+              gh api -X DELETE "repos/${GH_REPO}/releases/assets/$id" >/dev/null
+            done
+          done
+          gh release upload "$LINKED_TAG" release-assets/EditorsHub-Motion.apk --clobber
+
+      - name: Publish the exact linked APK as V4.4.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete "$RELEASE_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${RELEASE_TAG}" >/dev/null 2>&1 || true
+          gh release create "$RELEASE_TAG" \
+            release-assets/EditorsHub-Motion.apk \
+            release-assets/SHA256SUMS.txt \
+            --target "$OLD_COMMIT" \
+            --title "$TITLE" \
+            --notes-file release-notes.md \
+            --latest
+          gh release view "$RELEASE_TAG" --json name,tagName,targetCommitish,url,isDraft,isPrerelease,assets
+          gh release view "$LINKED_TAG" --json name,tagName,targetCommitish,url,assets
