@@ -1200,3 +1200,70 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .um-fx-head { height: 56px; }
 .um-sb-speed { font-size: 7.5px; font-weight: 700; line-height: 1.05; color: #f2f2f5;
   text-align: right; max-width: 34px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* v4.5.1 — interaction motion system.
+   Keep the existing Ultra Motion layout intact; add consistent tactile feedback,
+   animated tab selection, and spring-like entrances for dialogs and sheets. */
+:root {
+  --um-motion-fast: 150ms;
+  --um-motion-base: 230ms;
+  --um-motion-spring: cubic-bezier(.2,.85,.25,1.18);
+  --um-motion-out: cubic-bezier(.22,1,.36,1);
+}
+
+/* Native-feeling press feedback for every real action control. */
+button:not(:disabled) {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--um-motion-fast) cubic-bezier(.2,.75,.25,1),
+    filter var(--um-motion-fast) ease, background-color var(--um-motion-fast) ease,
+    color var(--um-motion-fast) ease, box-shadow var(--um-motion-fast) ease;
+  transform-origin: center;
+}
+button:not(:disabled):active { transform: scale(.955); filter: brightness(1.13); }
+.um-iconbtn:not(:disabled):active { transform: scale(.88); background: rgba(255,255,255,.13); }
+.um-lavender:not(:disabled):active, .um-btn:not(:disabled):active { transform: scale(.975); }
+.um-card, .um-recent-row, .um-list-row, .um-template-tile, .um-add-tile,
+.um-shape-cell, .um-layer-row, .um-fx-cell {
+  transition: transform var(--um-motion-fast) ease, border-color var(--um-motion-fast) ease,
+    background-color var(--um-motion-fast) ease, box-shadow var(--um-motion-fast) ease;
+}
+.um-recent-row:active, .um-list-row:active, .um-template-tile:active,
+.um-add-tile:active, .um-shape-cell:active { transform: scale(.985); }
+
+/* Home / Projects tab selection has a small lift and icon pop, without
+   changing the reference's pill geometry or spacing. */
+.um-nav > button { transition: color .18s ease, transform .2s var(--um-motion-spring); }
+.um-nav > button.on { animation: um-nav-select .28s var(--um-motion-spring) both; }
+.um-nav > button.on svg { animation: um-nav-icon .32s var(--um-motion-spring) both; }
+.um-nav > button:not(.on):active { transform: scale(.92); }
+.um-nav-plus { transition: transform .24s var(--um-motion-spring), box-shadow .2s ease, filter .15s ease; }
+.um-nav-plus:active { transform: translateY(-4px) scale(.9) rotate(-5deg); }
+.um-nav-plus.close-nav svg { animation: um-plus-close .22s var(--um-motion-spring) both; }
+@keyframes um-nav-select { 0% { transform: translateY(3px) scale(.94); } 75% { transform: translateY(-1px) scale(1.035); } 100% { transform: none; } }
+@keyframes um-nav-icon { 0% { transform: scale(.72); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes um-plus-close { from { opacity: .35; transform: rotate(-80deg) scale(.7); } to { opacity: 1; transform: rotate(0) scale(1); } }
+
+/* Tab body transition: horizontal movement follows the direction of travel. */
+.um-home-body, .um-projects-body { animation: um-tab-polish .26s var(--um-motion-out) both; }
+@keyframes um-tab-polish { from { opacity: 0; transform: translateY(9px) scale(.992); } to { opacity: 1; transform: none; } }
+
+/* Sheets and popup cards use the same soft overshoot, with a fading backdrop. */
+.um-backdrop, .um-presets-backdrop, .um-flow-backdrop { animation: um-backdrop-in .2s ease-out both; }
+.um-sheet { transform-origin: 50% 100%; animation: um-sheet-spring .32s var(--um-motion-out) both; }
+.um-presets-card, .um-fonts-card { animation: um-dialog-pop .34s var(--um-motion-spring) both; transform-origin: 50% 60%; }
+.um-flow { animation: um-flow-enter .32s var(--um-motion-out) both; }
+.um-fx-guide { animation: um-sheet-spring .3s var(--um-motion-out) both; }
+@keyframes um-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes um-sheet-spring { from { opacity: 0; transform: translateY(28px) scale(.985); } 72% { opacity: 1; transform: translateY(-2px) scale(1.002); } to { opacity: 1; transform: none; } }
+@keyframes um-dialog-pop { from { opacity: 0; transform: translateY(12px) scale(.91); } 72% { opacity: 1; transform: translateY(-2px) scale(1.015); } to { opacity: 1; transform: none; } }
+@keyframes um-flow-enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* Focus feedback for keyboard, switch-access and accessibility navigation. */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(216,220,255,.82); outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
