@@ -1,24 +1,12 @@
 name: Publish EditorsHub native release
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag
-        required: true
-        default: v4.6.0
-      title:
-        description: Release title
-        required: true
-        default: EditorsHub V4.6.0 — Native Android
-      release_commit:
-        description: Commit the release tag points to
-        required: true
-        default: d4ffa5237a08ec85c7a9d7e3e58fd3e60df49085
-      source_run_id:
-        description: Successful CI run containing editorshub-android
-        required: true
-        default: '42642800416'
+  push:
+    branches:
+      - arena/be31b8e1-editorshub
+    paths:
+      - '.github/workflows/publish-v4.6.0.yml'
+      - '.github/release-notes/v4.6.0.md'
 
 permissions:
   actions: read
@@ -30,16 +18,16 @@ concurrency:
 
 jobs:
   publish:
-    if: github.repository == 'spideycandy973-web/EditorsHub-'
+    if: github.repository == 'spideycandy973-web/EditorsHub-' && contains(github.event.head_commit.message, '[publish-v4.6.0]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
-      TAG: ${{ inputs.tag }}
-      TITLE: ${{ inputs.title }}
-      COMMIT: ${{ inputs.release_commit }}
-      RUN_ID: ${{ inputs.source_run_id }}
+      TAG: v4.6.0
+      TITLE: EditorsHub V4.6.0 — Native Android
+      COMMIT: d4ffa5237a08ec85c7a9d7e3e58fd3e60df49085
+      RUN_ID: '42642800416'
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
@@ -50,7 +38,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: editorshub-android
-          run-id: ${{ inputs.source_run_id }}
+          run-id: 42642800416
           repository: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: release-assets
@@ -85,8 +73,7 @@ jobs:
             gh release edit "$TAG" \
               --title "$TITLE" \
               --notes-file release-notes.md \
-              --latest \
-              --prerelease=false
+              --latest
             gh release upload "$TAG" \
               release-assets/EditorsHub-debug.apk \
               release-assets/EditorsHub-source-v4.6.0.zip \
