@@ -326,22 +326,25 @@ private fun ClipBar(
                 .background(color, RoundedCornerShape(5.dp))
                 .border(if (selected) 1.5.dp else 0.5.dp,
                     if (selected) Color.White else EditorPalette.Outline, RoundedCornerShape(5.dp))
-                .pointerInput(layer.id, zoom) {
+        ) {
+            // Keep the clip-body drag target clear of the two trim handles so a single
+            // gesture cannot both move and trim the same clip.
+            if (!layer.locked) {
+                Box(Modifier.fillMaxSize().padding(horizontal = 9.dp).pointerInput(layer.id, zoom) {
                     detectDragGestures(
                         onDragStart = { vm.selectLayer(layer.id) },
-                        onDragEnd = { },
                         onDrag = { _, drag ->
                             val deltaMs = (drag.x / density / zoom * 1000f).roundToLong()
                             vm.moveClip(layer.id, deltaMs)
                         }
                     )
-                }
-        ) {
+                })
+            }
             Text(layer.name, fontSize = 9.sp, color = Color.White,
                 modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp, end = 10.dp), maxLines = 1)
             // Trim handles
-            TrimHandle(Modifier.align(Alignment.CenterStart), zoom, density) { d -> vm.trimStart(layer.id, d) }
-            TrimHandle(Modifier.align(Alignment.CenterEnd), zoom, density) { d -> vm.trimEnd(layer.id, d) }
+            TrimHandle(Modifier.align(Alignment.CenterStart), zoom, density, enabled = !layer.locked) { d -> vm.trimStart(layer.id, d) }
+            TrimHandle(Modifier.align(Alignment.CenterEnd), zoom, density, enabled = !layer.locked) { d -> vm.trimEnd(layer.id, d) }
             if (selected) {
                 layer.keyframes.flatMap { it.keyframes }.forEach { kf ->
                     Box(
@@ -358,17 +361,22 @@ private fun ClipBar(
 }
 
 @Composable
-private fun TrimHandle(modifier: Modifier, zoom: Float, density: Float, onDrag: (Long) -> Unit) {
+private fun TrimHandle(
+    modifier: Modifier,
+    zoom: Float,
+    density: Float,
+    enabled: Boolean = true,
+    onDrag: (Long) -> Unit
+) {
+    val gesture = if (enabled) Modifier.pointerInput(zoom) {
+        detectDragGestures(onDrag = { _, drag ->
+            onDrag((drag.x / density / zoom * 1000f).roundToLong())
+        })
+    } else Modifier
     Box(
-        modifier
-            .width(9.dp)
-            .height(24.dp)
+        modifier.width(9.dp).height(24.dp)
             .background(Color(0x66FFFFFF), RoundedCornerShape(3.dp))
-            .pointerInput(zoom) {
-                detectDragGestures(onDrag = { _, drag ->
-                    onDrag((drag.x / density / zoom * 1000f).roundToLong())
-                })
-            }
+            .then(gesture)
     )
 }
 
