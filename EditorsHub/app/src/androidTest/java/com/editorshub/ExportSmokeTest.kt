@@ -52,6 +52,7 @@ class ExportSmokeTest {
         val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
         retriever.release()
         assertNotNull(duration)
-        assertTrue("Duration was $duration", duration!! > 0)
+        // Encoded presentation timestamps must follow the project frame clock, not render speed.
+        assertTrue("Expected about 700ms output, got $duration ms", duration!! in 500L..900L)
     }
 }
