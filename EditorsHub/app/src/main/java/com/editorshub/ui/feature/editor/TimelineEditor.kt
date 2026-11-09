@@ -43,7 +43,7 @@ fun TimelineEditor(
     val zoom = state.zoomPxPerSecond
     val timelineDurationMs = project.durationMs.coerceAtLeast(1L)
     val contentWidth: Dp = ((timelineDurationMs / 1000f) * zoom + 100f).dp.coerceAtLeast(220.dp)
-    val rowHeight = 28.dp
+    val rowHeight = 36.dp
     val totalTracks = project.layers.size + project.audioTracks.size
     val rows = totalTracks.coerceAtLeast(1)
     val latestPlayhead = rememberUpdatedState(state.playheadMs)
@@ -56,13 +56,19 @@ fun TimelineEditor(
 
     Column(modifier = modifier.background(EditorPalette.Charcoal)) {
         Row(Modifier.fillMaxWidth().height(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.width(108.dp).fillMaxHeight().background(EditorPalette.Surface),
-                contentAlignment = Alignment.CenterStart) {
-                Text(" $totalTracks track${if (totalTracks == 1) "" else "s"}",
-                    fontSize = 8.sp, color = EditorPalette.TextMuted)
-                Box(Modifier.align(Alignment.CenterEnd)) {
-                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.MoreHoriz, "Timeline actions", Modifier.size(17.dp), tint = EditorPalette.TextSecondary)
+            Row(Modifier.width(132.dp).fillMaxHeight().background(EditorPalette.Surface),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(" LAYERS · $totalTracks",
+                    fontSize = 8.sp, color = EditorPalette.TextMuted, modifier = Modifier.weight(1f))
+                IconButton(onClick = { vm.setZoom(zoom - 16f) }, modifier = Modifier.size(25.dp)) {
+                    Icon(Icons.Default.Remove, "Zoom out", Modifier.size(14.dp), tint = EditorPalette.TextSecondary)
+                }
+                IconButton(onClick = { vm.setZoom(zoom + 16f) }, modifier = Modifier.size(25.dp)) {
+                    Icon(Icons.Default.Add, "Zoom in", Modifier.size(14.dp), tint = EditorPalette.TextSecondary)
+                }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(25.dp)) {
+                        Icon(Icons.Default.MoreHoriz, "Timeline actions", Modifier.size(16.dp), tint = EditorPalette.TextSecondary)
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(text = { Text("Zoom out") }, onClick = { vm.setZoom(zoom - 16f); menuExpanded = false })
@@ -93,7 +99,7 @@ fun TimelineEditor(
             }
         }
         Row(Modifier.fillMaxWidth().weight(1f).verticalScroll(vScroll)) {
-            Column(Modifier.width(108.dp)) {
+            Column(Modifier.width(132.dp)) {
                 if (totalTracks == 0) {
                     Box(Modifier.height(rowHeight).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                         Text("  No tracks", fontSize = 8.sp, color = EditorPalette.TextMuted)
@@ -192,7 +198,7 @@ private fun LayerLabel(layer: Layer, index: Int, state: EditorUiState, vm: Edito
             null, Modifier.size(14.dp), tint = EditorPalette.Purple
         )
         Spacer(Modifier.width(4.dp))
-        Text(layer.name, fontSize = 9.sp, maxLines = 1, modifier = Modifier.weight(1f))
+        Text(layer.name, fontSize = 9.sp, maxLines = 1, color = if (layer.id == state.selectedLayerId) Color.White else EditorPalette.TextSecondary, modifier = Modifier.weight(1f))
         IconButton(onClick = { vm.toggleVisible(layer.id) }, modifier = Modifier.size(24.dp)) {
             Icon(if (layer.visible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                 null, Modifier.size(13.dp))
@@ -311,7 +317,7 @@ private fun ClipBar(
                 }
         ) {
             Text(layer.name, fontSize = 9.sp, color = Color.White,
-                modifier = Modifier.padding(start = 10.dp, top = 7.dp), maxLines = 1)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 10.dp, end = 10.dp), maxLines = 1)
             // Trim handles
             TrimHandle(Modifier.align(Alignment.CenterStart), zoom, density) { d -> vm.trimStart(layer.id, d) }
             TrimHandle(Modifier.align(Alignment.CenterEnd), zoom, density) { d -> vm.trimEnd(layer.id, d) }
@@ -320,8 +326,9 @@ private fun ClipBar(
                     Box(
                         Modifier
                             .offset(x = (kf.timeMs / 1000f * zoom).dp, y = (height - 14.dp))
-                            .size(6.dp)
-                            .background(EditorPalette.Purple, RoundedCornerShape(1.dp))
+                            .size(7.dp)
+                            .background(EditorPalette.Cyan, RoundedCornerShape(1.dp))
+                            .border(0.5.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(1.dp))
                     )
                 }
             }
