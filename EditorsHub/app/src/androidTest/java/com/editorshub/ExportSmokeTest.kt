@@ -40,7 +40,7 @@ class ExportSmokeTest {
         )
         val result = runBlocking {
             exporter.export(project, ExportConfig(
-                width = 320, height = 240, fps = 10, bitrate = 1_000_000,
+                width = 320, height = 240, fps = 10, fpsExact = 10.0, bitrate = 1_000_000,
                 includeAudio = false
             ), { _, _ -> }, { false })
         }
