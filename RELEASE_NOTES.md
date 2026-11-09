@@ -1,19 +1,23 @@
-# EditorsHub v4.6.0 — motion-first studio pass
+# EditorsHub v4.4.0 — native Android release
 
-Android candidate package `com.editorshub` (version code 19). The landing flow now
-opens as a video-editing workspace: create a composition, bring in multiple clips,
-resume recent projects, or browse project imports and templates. The multitrack
-timeline now shows audio clips with waveforms, supports drag-to-position, and lets
-you scrub from the ruler or playhead. Tab selection, inspector panels, expandable
-sections, and important touch targets have deliberate motion feedback. The
-underlying editor/render/export engine remains the existing native implementation;
-this candidate is not a claim of complete Alight Motion parity and is not a
-production-signed release.
+Native Kotlin/Compose app, package `com.editorshub`, version 4.4.0 (version
+code 20). This is the corrected release of the current native editor after the
+mistakenly labeled 4.6.0 candidate. The APK manifest, About screen, CI source
+archive, and release tag all report 4.4.0. It is a debug-signed CI build, not a
+production-signed Play Store artifact.
 
-## v4.6.0 verification
+## v4.4.0 verification
 
-- GitHub Actions Android build (debug APK, release APK/AAB tasks and unit tests) passed.
-- Compose instrumentation test and Android emulator install/launch smoke check passed in [run 42514390984](https://github.com/spideycandy973-web/EditorsHub-/actions/runs/42514390984).
+- The rebuilt APK is produced by the Android CI run linked in the GitHub
+  release notes. Unit tests, emulator instrumentation tests, and emulator
+  install/launch smoke checks run on that same commit.
+- A new unit test asserts `APP_VERSION_NAME = 4.4.0` and
+  `APP_VERSION_CODE = 20`.
+- The earlier successful native regression run 42642800416 covered the
+  unchanged editor code, including thumbnails and keyframes.
+- Exact pixel-clone parity to the supplied reference is not claimed; the final
+  screen-capture artifact could not be visually reviewed from the release
+  environment.
 
 ## Previous v4.5.0 notes — measured reference alignment
 

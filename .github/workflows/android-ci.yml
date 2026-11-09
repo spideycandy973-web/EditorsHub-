@@ -95,9 +95,9 @@ jobs:
         if: success()
         # Source only: exclude committed build outputs so the ZIP stays small.
         run: |
-          git archive --format=zip --prefix=EditorsHub-v4.6.0/ HEAD -- \
+          git archive --format=zip --prefix=EditorsHub-v4.4.0/ HEAD -- \
             . ':(exclude)artifacts' ':(exclude)artifacts/**' \
-            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v4.6.0.zip
+            ':(exclude)EditorsHub-Motion.apk' ':(exclude)ci-logs' > artifacts/EditorsHub-source-v4.4.0.zip
           ls -lh artifacts/
 
       - name: Upload artifact bundle
@@ -216,9 +216,9 @@ jobs:
       - name: Publish GitHub pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v4.6.0-debug
+          tag_name: v4.4.0-debug
           target_commitish: ${{ github.sha }}
-          name: EditorsHub v4.6.0 — Debug pre-release
+          name: EditorsHub v4.4.0 — Debug pre-release
           prerelease: true
           body: |
             **Tested debug-signed build — not the official production-signed release.**

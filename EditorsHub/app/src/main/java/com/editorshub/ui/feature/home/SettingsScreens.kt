@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.editorshub.BuildConfig
 import com.editorshub.core.domain.model.ExportResolution
 import com.editorshub.core.domain.model.VideoCodec
 import com.editorshub.ui.components.LabeledSelect
@@ -226,7 +227,7 @@ fun SettingsScreen(
                         }
                         "About" -> {
                             SettingsCard("EditorsHub EditorsHub") {
-                                Text("Version 1.0.0 · build 2 · open source (MIT)",
+                                Text("Version ${BuildConfig.APP_VERSION_NAME} · build ${BuildConfig.APP_VERSION_CODE} · open source (MIT)",
                                     style = MaterialTheme.typography.bodySmall)
                                 Text("Kotlin · Compose · Room · Hilt · MediaCodec · OpenGL ES",
                                     style = MaterialTheme.typography.labelSmall, color = EditorPalette.TextMuted)

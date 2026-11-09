@@ -1,14 +1,12 @@
 # Changelog
 
-## 4.6.0 — motion-first native studio (2026-11-02)
+## 4.4.0 — native Android release (2026-11-09)
 
-- Reworked the Android landing screen into an editor-first dashboard: create a composition, import multiple media items, open project packages, browse templates, and resume recent edits without starting in an XML-import form.
-- Added touch-scale feedback to the home actions, recent project cards, bottom navigation and inspector options; tab navigation already slides/fades between destinations and now has animated selection feedback.
-- Inspector panels and toolbar titles now transition instead of switching abruptly; expandable property sections animate open/closed.
-- Added a waveform-visible audio row to the multitrack timeline, with drag-to-position, frame/magnetic snapping, mute control and tap-to-scrub playhead interaction.
-- Kept the existing native project, timeline, keyframe/easing, effect, mask/blend, media and export engine; this is an original workflow enhancement, not a claim of complete Alight Motion parity.
-- Recorded public-source findings and a clean-room product target in `docs/REFERENCE_RESEARCH.md`.
-- Android candidate version: 4.6.0 / version code 19. GitHub Actions Android build, instrumentation test and emulator install/launch smoke check passed in [run 42514390984](https://github.com/spideycandy973-web/EditorsHub-/actions/runs/42514390984). It remains a debug candidate, not a production-signed stable release.
+- Corrected the native app build metadata to version 4.4.0 / version code 20 after the rejected 4.6.0 label.
+- Added generated `APP_VERSION_NAME` / `APP_VERSION_CODE` fields, made Settings → About display them, and added `AppVersionTest`.
+- Aligned the Android CI source archive and optional debug-prerelease labels with 4.4.0.
+- Rebuilt the debug APK from the same verified native editor implementation; project/effects thumbnails and keyframe editing remain functional.
+- This is a debug-signed GitHub release build, not a production-signed Play Store artifact and not a claim of exact reference parity.
 
 ## 4.5.0 — measured Ultra Motion editor alignment (2026-11-06)
 
@@ -38,7 +36,7 @@
   assets, fonts, or re-signed reference APK are included; package remains
   `com.editorshub` and branding is still editable in-app.
 
-## 4.4.0 — screenshot pass and reliable APK updates (2026-11-06)
+## 4.4.0 — screenshot pass and reliable APK updates (web/Capacitor, historical, 2026-11-06)
 
 - **Fixed the reason an installed APK can look unchanged after an update.**
   v4.3.0 registered a cache-first service worker inside the Capacitor WebView.

@@ -17,6 +17,9 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
+val appVersionName = "4.4.0"
+val appVersionCode = 20
+
 android {
     namespace = "com.editorshub"
     compileSdk = 35
@@ -36,8 +39,10 @@ android {
         applicationId = "com.editorshub"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "4.6.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
+        buildConfigField("String", "APP_VERSION_NAME", "\"$appVersionName\"")
+        buildConfigField("int", "APP_VERSION_CODE", appVersionCode.toString())
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
@@ -59,7 +64,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
     testOptions { unitTests.isReturnDefaultValues = true }
     lint { abortOnError = false }

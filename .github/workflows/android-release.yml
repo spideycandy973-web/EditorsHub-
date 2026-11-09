@@ -6,7 +6,7 @@ on:
       version:
         description: 'Release tag (e.g. v4.5.0)'
         required: true
-        default: 'v4.6.0'
+        default: 'v4.4.0'
 
 permissions:
   contents: write
