@@ -106,9 +106,9 @@ class VideoExporter @Inject constructor(
                     full = compositor.renderToBitmap(frame, project.width, project.height)
                     scaled = if (full.width != width || full.height != height)
                         Bitmap.createScaledBitmap(full, width, height, true) else full
-                    val uniforms = EffectUniformBuilder.from(
-                        frame.layers.flatMap { it.effects }, timeMs
-                    )
+                    // CanvasCompositor has already applied each layer's effect stack.
+                    // A global aggregate pass here would duplicate effects across the whole frame.
+                    val uniforms = com.editorshub.core.rendering.gl.GlUniforms(time = timeMs / 1000f)
                     val presentationTimeNs = (i * 1_000_000_000.0 / fpsExact).toLong()
                     writer.draw(scaled, uniforms, presentationTimeNs)
                     drain(encoder, muxer, state, info, false)
