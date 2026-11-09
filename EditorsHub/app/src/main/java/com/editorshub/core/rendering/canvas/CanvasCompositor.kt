@@ -65,11 +65,18 @@ class CanvasCompositor @Inject constructor(
 
     fun draw(canvas: Canvas, frame: RenderFrame, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
+        val projectWidth = frame.project.width.coerceIn(1, 4096)
+        val projectHeight = frame.project.height.coerceIn(1, 4096)
+        canvas.save()
         try {
-            drawBackground(canvas, frame.project, width, height)
+            // Layer transforms and content are authored in project pixels. Scale the finished
+            // composition into the preview/output viewport instead of interpreting project
+            // coordinates as device pixels (which clipped almost every portrait composition).
+            canvas.scale(width.toFloat() / projectWidth, height.toFloat() / projectHeight)
+            drawBackground(canvas, frame.project, projectWidth, projectHeight)
             // Layer 0 is topmost, so paint bottom-to-top.
             for (resolved in frame.layers.asReversed()) {
-                drawLayer(canvas, frame, resolved, width, height)
+                drawLayer(canvas, frame, resolved, projectWidth, projectHeight)
             }
         } catch (e: OutOfMemoryError) {
             Log.w(TAG, "Out of memory while compositing; frame skipped")
@@ -77,6 +84,8 @@ class CanvasCompositor @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "Compositing failed; frame skipped", e)
             canvas.drawColor(Color.BLACK)
+        } finally {
+            canvas.restore()
         }
     }
 
