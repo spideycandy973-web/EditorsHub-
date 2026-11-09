@@ -1,0 +1,106 @@
+name: Publish EditorsHub native release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        required: true
+        default: v4.6.0
+      title:
+        description: Release title
+        required: true
+        default: EditorsHub V4.6.0 — Native Android
+      release_commit:
+        description: Commit the release tag points to
+        required: true
+        default: d4ffa5237a08ec85c7a9d7e3e58fd3e60df49085
+      source_run_id:
+        description: Successful CI run containing editorshub-android
+        required: true
+        default: '42642800416'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-editorshub-v4.6.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'spideycandy973-web/EditorsHub-'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ inputs.tag }}
+      TITLE: ${{ inputs.title }}
+      COMMIT: ${{ inputs.release_commit }}
+      RUN_ID: ${{ inputs.source_run_id }}
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download tested Android artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: editorshub-android
+          run-id: ${{ inputs.source_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release-assets
+
+      - name: Prepare release assets and notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${COMMIT}^{commit}"
+          test -s release-assets/EditorsHub-debug.apk
+          test -s release-assets/EditorsHub-source-v4.6.0.zip
+          ls -lh release-assets
+          (cd release-assets && sha256sum EditorsHub-debug.apk EditorsHub-source-v4.6.0.zip > SHA256SUMS.txt)
+          cp .github/release-notes/v4.6.0.md release-notes.md
+          {
+            echo
+            echo "Source CI run: ${RUN_ID}"
+            echo
+            echo '## Checksums'
+            echo
+            echo '```text'
+            cat release-assets/SHA256SUMS.txt
+            echo '```'
+          } >> release-notes.md
+
+      - name: Create or update GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Updating existing release $TAG"
+            gh release edit "$TAG" \
+              --title "$TITLE" \
+              --notes-file release-notes.md \
+              --latest \
+              --prerelease=false
+            gh release upload "$TAG" \
+              release-assets/EditorsHub-debug.apk \
+              release-assets/EditorsHub-source-v4.6.0.zip \
+              release-assets/SHA256SUMS.txt \
+              --clobber
+          else
+            echo "Creating release $TAG at $COMMIT"
+            gh release create "$TAG" \
+              release-assets/EditorsHub-debug.apk \
+              release-assets/EditorsHub-source-v4.6.0.zip \
+              release-assets/SHA256SUMS.txt \
+              --target "$COMMIT" \
+              --title "$TITLE" \
+              --notes-file release-notes.md \
+              --latest
+          fi
+          gh release view "$TAG" --json name,tagName,targetCommitish,url,isDraft,isPrerelease,assets
