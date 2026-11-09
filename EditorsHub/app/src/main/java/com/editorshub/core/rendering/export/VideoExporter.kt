@@ -103,7 +103,7 @@ class VideoExporter @Inject constructor(
                 var full: Bitmap? = null
                 var scaled: Bitmap? = null
                 try {
-                    full = compositor.renderToBitmap(frame, project.width, project.height)
+                    full = compositor.renderToBitmap(frame, project.width, project.height, quality = 1f)
                     scaled = if (full.width != width || full.height != height)
                         Bitmap.createScaledBitmap(full, width, height, true) else full
                     // CanvasCompositor has already applied each layer's effect stack.
