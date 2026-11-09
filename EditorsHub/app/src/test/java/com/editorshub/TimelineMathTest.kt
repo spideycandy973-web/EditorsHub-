@@ -2,6 +2,11 @@ package com.editorshub
 
 import com.editorshub.core.domain.model.Layer
 import com.editorshub.core.domain.model.LayerType
+import com.editorshub.core.domain.model.Keyframe
+import com.editorshub.core.domain.model.KeyframeTrack
+import com.editorshub.core.domain.model.Easing
+import com.editorshub.core.domain.model.Effect
+import com.editorshub.core.domain.model.EffectType
 import com.editorshub.core.domain.timeline.TimelineMath
 import org.junit.Assert.*
 import org.junit.Test
@@ -48,6 +53,40 @@ class TimelineMathTest {
         val list = listOf(layer, layer.copy(id = "b"), layer.copy(id = "c"))
         val reordered = TimelineMath.reordered(list, 2, 0)
         assertEquals("c", reordered[0].id)
+    }
+
+    @Test fun splitPreservesAnimationOnBothSidesOfCut() {
+        val animated = layer.copy(keyframes = listOf(KeyframeTrack("x", listOf(
+            Keyframe(id = "a", timeMs = 0, value = 0f, easing = Easing.LINEAR),
+            Keyframe(id = "b", timeMs = 1000, value = 100f, easing = Easing.LINEAR),
+            Keyframe(id = "c", timeMs = 2000, value = 200f, easing = Easing.LINEAR)
+        ))))
+        val (left, right) = TimelineMath.split(animated, 2500L, 30, "right")!!
+        val leftTrack = left.keyframes.single()
+        val rightTrack = right.keyframes.single()
+        assertEquals(150f, leftTrack.keyframes.last().value, 0.001f)
+        assertEquals(150f, rightTrack.keyframes.first().value, 0.001f)
+        assertEquals(125f, com.editorshub.core.domain.keyframe.KeyframeEngine.value(leftTrack, 1250L, 0f), 0.001f)
+        assertEquals(175f, com.editorshub.core.domain.keyframe.KeyframeEngine.value(rightTrack, 250L, 0f), 0.001f)
+    }
+
+    @Test fun trimStartRebasesLayerEffectAndMaskAnimation() {
+        val track = KeyframeTrack("amount", listOf(
+            Keyframe(id = "a", timeMs = 0, value = 0f, easing = Easing.LINEAR),
+            Keyframe(id = "b", timeMs = 1000, value = 100f, easing = Easing.LINEAR),
+            Keyframe(id = "c", timeMs = 2000, value = 200f, easing = Easing.LINEAR)
+        ))
+        val animated = layer.copy(
+            keyframes = listOf(track),
+            effects = listOf(Effect(id = "fx", type = EffectType.GAUSSIAN_BLUR, animated = mapOf("amount" to track))),
+            masks = listOf(com.editorshub.core.domain.model.MaskSpec(id = "mask", keyframes = listOf(track)))
+        )
+        val trimmed = TimelineMath.trimStart(animated, 1000L, 30, false)
+        assertEquals(2000L, trimmed.startMs)
+        assertEquals(3000L, trimmed.durationMs)
+        assertEquals(100f, com.editorshub.core.domain.keyframe.KeyframeEngine.value(trimmed.keyframes.single(), 0L, 0f), 0.001f)
+        assertEquals(150f, com.editorshub.core.domain.keyframe.KeyframeEngine.value(trimmed.effects.single().animated.getValue("amount"), 500L, 0f), 0.001f)
+        assertEquals(100f, com.editorshub.core.domain.keyframe.KeyframeEngine.value(trimmed.masks.single().keyframes.single(), 0L, 0f), 0.001f)
     }
 
     @Test fun overlapDetection() {
