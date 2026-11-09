@@ -73,6 +73,11 @@ fun TimelineEditor(
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(text = { Text("Zoom out") }, onClick = { vm.setZoom(zoom - 16f); menuExpanded = false })
                         DropdownMenuItem(text = { Text("Zoom in") }, onClick = { vm.setZoom(zoom + 16f); menuExpanded = false })
+                        DropdownMenuItem(text = { Text("Zoom to fit") }, onClick = { vm.zoomToFit(); menuExpanded = false })
+                        DropdownMenuItem(text = { Text(if (state.autoKey) "Auto key: ON" else "Auto key: OFF") },
+                            onClick = { vm.setAutoKey(!state.autoKey); menuExpanded = false })
+                        DropdownMenuItem(text = { Text(if (state.snapping) "Frame snapping: ON" else "Frame snapping: OFF") },
+                            onClick = { vm.setSnapping(!state.snapping); menuExpanded = false })
                         DropdownMenuItem(text = { Text("Split at playhead") },
                             enabled = state.selectedLayerId != null,
                             onClick = { state.selectedLayerId?.let(vm::splitLayer); menuExpanded = false })
