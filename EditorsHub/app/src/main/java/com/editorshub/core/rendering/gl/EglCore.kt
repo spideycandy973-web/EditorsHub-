@@ -44,6 +44,13 @@ class EglCore {
         check(EGL14.eglMakeCurrent(display, target, target, context)) { "eglMakeCurrent failed" }
     }
 
+    /** Assign the media presentation timestamp before swapping an encoder surface. */
+    fun presentationTime(target: EGLSurface, timestampNs: Long) {
+        check(android.opengl.EGLExt.eglPresentationTimeANDROID(display, target, timestampNs)) {
+            "eglPresentationTimeANDROID failed"
+        }
+    }
+
     fun swap(target: EGLSurface): Boolean = EGL14.eglSwapBuffers(display, target)
 
     fun releaseSurface(target: EGLSurface) {
