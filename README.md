@@ -72,12 +72,12 @@ then `node tools/frames-libs.mjs` and run against `npm run preview`.
 
 ## Android
 
-`EditorsHub-Motion.apk` (Capacitor, installable) is committed at the repository
-root and attached to `apk-latest`, `v4.5.0` and `editorshub-latest`, together
-with `EditorsHub-debug.apk`, `EditorsHub-release-unsigned.apk`,
-`EditorsHub-release.aab` and `EditorsHub-source-v4.5.0.zip`. Release APK/AAB are
-unsigned by design; see `EditorsHub/docs/RELEASE_SIGNING.md` for the keystore
-workflow. All Android builds run in GitHub Actions.
+The rolling [`apk-latest`](https://github.com/spideycandy973-web/EditorsHub-/releases/tag/apk-latest)
+release now serves the tested **native Kotlin/Compose** APK under the retained
+`EditorsHub-Motion.apk` download name. It is not the legacy Capacitor WebView
+wrapper. The APK is debug-signed; release APK/AAB signing still requires a local
+keystore as described in `EditorsHub/docs/RELEASE_SIGNING.md`. Android builds and
+emulator checks run in GitHub Actions.
 
 ## Boundary
 
