@@ -194,8 +194,8 @@ class CanvasCompositor @Inject constructor(
             resolved,
             projectWidth,
             projectHeight,
-            scaleX,
-            scaleY,
+            width,
+            height,
             matrix
         )
 
@@ -394,8 +394,8 @@ class CanvasCompositor @Inject constructor(
         resolved: ResolvedLayer,
         projectWidth: Float,
         projectHeight: Float,
-        scaleX: Float,
-        scaleY: Float,
+        width: Int,
+        height: Int,
         layerMatrix: Matrix
     ) {
         if (resolved.masks.isEmpty()) return
@@ -414,9 +414,6 @@ class CanvasCompositor @Inject constructor(
         }.coerceAtLeast(1f)
         val maskPixelWidth = projectWidth.toInt().coerceIn(1, 4096)
         val maskPixelHeight = projectHeight.toInt().coerceIn(1, 4096)
-        // Scale the project-space alpha mask into the output viewport when compositing.
-        val outputMatrix = Matrix().apply { setScale(scaleX, scaleY) }
-
         for (mask in resolved.masks) {
             // Build a full-frame alpha mask. Drawing DST_IN only over the path
             // itself does not clear pixels outside that path.
@@ -457,10 +454,19 @@ class CanvasCompositor @Inject constructor(
             maskCanvas.drawPath(path, maskPaint)
             maskCanvas.restore()
 
+            // Scale the project-space alpha mask to the output size before DST_IN.
+            // Compositing with a transformed ALPHA_8 bitmap can leave corner pixels
+            // untouched on some Android renderers.
+            val scaledMask = if (maskBitmap.width == width && maskBitmap.height == height) {
+                maskBitmap
+            } else {
+                Bitmap.createScaledBitmap(maskBitmap, width, height, true)
+            }
             val composite = Paint().apply {
                 xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
             }
-            c.drawBitmap(maskBitmap, outputMatrix, composite)
+            c.drawBitmap(scaledMask, 0f, 0f, composite)
+            if (scaledMask !== maskBitmap) scaledMask.recycle()
             maskBitmap.recycle()
         }
     }
