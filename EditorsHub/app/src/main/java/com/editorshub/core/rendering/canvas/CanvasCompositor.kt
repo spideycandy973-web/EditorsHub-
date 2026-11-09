@@ -121,9 +121,11 @@ class CanvasCompositor @Inject constructor(
 
     /** Render the whole composition to a bitmap (used by GPU preview and GL export). */
     @Synchronized
-    fun renderToBitmap(frame: RenderFrame, width: Int, height: Int): Bitmap {
+    fun renderToBitmap(frame: RenderFrame, width: Int, height: Int, quality: Float? = null): Bitmap {
         val w = width.coerceIn(1, 4096)
         val h = height.coerceIn(1, 4096)
+        val previousQuality = previewQuality
+        if (quality != null) previewQuality = quality.coerceIn(0.2f, 1f)
         return try {
             val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             draw(Canvas(bmp), frame, w, h)
@@ -133,6 +135,8 @@ class CanvasCompositor @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "renderToBitmap failed", e)
             fallbackBitmap()
+        } finally {
+            if (quality != null) previewQuality = previousQuality
         }
     }
 
