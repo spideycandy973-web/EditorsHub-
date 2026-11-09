@@ -6,11 +6,17 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.editorshub.core.media.MediaKind
 import com.editorshub.core.media.MediaRepository
+import com.editorshub.core.rendering.audio.AudioMixer
+import com.editorshub.core.domain.model.AudioTrack
+import com.editorshub.core.domain.model.ExportConfig
+import com.editorshub.core.domain.model.Project
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.PI
+import kotlin.math.sin
 
 @RunWith(AndroidJUnit4::class)
 class MediaImportTest {
@@ -34,12 +40,32 @@ class MediaImportTest {
         // Minimal 44-byte WAV header + 1 second of silence (8 kHz mono 16-bit).
         val data = ByteArray(44 + 16000)
         writeWavHeader(data, 16000)
+        // 440Hz tone gives the waveform and mixer tests a known non-silent signal.
+        for (i in 0 until 8000) {
+            val sample = (sin(2.0 * PI * 440.0 * i / 8000.0) * 12000.0).toInt()
+            val offset = 44 + i * 2
+            data[offset] = (sample and 0xFF).toByte()
+            data[offset + 1] = ((sample shr 8) and 0xFF).toByte()
+        }
         FileOutputStream(file).use { it.write(data) }
         val repo = MediaRepository(ctx)
         val info = repo.probe(file.absolutePath)
         assertEquals(MediaKind.AUDIO, info.kind)
         val peaks = repo.waveform(file.absolutePath, 160)
         assertEquals(160, peaks.size)
+        assertTrue("Waveform should contain decoded audio peaks", peaks.maxOrNull()!! > 0.9f)
+
+        val project = Project(
+            id = "audio-mix",
+            name = "Audio mix",
+            durationMs = 1000L,
+            audioTracks = listOf(AudioTrack(
+                id = "tone", uri = "file://${file.absolutePath}",
+                startMs = 0L, durationMs = 1000L
+            ))
+        )
+        val mixed = AudioMixer(ctx).buildPcm(project, ExportConfig(includeAudio = true))
+        assertTrue("Audio mixer should produce non-silent PCM", mixed.any { kotlin.math.abs(it.toInt()) > 1000 })
     }
 
     private fun writeWavHeader(b: ByteArray, dataSize: Int) {
