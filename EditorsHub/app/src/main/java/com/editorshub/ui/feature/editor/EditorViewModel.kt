@@ -441,6 +441,7 @@ class EditorViewModel @Inject constructor(
     fun splitLayer(id: String) {
         val p = project()
         val layer = p.layers.firstOrNull { it.id == id } ?: return
+        if (layer.locked) { message("Unlock this layer before splitting it"); return }
         val result = TimelineMath.split(layer, _ui.value.playheadMs, p.fps, UUID.randomUUID().toString())
         if (result == null) { message("Playhead is outside the layer"); return }
         commit { proj ->
@@ -454,7 +455,7 @@ class EditorViewModel @Inject constructor(
 
     fun moveClip(id: String, deltaMs: Long) = commit { p ->
         p.copy(layers = p.layers.map { l ->
-            if (l.id != id) return@map l
+            if (l.id != id || l.locked) return@map l
             var moved = TimelineMath.move(l, deltaMs, p.fps, _ui.value.snapping)
             if (_ui.value.magneticSnapping) {
                 val edges = p.layers.filter { it.id != id }
@@ -473,17 +474,18 @@ class EditorViewModel @Inject constructor(
     }
 
     fun trimStart(id: String, deltaMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { if (it.id == id) TimelineMath.trimStart(it, deltaMs, p.fps, _ui.value.snapping) else it })
+        p.copy(layers = p.layers.map { if (it.id == id && !it.locked) TimelineMath.trimStart(it, deltaMs, p.fps, _ui.value.snapping) else it })
     }
 
     fun trimEnd(id: String, deltaMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { if (it.id == id) TimelineMath.resizeEnd(it, deltaMs, p.fps, _ui.value.snapping) else it })
+        p.copy(layers = p.layers.map { if (it.id == id && !it.locked) TimelineMath.resizeEnd(it, deltaMs, p.fps, _ui.value.snapping) else it })
     }
 
     // ------------------------------------------------------------------ transform
     fun setTransform(property: String, value: Float) {
         val id = _ui.value.selectedLayerId ?: return
         val layer = selected() ?: return
+        if (layer.locked) { message("Unlock this layer before editing it"); return }
         val local = _ui.value.playheadMs - layer.startMs
         val animated = _ui.value.autoKey || layer.keyframes.any { it.property == property }
         commit { p ->
@@ -515,6 +517,7 @@ class EditorViewModel @Inject constructor(
     fun addKeyframe(property: String) {
         val id = _ui.value.selectedLayerId ?: return
         val layer = selected() ?: return
+        if (layer.locked) { message("Unlock this layer before editing it"); return }
         val local = _ui.value.playheadMs - layer.startMs
         val current = KeyframeEngine.trackValue(layer.keyframes, property, local,
             when (property) {
@@ -661,6 +664,7 @@ class EditorViewModel @Inject constructor(
     // -------------------------------------------------------------------- effects
     fun addEffect(type: EffectType) {
         val id = _ui.value.selectedLayerId ?: return
+        if (selected()?.locked == true) { message("Unlock this layer before editing it"); return }
         val effect = Effect(id = UUID.randomUUID().toString(), type = type,
             params = EffectCatalog.defaults(type))
         commit { p -> p.copy(layers = p.layers.map { if (it.id == id) it.copy(effects = it.effects + effect) else it }) }
@@ -691,6 +695,7 @@ class EditorViewModel @Inject constructor(
     fun setEffectParam(effectId: String, key: String, value: Float) {
         val id = _ui.value.selectedLayerId ?: return
         val layer = selected() ?: return
+        if (layer.locked) { message("Unlock this layer before editing it"); return }
         val local = _ui.value.playheadMs - layer.startMs
         commit { p -> p.copy(layers = p.layers.map { l ->
             if (l.id != id) return@map l
@@ -708,26 +713,26 @@ class EditorViewModel @Inject constructor(
     // -------------------------------------------------------- text / shape / vector
     fun updateText(transform: (TextSpec) -> TextSpec) = commit { p ->
         p.copy(layers = p.layers.map { l ->
-            if (l.id == _ui.value.selectedLayerId && l.text != null) l.copy(text = transform(l.text)) else l
+            if (l.id == _ui.value.selectedLayerId && !l.locked && l.text != null) l.copy(text = transform(l.text)) else l
         })
     }
 
     fun updateShape(transform: (ShapeSpec) -> ShapeSpec) = commit { p ->
         p.copy(layers = p.layers.map { l ->
-            if (l.id == _ui.value.selectedLayerId && l.shape != null) l.copy(shape = transform(l.shape)) else l
+            if (l.id == _ui.value.selectedLayerId && !l.locked && l.shape != null) l.copy(shape = transform(l.shape)) else l
         })
     }
 
     fun updateVector(transform: (VectorSpec) -> VectorSpec) = commit { p ->
         p.copy(layers = p.layers.map { l ->
-            if (l.id == _ui.value.selectedLayerId && l.vector != null) l.copy(vector = transform(l.vector)) else l
+            if (l.id == _ui.value.selectedLayerId && !l.locked && l.vector != null) l.copy(vector = transform(l.vector)) else l
         })
     }
 
     // ---------------------------------------------------------------------- masks
     fun addMask(kind: MaskKind) = commit { p ->
         p.copy(layers = p.layers.map { l ->
-            if (l.id == _ui.value.selectedLayerId)
+            if (l.id == _ui.value.selectedLayerId && !l.locked)
                 l.copy(masks = l.masks + MaskSpec(id = UUID.randomUUID().toString(), kind = kind))
             else l
         })
