@@ -15,7 +15,6 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: false
-        default: '4.5.1'
 
 permissions:
   contents: write
