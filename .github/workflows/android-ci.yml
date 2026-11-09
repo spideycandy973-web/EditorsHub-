@@ -95,42 +95,9 @@ jobs:
           path: artifacts/
           if-no-files-found: error
 
-      - name: Publish latest automated build
-        if: success()
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: editorshub-latest
-          name: EditorsHub — Android builds
-          body: |
-            Automated build from the native Android Studio project (`EditorsHub/`).
-            `EditorsHub-debug.apk` is installable for development.
-            The release APK/AAB are unsigned by design — see docs/RELEASE_SIGNING.md.
-          files: |
-            artifacts/EditorsHub-debug.apk
-            artifacts/EditorsHub-release-unsigned.apk
-            artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v4.4.0.zip
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish versioned release v4.4.0
-        if: success()
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v4.4.0
-          name: 'EditorsHub v4.4.0 — screenshot pass and reliable APK updates'
-          body_path: RELEASE_NOTES.md
-          files: |
-            artifacts/EditorsHub-debug.apk
-            artifacts/EditorsHub-release-unsigned.apk
-            artifacts/EditorsHub-release.aab
-            artifacts/EditorsHub-source-v4.4.0.zip
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # CI artifacts remain downloadable from the Actions run only.
+      # Stable version tags are created only by android-release.yml, which
+      # builds the signed assembleRelease variant and verifies its signature.
 
       - name: Commit artifacts to repository
         if: success()
