@@ -467,7 +467,7 @@ class EditorViewModel @Inject constructor(
     }
 
     fun moveClip(id: String, deltaMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { l ->
+        val layers = p.layers.map { l ->
             if (l.id != id || l.locked) return@map l
             var moved = TimelineMath.move(l, deltaMs, p.fps, _ui.value.snapping)
             if (_ui.value.magneticSnapping) {
@@ -483,7 +483,9 @@ class EditorViewModel @Inject constructor(
                 }
             }
             moved
-        })
+        }
+        val contentEnd = layers.maxOfOrNull { it.startMs + it.durationMs } ?: 0L
+        p.copy(durationMs = maxOf(p.durationMs, contentEnd), layers = layers)
     }
 
     fun trimStart(id: String, deltaMs: Long) = commit { p ->
@@ -491,7 +493,11 @@ class EditorViewModel @Inject constructor(
     }
 
     fun trimEnd(id: String, deltaMs: Long) = commit { p ->
-        p.copy(layers = p.layers.map { if (it.id == id && !it.locked) TimelineMath.resizeEnd(it, deltaMs, p.fps, _ui.value.snapping) else it })
+        val layers = p.layers.map {
+            if (it.id == id && !it.locked) TimelineMath.resizeEnd(it, deltaMs, p.fps, _ui.value.snapping) else it
+        }
+        val contentEnd = layers.maxOfOrNull { it.startMs + it.durationMs } ?: 0L
+        p.copy(durationMs = maxOf(p.durationMs, contentEnd), layers = layers)
     }
 
     // ------------------------------------------------------------------ transform
@@ -809,9 +815,11 @@ class EditorViewModel @Inject constructor(
                 }
             }
         }
-        p.copy(audioTracks = p.audioTracks.map {
+        val audioTracks = p.audioTracks.map {
             if (it.id == id) it.copy(startMs = nextStart) else it
-        })
+        }
+        val audioEnd = audioTracks.maxOfOrNull { it.startMs + it.durationMs } ?: 0L
+        p.copy(durationMs = maxOf(p.durationMs, audioEnd), audioTracks = audioTracks)
     }
 
     fun removeAudioTrack(id: String) = commit { p ->
