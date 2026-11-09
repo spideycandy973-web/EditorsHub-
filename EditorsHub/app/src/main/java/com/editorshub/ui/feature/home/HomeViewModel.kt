@@ -59,7 +59,7 @@ class HomeViewModel @Inject constructor(
     val query: StateFlow<String> = _query.asStateFlow()
     private val _sort = MutableStateFlow(ProjectSort.DATE)
     val sort: StateFlow<ProjectSort> = _sort.asStateFlow()
-    private val _grid = MutableStateFlow(true)
+    private val _grid = MutableStateFlow(false)
     val grid: StateFlow<Boolean> = _grid.asStateFlow()
 
     val visible: StateFlow<List<ProjectSummary>> = combine(projects, _query, _sort) { list, q, s ->

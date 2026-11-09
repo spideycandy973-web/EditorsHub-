@@ -10,6 +10,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +50,9 @@ fun EditorScreen(
     var showExport by remember { mutableStateOf(false) }
     var fullscreen by remember { mutableStateOf(false) }
     var showShapePicker by remember { mutableStateOf(false) }
+    var inspectorVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(state.tab) { if (state.tab != EditorTab.ADD) inspectorVisible = true }
+    LaunchedEffect(state.selectedLayerId) { if (state.selectedLayerId != null) inspectorVisible = true }
     val xmlExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/xml")
     ) { uri ->
@@ -78,6 +84,7 @@ fun EditorScreen(
                     } else onBack()
                 },
                 onExport = { showExport = true },
+                onShowInspector = { inspectorVisible = true },
                 onXmlExport = {
                     val name = (state.project?.name ?: "Project").replace(Regex("[^A-Za-z0-9_-]"), "_")
                     xmlExportLauncher.launch("$name.xml")
@@ -94,13 +101,49 @@ fun EditorScreen(
                         .size(38.dp).background(EditorPalette.SurfaceRaised, RoundedCornerShape(6.dp))
                 ) { Icon(Icons.Default.ZoomIn, "Zoom preview", tint = EditorPalette.TextPrimary) }
             }
-            PlayerBar(state, vm)
-            TimelineEditor(state, vm, Modifier.fillMaxWidth().height(86.dp))
-            Inspector(state, vm, Modifier.fillMaxWidth().height(228.dp),
-                onShapePicker = { showShapePicker = true })
+            PlayerBar(state, vm, onFullscreen = { fullscreen = true })
+            TimelineEditor(
+                state, vm,
+                Modifier.fillMaxWidth().height(if (inspectorVisible) 86.dp else 268.dp)
+            )
+            if (inspectorVisible) {
+                Column(Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.fillMaxWidth().height(32.dp).background(EditorPalette.Charcoal)
+                            .padding(start = 14.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            if (state.tab == EditorTab.ADD) "Add to project" else "Properties",
+                            fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                            color = EditorPalette.TextSecondary
+                        )
+                        Spacer(Modifier.weight(1f))
+                        IconButton(onClick = { inspectorVisible = false }, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Default.Close, "Close panel", Modifier.size(17.dp), tint = EditorPalette.TextMuted)
+                        }
+                    }
+                    Inspector(state, vm, Modifier.fillMaxWidth().height(196.dp),
+                        onShapePicker = { showShapePicker = true })
+                }
+            }
+        }
+        if (!inspectorVisible) {
+            Box(
+                Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 16.dp)
+                    .size(50.dp).clip(CircleShape).background(EditorPalette.Green)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button) {
+                        vm.setTab(EditorTab.ADD)
+                        inspectorVisible = true
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Add, "Add layer", Modifier.size(27.dp), tint = EditorPalette.Black)
+            }
         }
         state.message?.let { msg ->
-            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 236.dp, start = 10.dp, end = 10.dp)) {
+            Snackbar(modifier = Modifier.align(Alignment.BottomCenter)
+                .padding(bottom = if (inspectorVisible) 244.dp else 72.dp, start = 10.dp, end = 10.dp)) {
                 Text(msg, fontSize = 11.sp)
             }
         }
@@ -144,6 +187,7 @@ private fun EditorTopBar(
     vm: EditorViewModel,
     onBack: () -> Unit,
     onExport: () -> Unit,
+    onShowInspector: () -> Unit,
     onXmlExport: () -> Unit,
     onFullscreen: () -> Unit
 ) {
@@ -183,7 +227,7 @@ private fun EditorTopBar(
             Text(animatedTitle, fontSize = 13.sp, color = EditorPalette.TextPrimary, maxLines = 1)
         }
         GuidesMenu(state, vm)
-        IconButton(onClick = { vm.setTab(EditorTab.PROJECT) }, modifier = Modifier.size(38.dp)) {
+        IconButton(onClick = { vm.setTab(EditorTab.PROJECT); onShowInspector() }, modifier = Modifier.size(38.dp)) {
             Icon(Icons.Default.Settings, "Project settings", Modifier.size(19.dp), tint = EditorPalette.TextSecondary)
         }
         Box {
@@ -219,7 +263,7 @@ private fun EditorTopBar(
 
 /** Compact transport row matching the supplied editor. */
 @Composable
-private fun PlayerBar(state: EditorUiState, vm: EditorViewModel) {
+private fun PlayerBar(state: EditorUiState, vm: EditorViewModel, onFullscreen: () -> Unit) {
     val p = state.project ?: return
     Row(
         Modifier.fillMaxWidth().height(48.dp).background(EditorPalette.Charcoal),
@@ -248,11 +292,12 @@ private fun PlayerBar(state: EditorUiState, vm: EditorViewModel) {
         IconButton(onClick = { vm.seek(p.durationMs) }, modifier = Modifier.size(40.dp)) {
             Icon(Icons.Default.SkipNext, "Go to end", Modifier.size(23.dp), tint = EditorPalette.TextPrimary)
         }
-        IconButton(onClick = { state.selectedLayerId?.let { vm.duplicateLayer(it) } }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.LibraryAdd, "Duplicate layer", Modifier.size(22.dp), tint = EditorPalette.TextPrimary)
+        IconButton(onClick = { state.selectedLayerId?.let { vm.duplicateLayer(it) } },
+            enabled = state.selectedLayerId != null, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.ContentCopy, "Duplicate layer", Modifier.size(21.dp), tint = EditorPalette.TextPrimary)
         }
-        IconButton(onClick = { vm.setTab(EditorTab.ADD) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.AddBox, "Add layer", Modifier.size(22.dp), tint = EditorPalette.TextPrimary)
+        IconButton(onClick = onFullscreen, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.Fullscreen, "Fullscreen preview", Modifier.size(22.dp), tint = EditorPalette.TextPrimary)
         }
     }
 }

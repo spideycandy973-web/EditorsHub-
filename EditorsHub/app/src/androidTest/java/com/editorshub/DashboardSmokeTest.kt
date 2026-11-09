@@ -1,5 +1,6 @@
 package com.editorshub
 
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -24,15 +25,22 @@ class DashboardSmokeTest {
         compose.onNodeWithText("https://alight...").assertIsDisplayed()
         compose.onNodeWithText("Scan QR image").assertIsDisplayed()
 
-        compose.onNodeWithContentDescription("Create project").performClick()
-        compose.onNodeWithText("Project name").assertIsDisplayed()
-        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithContentDescription("Projects").performClick()
+        compose.onNodeWithText("Your projects").assertIsDisplayed()
+        compose.onNodeWithText("Sort by Date").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Home").performClick()
 
         compose.onNodeWithContentDescription("Create project").performClick()
-        compose.onNodeWithText("Create").performClick()
+        compose.onNodeWithText("Project name").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Close create project").performClick()
+
+        compose.onNodeWithContentDescription("Create project").performClick()
+        compose.onNodeWithText("Create Project").performClick()
         compose.waitUntil(timeoutMillis = 15_000) {
             compose.onAllNodesWithContentDescription("Play / pause").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithContentDescription("Play / pause").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Add layer").assertIsDisplayed()
+        compose.onNodeWithText("Add to project").assertDoesNotExist()
     }
 }

@@ -9,8 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Single source of truth for spacing, colour, shape and motion.
- *  Alight-Motion-style midnight navy editor with a mint/teal accent. */
+/** Single source of truth for shared spacing, colour, shape and motion tokens. */
 object EditorDimens {
     val Space0: Dp = 2.dp
     val Space1: Dp = 4.dp
@@ -31,45 +30,45 @@ object EditorDimens {
 }
 
 object ReferencePalette {
-    val Background = Color(0xFF121215)
-    val Card = Color(0xFF1C1C1F)
-    val Input = Color(0xFF262629)
-    val Lavender = Color(0xFFD8DCFF)
-    val Mint = Color(0xFF00FFA8)
+    val Background = Color(0xFF121214)
+    val Card = Color(0xFF1C1C1E)
+    val Input = Color(0xFF262628)
+    val Lavender = Color(0xFFDFE3FF)
+    val Mint = Color(0xFF01FFA7)
     val Text = Color(0xFFF2F2F6)
     val SecondaryText = Color(0xFFB9B9C1)
     val MutedText = Color(0xFF85858D)
-    val Avatar = Color(0xFF3A3A40)
+    val Avatar = Color(0xFF3A3A42)
 }
 
 object EditorPalette {
-    // Graphite workspace with cool blue controls, inspired by pro motion editors.
-    val Black = Color(0xFF090B10)
-    val Charcoal = Color(0xFF11151C)
-    val Surface = Color(0xFF191F29)
-    val SurfaceRaised = Color(0xFF222B38)
-    val SurfaceVariant = Color(0xFF293444)
-    val Outline = Color(0xFF394657)
-    val OutlineSoft = Color(0xFF2A3543)
-    val TextPrimary = Color(0xFFF3F3F6)
-    val TextSecondary = Color(0xFFC8C8D2)
-    val TextMuted = Color(0xFF92929C)
+    // Clean-room dark workspace using the reference's graphite, lavender and mint tokens.
+    val Black = ReferencePalette.Background
+    val Charcoal = ReferencePalette.Card
+    val Surface = ReferencePalette.Card
+    val SurfaceRaised = ReferencePalette.Input
+    val SurfaceVariant = Color(0xFF303036)
+    val Outline = Color(0xFF3A3A42)
+    val OutlineSoft = Color(0xFF2A2A30)
+    val TextPrimary = ReferencePalette.Text
+    val TextSecondary = ReferencePalette.SecondaryText
+    val TextMuted = ReferencePalette.MutedText
 
-    // Legacy names kept so every existing screen picks up the new skin.
-    val Purple = Color(0xFF159BFF)       // primary electric-blue accent
-    val PurpleDeep = Color(0xFF0875D1)
-    val Cyan = Color(0xFF39C8FF)
-    val Pink = Color(0xFFFFB65C)
-    val Amber = Color(0xFFFFB547)
-    val Green = Color(0xFF40D6A2)
-    val Red = Color(0xFFFF657A)
-    val Blue = Color(0xFF399CFF)
+    // Legacy names kept so existing native editing controls inherit the reference palette.
+    val Purple = ReferencePalette.Lavender
+    val PurpleDeep = Color(0xFFBCC5EF)
+    val Cyan = ReferencePalette.Mint
+    val Pink = Color(0xFFFF8B8B)
+    val Amber = Color(0xFFFFCE5C)
+    val Green = ReferencePalette.Mint
+    val Red = Color(0xFFE0455D)
+    val Blue = Color(0xFF55A7E6)
     val Coral = Color(0xFFFF7B70)
-    val Violet = Color(0xFF9C82FF)
+    val Violet = Color(0xFFA995FF)
 
-    val AccentBrush = Brush.linearGradient(listOf(Color(0xFF38B6FF), Color(0xFF0875D1)))
-    val HeroBrush = Brush.linearGradient(listOf(Color(0xFF1C2B3D), Color(0xFF111923), Color(0xFF202B3A)))
-    val GlowBrush = Brush.radialGradient(listOf(Color(0x3338B6FF), Color.Transparent))
+    val AccentBrush = Brush.linearGradient(listOf(ReferencePalette.Lavender, ReferencePalette.Mint))
+    val HeroBrush = Brush.linearGradient(listOf(ReferencePalette.Card, ReferencePalette.Input))
+    val GlowBrush = Brush.radialGradient(listOf(ReferencePalette.Mint.copy(alpha = 0.18f), Color.Transparent))
 }
 
 /** Shared motion specs so every screen/tab transition feels identical. */
