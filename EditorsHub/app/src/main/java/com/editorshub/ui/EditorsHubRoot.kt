@@ -39,6 +39,7 @@ import com.editorshub.ui.navigation.Routes
 import com.editorshub.ui.theme.AppMotion
 import com.editorshub.ui.theme.EditorDimens
 import com.editorshub.ui.theme.EditorPalette
+import com.editorshub.ui.theme.ReferencePalette
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -170,10 +171,8 @@ private fun TabHost(
         composable(MainTab.HOME.route) {
             HomeScreen(
                 onOpenProject = openProject,
-                onSettings = { tabNav.navigate(MainTab.SETTINGS.route) },
-                onImport = goImport,
+                onSettings = { navigateToTab(tabNav, MainTab.SETTINGS) },
                 onProjects = { navigateToTab(tabNav, MainTab.PROJECTS) },
-                onTemplates = { navigateToTab(tabNav, MainTab.TEMPLATES) },
                 createRequest = createRequest
             )
         }
@@ -216,11 +215,13 @@ private fun AnimatedNavigationBar(
     onCreate: () -> Unit
 ) {
     val projectsSelected = current in setOf(MainTab.PROJECTS, MainTab.TEMPLATES, MainTab.EFFECTS, MainTab.AI)
-    Box(Modifier.fillMaxWidth().height(82.dp).background(EditorPalette.Black),
-        contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.fillMaxWidth().height(82.dp).background(ReferencePalette.Background),
+        contentAlignment = Alignment.Center
+    ) {
         Row(
-            Modifier.widthIn(min = 250.dp, max = 278.dp).fillMaxHeight(0.78f)
-                .clip(CircleShape).background(EditorPalette.Surface).padding(horizontal = 14.dp),
+            Modifier.width(240.dp).fillMaxHeight(0.80f)
+                .clip(CircleShape).background(ReferencePalette.Card).padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             MainNavItem(MainTab.HOME, current == MainTab.HOME, Modifier.weight(1f)) {
@@ -228,13 +229,13 @@ private fun AnimatedNavigationBar(
             }
             val createInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
             Box(
-                Modifier.size(54.dp).pressScale(createInteraction, 0.9f)
-                    .clip(CircleShape).background(EditorPalette.Purple)
+                Modifier.size(48.dp).pressScale(createInteraction, 0.9f)
+                    .clip(CircleShape).background(ReferencePalette.Mint)
                     .clickable(interactionSource = createInteraction, indication = LocalIndication.current,
                         onClick = onCreate),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, "Create project", Modifier.size(30.dp), tint = EditorPalette.Black)
+                Icon(Icons.Default.Add, "Create project", Modifier.size(24.dp), tint = ReferencePalette.Background)
             }
             MainNavItem(MainTab.PROJECTS, projectsSelected, Modifier.weight(1f)) {
                 navigateToTab(nav, MainTab.PROJECTS)
@@ -247,35 +248,23 @@ private fun AnimatedNavigationBar(
 private fun MainNavItem(tab: MainTab, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val iconColor by animateColorAsState(
-        if (selected) EditorPalette.Purple else EditorPalette.TextMuted,
+        if (selected) ReferencePalette.Text else ReferencePalette.MutedText,
         animationSpec = tween(AppMotion.Fast), label = "${tab.route}-icon-color"
     )
     val labelColor by animateColorAsState(
-        if (selected) EditorPalette.TextPrimary else EditorPalette.TextMuted,
+        if (selected) ReferencePalette.Text else ReferencePalette.MutedText,
         animationSpec = tween(AppMotion.Fast), label = "${tab.route}-label-color"
-    )
-    val itemBackground by animateColorAsState(
-        if (selected) EditorPalette.SurfaceRaised else Color.Transparent,
-        animationSpec = tween(AppMotion.Fast), label = "${tab.route}-item-background"
-    )
-    val indicatorWidth by animateDpAsState(
-        if (selected) 16.dp else 0.dp,
-        animationSpec = tween(AppMotion.Normal, easing = AppMotion.Emphasized),
-        label = "${tab.route}-indicator"
     )
     Column(
         modifier.fillMaxHeight().pressScale(interaction, 0.93f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(itemBackground)
+            .clip(CircleShape)
             .clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(tab.icon, tab.label, Modifier.size(23.dp), tint = iconColor)
+        Icon(tab.icon, tab.label, Modifier.size(20.dp), tint = iconColor)
         Spacer(Modifier.height(2.dp))
         Text(tab.label, fontSize = 10.sp, color = labelColor, maxLines = 1)
-        Spacer(Modifier.height(3.dp))
-        Box(Modifier.width(indicatorWidth).height(2.dp).clip(CircleShape).background(EditorPalette.Purple))
     }
 }
 

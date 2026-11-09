@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 /** All six main destinations are real screens with real content. */
 enum class MainTab(val route: String, val label: String, val icon: ImageVector, val order: Int) {
     HOME("tab_home", "Home", Icons.Default.Home, 0),
-    PROJECTS("tab_projects", "Projects", Icons.Default.FolderOpen, 1),
+    PROJECTS("tab_projects", "Projects", Icons.Outlined.SmartDisplay, 1),
     TEMPLATES("tab_templates", "Templates", Icons.Default.Dashboard, 2),
     EFFECTS("tab_effects", "Effects", Icons.Default.AutoAwesome, 3),
     AI("tab_ai", "AI Studio", Icons.Default.Bolt, 4),

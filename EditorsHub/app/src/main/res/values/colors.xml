@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#FF141824</color>
-    <color name="surface">#FF1B2130</color>
-    <color name="accent">#FF10E0A0</color>
-    <color name="ic_launcher_background">#FF141824</color>
-    <color name="splash">#FF141824</color>
+    <color name="background">#FF121215</color>
+    <color name="surface">#FF1C1C1F</color>
+    <color name="accent">#FF00FFA8</color>
+    <color name="ic_launcher_background">#FF121215</color>
+    <color name="splash">#FF121215</color>
 </resources>

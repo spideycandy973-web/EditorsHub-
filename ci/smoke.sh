@@ -20,10 +20,13 @@ adb install -r artifacts/EditorsHub-debug.apk >> "$OUT" 2>&1 || {
 adb logcat -c >> "$OUT" 2>&1 || true
 
 log "== start =="
+adb shell am force-stop com.editorshub >> "$OUT" 2>&1 || true
+adb shell pm clear com.editorshub >> "$OUT" 2>&1 || true
 adb shell am start -W -n com.editorshub/.MainActivity >> "$OUT" 2>&1 ||
   log "am start returned nonzero (continuing to inspect process/logcat)"
 
 sleep 12
+adb exec-out screencap -p > native-home.png 2>> "$OUT" || log "Could not capture native home screenshot"
 
 PROC=$(adb shell pidof com.editorshub 2>> "$OUT" | tr -d '\r' || true)
 log "PROC=[$PROC]"

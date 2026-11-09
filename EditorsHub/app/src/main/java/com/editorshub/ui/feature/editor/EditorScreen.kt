@@ -64,6 +64,8 @@ fun EditorScreen(
 
     Box(Modifier.fillMaxSize().background(EditorPalette.Black)) {
         Column(Modifier.fillMaxSize().background(EditorPalette.Black)) {
+            // The reference has an intentional dark breathing strip above its short toolbar.
+            Spacer(Modifier.height(34.dp))
             EditorTopBar(
                 state = state,
                 vm = vm,
@@ -93,12 +95,12 @@ fun EditorScreen(
                 ) { Icon(Icons.Default.ZoomIn, "Zoom preview", tint = EditorPalette.TextPrimary) }
             }
             PlayerBar(state, vm)
-            TimelineEditor(state, vm, Modifier.fillMaxWidth().height(174.dp))
-            Inspector(state, vm, Modifier.fillMaxWidth().height(190.dp),
+            TimelineEditor(state, vm, Modifier.fillMaxWidth().height(86.dp))
+            Inspector(state, vm, Modifier.fillMaxWidth().height(228.dp),
                 onShapePicker = { showShapePicker = true })
         }
         state.message?.let { msg ->
-            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 198.dp, start = 10.dp, end = 10.dp)) {
+            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 236.dp, start = 10.dp, end = 10.dp)) {
                 Text(msg, fontSize = 11.sp)
             }
         }
@@ -163,7 +165,7 @@ private fun EditorTopBar(
         else -> state.project?.name ?: "Loading…"
     }
     Row(
-        Modifier.fillMaxWidth().height(48.dp).background(EditorPalette.Surface),
+        Modifier.fillMaxWidth().height(42.dp).background(EditorPalette.SurfaceRaised),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {

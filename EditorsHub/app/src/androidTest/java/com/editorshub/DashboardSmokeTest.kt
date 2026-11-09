@@ -17,14 +17,18 @@ class DashboardSmokeTest {
     val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun dashboardCreatesAndOpensAComposition() {
-        compose.onNodeWithText("Create your next edit").assertIsDisplayed()
-        compose.onNodeWithText("New project").performClick()
+    fun referenceHomeImportsAndCreatesProjects() {
+        compose.onNodeWithText("Upload XML file").assertIsDisplayed()
+        compose.onNodeWithText("Import Project Package").assertIsDisplayed()
+        compose.onNodeWithText("Paste a link or scan the QR code.").assertIsDisplayed()
+        compose.onNodeWithText("https://alight...").assertIsDisplayed()
+        compose.onNodeWithText("Scan QR image").assertIsDisplayed()
+
+        compose.onNodeWithContentDescription("Create project").performClick()
         compose.onNodeWithText("Project name").assertIsDisplayed()
         compose.onNodeWithText("Cancel").performClick()
-        compose.onNodeWithText("Recent projects").assertIsDisplayed()
 
-        compose.onNodeWithText("New project").performClick()
+        compose.onNodeWithContentDescription("Create project").performClick()
         compose.onNodeWithText("Create").performClick()
         compose.waitUntil(timeoutMillis = 15_000) {
             compose.onAllNodesWithContentDescription("Play / pause").fetchSemanticsNodes().isNotEmpty()

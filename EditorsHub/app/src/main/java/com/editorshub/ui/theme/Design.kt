@@ -30,6 +30,18 @@ object EditorDimens {
     val TouchTarget: Dp = 44.dp
 }
 
+object ReferencePalette {
+    val Background = Color(0xFF121215)
+    val Card = Color(0xFF1C1C1F)
+    val Input = Color(0xFF262629)
+    val Lavender = Color(0xFFD8DCFF)
+    val Mint = Color(0xFF00FFA8)
+    val Text = Color(0xFFF2F2F6)
+    val SecondaryText = Color(0xFFB9B9C1)
+    val MutedText = Color(0xFF85858D)
+    val Avatar = Color(0xFF3A3A40)
+}
+
 object EditorPalette {
     // Graphite workspace with cool blue controls, inspired by pro motion editors.
     val Black = Color(0xFF090B10)

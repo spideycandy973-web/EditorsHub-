@@ -43,7 +43,7 @@ fun TimelineEditor(
     val zoom = state.zoomPxPerSecond
     val timelineDurationMs = project.durationMs.coerceAtLeast(1L)
     val contentWidth: Dp = ((timelineDurationMs / 1000f) * zoom + 100f).dp.coerceAtLeast(220.dp)
-    val rowHeight = 36.dp
+    val rowHeight = 28.dp
     val totalTracks = project.layers.size + project.audioTracks.size
     val rows = totalTracks.coerceAtLeast(1)
     val latestPlayhead = rememberUpdatedState(state.playheadMs)

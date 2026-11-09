@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -151,6 +152,22 @@ fun ImportScreen(
             ) {
                 state.result?.let { ResultCard(it, onOpenProject) { vm.clear() } }
             }
+        }
+    }
+}
+
+@Composable
+fun ImportResultDialog(
+    result: ImportResult,
+    onOpenProject: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().heightIn(max = 680.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            ResultCard(result, onOpenProject, onDismiss)
         }
     }
 }
