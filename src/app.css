@@ -1267,3 +1267,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important;
     animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* v4.5.1 finishing pass: animate every modal-style confirmation and the
+   small transient UI states as well as the primary sheets. */
+.um-flow-confirm { animation: um-backdrop-in .18s ease-out both; }
+.um-flow-confirm-card { animation: um-dialog-pop .3s var(--um-motion-spring) both; }
+.um-toast { animation: um-toast-enter .24s var(--um-motion-spring) both; }
+@keyframes um-toast-enter { from { opacity: 0; transform: translate(-50%, -9px) scale(.96); } 75% { opacity: 1; transform: translate(-50%, 1px) scale(1.01); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+.um-fx-browser, .um-brand-sheet { animation: um-flow-enter .28s var(--um-motion-out) both; }
+.um-prop-tile, .um-fx-cell, .um-template-tile, .um-shape-cell, .um-layer-row {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--um-motion-fast) ease, background-color var(--um-motion-fast) ease,
+    border-color var(--um-motion-fast) ease, box-shadow var(--um-motion-fast) ease;
+}
+.um-prop-tile:active, .um-fx-cell:active, .um-layer-row:active { transform: scale(.975); }
+.um-toggle { transition: background-color .2s ease, border-color .2s ease; }
+.um-toggle > span { transition: transform .22s var(--um-motion-spring), background-color .18s ease; }
+.um-seg button, .um-seg [role="button"] { transition: background-color .18s ease, color .18s ease, transform .16s ease; }
+.um-seg button:active { transform: scale(.96); }
