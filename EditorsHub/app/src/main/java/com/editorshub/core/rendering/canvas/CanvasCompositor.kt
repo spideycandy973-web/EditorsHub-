@@ -177,7 +177,7 @@ class CanvasCompositor @Inject constructor(
         drawContent(layerCanvas, frame, resolved)
         layerCanvas.restore()
 
-        applyMasks(layerCanvas, layerBitmap, resolved, width, height)
+        applyMasks(layerCanvas, layerBitmap, resolved, width, height, matrix)
 
         var processed = applyEffects(layerBitmap, resolved.effects, width, height, frame.timeMs)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -367,30 +367,71 @@ class CanvasCompositor @Inject constructor(
     }
 
     // ------------------------------------------------------------------- masks
-    private fun applyMasks(c: Canvas, bmp: Bitmap, resolved: ResolvedLayer, width: Int, height: Int) {
+    private fun applyMasks(
+        c: Canvas,
+        bmp: Bitmap,
+        resolved: ResolvedLayer,
+        width: Int,
+        height: Int,
+        layerMatrix: Matrix
+    ) {
+        if (resolved.masks.isEmpty()) return
+        val layer = resolved.layer
+        val maskWidth = when (layer.type) {
+            LayerType.SHAPE -> layer.shape?.width ?: width.toFloat()
+            LayerType.VECTOR -> width * 0.5f
+            LayerType.TEXT -> width * 0.8f
+            else -> width.toFloat()
+        }.coerceAtLeast(1f)
+        val maskHeight = when (layer.type) {
+            LayerType.SHAPE -> layer.shape?.height ?: height.toFloat()
+            LayerType.VECTOR -> width * 0.5f
+            LayerType.TEXT -> (layer.text?.fontSize ?: 96f) * 2f
+            else -> height.toFloat()
+        }.coerceAtLeast(1f)
+
         for (mask in resolved.masks) {
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-            paint.xfermode = PorterDuffXfermode(
-                if (mask.mask.inverted) PorterDuff.Mode.DST_OUT else PorterDuff.Mode.DST_IN
-            )
-            paint.alpha = (mask.opacity * 255).toInt().coerceIn(0, 255)
-            if (mask.feather > 0f) {
-                try { paint.maskFilter = android.graphics.BlurMaskFilter(mask.feather, android.graphics.BlurMaskFilter.Blur.NORMAL) }
-                catch (e: Exception) { /* unsupported on this GPU */ }
-            }
+            // Build a full-frame alpha mask. Drawing DST_IN only over the path itself does not
+            // clear pixels outside that path, so masks must be composited as a full bitmap.
+            val maskBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val maskCanvas = Canvas(maskBitmap)
+            if (mask.mask.inverted) maskCanvas.drawColor(Color.WHITE)
+
             val path = Path()
             val expand = mask.expansion
             when (mask.mask.kind) {
                 MaskKind.RECTANGLE -> path.addRect(
-                    -width / 2f + expand, -height / 2f + expand,
-                    width / 2f - expand, height / 2f - expand, Path.Direction.CW
+                    -maskWidth / 2f + expand, -maskHeight / 2f + expand,
+                    maskWidth / 2f - expand, maskHeight / 2f - expand, Path.Direction.CW
                 )
-                MaskKind.CIRCLE -> path.addCircle(0f, 0f, min(width, height) / 2f - expand, Path.Direction.CW)
+                MaskKind.CIRCLE -> path.addCircle(
+                    0f, 0f, (min(maskWidth, maskHeight) / 2f - expand).coerceAtLeast(0f), Path.Direction.CW
+                )
                 MaskKind.PATH -> mask.mask.path?.let { path.addPath(vectorPath(it)) }
             }
-            c.save()
-            c.drawPath(path, paint)
-            c.restore()
+
+            val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                alpha = (mask.opacity * 255f).toInt().coerceIn(0, 255)
+                if (mask.feather > 0f) {
+                    try {
+                        maskFilter = android.graphics.BlurMaskFilter(
+                            mask.feather, android.graphics.BlurMaskFilter.Blur.NORMAL
+                        )
+                    } catch (e: Exception) { /* unsupported on this GPU */ }
+                }
+                if (mask.mask.inverted) xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+            }
+            maskCanvas.save()
+            maskCanvas.concat(layerMatrix)
+            maskCanvas.drawPath(path, maskPaint)
+            maskCanvas.restore()
+
+            val composite = Paint().apply {
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+            }
+            c.drawBitmap(maskBitmap, 0f, 0f, composite)
+            maskBitmap.recycle()
         }
     }
 
