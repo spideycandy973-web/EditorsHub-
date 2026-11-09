@@ -37,14 +37,14 @@ jobs:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          APP_VERSION=$(sed -n 's/.*versionName "\\([^"]*\\)".*/\\1/p' android/app/build.gradle | head -1)
+          APP_VERSION=$(sed -n 's/.*versionName "\([^"]*\)".*/\1/p' android/app/build.gradle | head -1)
           VERSION="${REQUESTED_VERSION:-$APP_VERSION}"
           VERSION="${VERSION#v}"
           if [ "$VERSION" != "$APP_VERSION" ]; then
             echo "::error::Requested version $VERSION does not match Android versionName $APP_VERSION"
             exit 1
           fi
-          if ! [[ "$VERSION" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Stable version must be MAJOR.MINOR.PATCH; prerelease/debug versions are forbidden"
             exit 1
           fi
@@ -113,12 +113,12 @@ jobs:
           test -s "$UNSIGNED"
           mkdir -p artifacts
           "$BUILD_TOOLS/zipalign" -p -f 4 "$UNSIGNED" artifacts/EditorsHub-Motion-aligned.apk
-          "$BUILD_TOOLS/apksigner" sign \\
-            --ks "$RUNNER_TEMP/editorshub-release.jks" \\
-            --ks-key-alias "$KEY_ALIAS" \\
-            --ks-pass env:KEYSTORE_PASSWORD \\
-            --key-pass env:KEY_PASSWORD \\
-            --out artifacts/EditorsHub-Motion.apk \\
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$RUNNER_TEMP/editorshub-release.jks" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
+            --out artifacts/EditorsHub-Motion.apk \
             artifacts/EditorsHub-Motion-aligned.apk
           "$BUILD_TOOLS/apksigner" verify --verbose artifacts/EditorsHub-Motion.apk
           "$BUILD_TOOLS/aapt" dump badging artifacts/EditorsHub-Motion.apk | head -6
