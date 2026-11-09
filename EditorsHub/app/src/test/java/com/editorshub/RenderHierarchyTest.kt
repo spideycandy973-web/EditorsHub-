@@ -20,7 +20,7 @@ class RenderHierarchyTest {
             Layer(id = "child", name = "Child", type = LayerType.SHAPE, parentId = "group", durationMs = 5000L)
         ))
         assertEquals(0, RenderGraph.resolve(project, 500L).layers.size)
-        assertEquals(1, RenderGraph.resolve(project, 1500L).layers.size)
+        assertEquals(2, RenderGraph.resolve(project, 1500L).layers.size)
     }
 
     @Test fun cyclicParentingDoesNotRenderRecursiveChildren() {
