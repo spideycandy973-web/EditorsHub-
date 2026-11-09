@@ -61,7 +61,7 @@ class TimelineMathTest {
             Keyframe(id = "b", timeMs = 1000, value = 100f, easing = Easing.LINEAR),
             Keyframe(id = "c", timeMs = 2000, value = 200f, easing = Easing.LINEAR)
         ))))
-        val (left, right) = TimelineMath.split(animated, 2500L, 30, "right")!!
+        val (left, right) = TimelineMath.split(animated, 2500L, 10, "right")!!
         val leftTrack = left.keyframes.single()
         val rightTrack = right.keyframes.single()
         assertEquals(150f, leftTrack.keyframes.last().value, 0.001f)
