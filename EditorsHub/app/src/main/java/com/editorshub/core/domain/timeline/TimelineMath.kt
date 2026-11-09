@@ -41,21 +41,30 @@ object TimelineMath {
     fun active(layer: Layer, timeMs: Long): Boolean =
         timeMs >= layer.startMs && timeMs < layer.startMs + layer.durationMs
 
-    fun move(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer {
-        val next = snap(layer.startMs + deltaMs, fps, snapping).coerceAtLeast(0)
+    fun move(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer =
+        move(layer, deltaMs, fps.toDouble(), snapping)
+
+    fun move(layer: Layer, deltaMs: Long, fpsExact: Double, snapping: Boolean = true): Layer {
+        val next = snapExact(layer.startMs + deltaMs, fpsExact, snapping).coerceAtLeast(0)
         return layer.copy(startMs = next)
     }
 
-    fun resizeEnd(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer {
-        val next = snap(layer.durationMs + deltaMs, fps, snapping).coerceAtLeast(33L)
+    fun resizeEnd(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer =
+        resizeEnd(layer, deltaMs, fps.toDouble(), snapping)
+
+    fun resizeEnd(layer: Layer, deltaMs: Long, fpsExact: Double, snapping: Boolean = true): Layer {
+        val next = snapExact(layer.durationMs + deltaMs, fpsExact, snapping).coerceAtLeast(33L)
         return layer.copy(durationMs = next)
     }
 
     /** Rebase clip-local animation when the visible in-point changes. */
-    fun trimStart(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer {
+    fun trimStart(layer: Layer, deltaMs: Long, fps: Int, snapping: Boolean = true): Layer =
+        trimStart(layer, deltaMs, fps.toDouble(), snapping)
+
+    fun trimStart(layer: Layer, deltaMs: Long, fpsExact: Double, snapping: Boolean = true): Layer {
         val minDelta = if (layer.type == com.editorshub.core.domain.model.LayerType.VIDEO)
             maxOf(-layer.startMs, -layer.inPointMs) else -layer.startMs
-        val d = snap(deltaMs, fps, snapping).coerceIn(minDelta, layer.durationMs - 33L)
+        val d = snapExact(deltaMs, fpsExact, snapping).coerceIn(minDelta, layer.durationMs - 33L)
         if (d == 0L) return layer
         val effects = layer.effects.map { effect ->
             effect.copy(animated = effect.animated.mapValues { (_, track) -> rebaseTrack(track, d) })
@@ -80,9 +89,12 @@ object TimelineMath {
         )
     }
 
-    fun split(layer: Layer, atMs: Long, fps: Int, newId: String): Pair<Layer, Layer>? {
+    fun split(layer: Layer, atMs: Long, fps: Int, newId: String): Pair<Layer, Layer>? =
+        split(layer, atMs, fps.toDouble(), newId)
+
+    fun split(layer: Layer, atMs: Long, fpsExact: Double, newId: String): Pair<Layer, Layer>? {
         if (atMs <= layer.startMs || atMs >= layer.startMs + layer.durationMs) return null
-        val cut = snap(atMs, fps, true).coerceIn(layer.startMs + 1L, layer.startMs + layer.durationMs - 1L)
+        val cut = snapExact(atMs, fpsExact, true).coerceIn(layer.startMs + 1L, layer.startMs + layer.durationMs - 1L)
         val localCut = cut - layer.startMs
         val layerTracks = layer.keyframes.map { splitTrack(it, localCut) }
         val effectTracks = layer.effects.map { effect ->
