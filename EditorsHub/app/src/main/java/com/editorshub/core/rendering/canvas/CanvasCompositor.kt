@@ -417,9 +417,12 @@ class CanvasCompositor @Inject constructor(
         for (mask in resolved.masks) {
             // Build a full-frame alpha mask. Drawing DST_IN only over the path
             // itself does not clear pixels outside that path.
+            // ARGB_8888 is required for reliable DST_IN compositing on Android's
+            // software canvas; ALPHA_8 masks can leave destination pixels intact.
             val maskBitmap = Bitmap.createBitmap(
-                maskPixelWidth, maskPixelHeight, Bitmap.Config.ALPHA_8)
+                maskPixelWidth, maskPixelHeight, Bitmap.Config.ARGB_8888)
             val maskCanvas = Canvas(maskBitmap)
+            maskCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             if (mask.mask.inverted) maskCanvas.drawColor(Color.WHITE)
 
             val path = Path()
