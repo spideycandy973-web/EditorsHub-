@@ -63,6 +63,7 @@ class CanvasCompositor @Inject constructor(
     /** 0.2..1 — scales decoded video frames to control preview cost. */
     @Volatile var previewQuality: Float = 1f
 
+    @Synchronized
     fun draw(canvas: Canvas, frame: RenderFrame, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
         val projectWidth = frame.project.width.coerceIn(1, 4096)
@@ -119,6 +120,7 @@ class CanvasCompositor @Inject constructor(
     }
 
     /** Render the whole composition to a bitmap (used by GPU preview and GL export). */
+    @Synchronized
     fun renderToBitmap(frame: RenderFrame, width: Int, height: Int): Bitmap {
         val w = width.coerceIn(1, 4096)
         val h = height.coerceIn(1, 4096)
