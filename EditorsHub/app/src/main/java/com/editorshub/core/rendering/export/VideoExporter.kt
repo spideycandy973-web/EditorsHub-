@@ -109,7 +109,8 @@ class VideoExporter @Inject constructor(
                     val uniforms = EffectUniformBuilder.from(
                         frame.layers.flatMap { it.effects }, timeMs
                     )
-                    writer.draw(scaled, uniforms)
+                    val presentationTimeNs = (i * 1_000_000_000.0 / fpsExact).toLong()
+                    writer.draw(scaled, uniforms, presentationTimeNs)
                     drain(encoder, muxer, state, info, false)
                 } finally {
                     if (scaled != null && scaled !== full && !scaled.isRecycled) scaled.recycle()
