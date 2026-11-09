@@ -1,4 +1,4 @@
-# EditorsHub v4.4.0
+# EditorsHub v4.5.1
 
 A **real, working mobile video & motion-graphics editor** that runs entirely in
 the browser, packaged as an Android app (`com.editorshub`). Layers, keyframes,

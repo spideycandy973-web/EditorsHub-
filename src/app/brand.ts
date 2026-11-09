@@ -42,7 +42,7 @@ export const BASE_BRAND: Brand = {
   wordmark: 'ULTRA MOTION',
   domain: 'ultramotionofficial.com',
   packageName: 'com.editorshub',
-  version: '4.4.0',
+  version: '4.5.1',
   website: 'https://github.com/spideycandy973-web/EditorsHub-',
   links: [
     { label: 'Website', url: 'https://github.com/spideycandy973-web/EditorsHub-', icon: 'globe' },

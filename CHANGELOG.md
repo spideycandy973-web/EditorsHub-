@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.5.1 — Ultra Motion interaction polish (2026-11-10)
+
+- Added spring-animated Home / Projects tab selection and create action feedback.
+- Added tactile press states to buttons, icons, project rows, property tiles, effect tiles and shape tiles.
+- Added spring entrances and fading backdrops to sheets, dialogs, full-screen panels, confirmations and popups.
+- Animated toast notifications and switch controls; respects reduced-motion preferences.
+- Production release workflow now builds, signs, verifies and smoke-tests the Capacitor APK and publishes only `EditorsHub-Motion.apk` plus its SHA-256 manifest to stable version tags. Debug APKs remain outside stable releases.
+
+
 ## 4.4.0 — screenshot pass and reliable APK updates (2026-11-06)
 
 - **Fixed the reason an installed APK can look unchanged after an update.**

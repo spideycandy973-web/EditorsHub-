@@ -1,82 +1,169 @@
-name: Signed Android release (EditorsHub)
+name: Signed production Android release (EditorsHub)
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'android/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android-release.yml'
+      - 'RELEASE_NOTES.md'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release tag (e.g. v4.4.0)'
-        required: true
-        default: 'v4.4.0'
+        description: 'Version to publish (must match android/app/build.gradle)'
+        required: false
 
 permissions:
   contents: write
 
 jobs:
-  signed-release:
+  build-and-release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate stable release tag
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate stable version
+        id: version
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          if ! [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Stable releases require a vMAJOR.MINOR.PATCH tag (for example v4.5.1). Debug/prerelease tags are not accepted."
+          set -euo pipefail
+          APP_VERSION=$(sed -n 's/.*versionName "\([^"]*\)".*/\1/p' android/app/build.gradle | head -1)
+          VERSION="${REQUESTED_VERSION:-$APP_VERSION}"
+          VERSION="${VERSION#v}"
+          if [ "$VERSION" != "$APP_VERSION" ]; then
+            echo "::error::Requested version $VERSION does not match Android versionName $APP_VERSION"
             exit 1
           fi
-          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_VERSION" >/dev/null 2>&1; then
-            echo "::error::Tag $RELEASE_VERSION already exists. Create a new version tag instead of replacing a release."
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Stable version must be MAJOR.MINOR.PATCH; prerelease/debug versions are forbidden"
             exit 1
           fi
-      - uses: actions/setup-java@v4
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists; refusing to overwrite a release"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Decode release keystore from secrets
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install dependencies and validate web app
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Decode production signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
+          set -euo pipefail
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::KEYSTORE_BASE64 secret is not configured. Debug keys are not used for releases."
+            echo "::error::Production signing key is not configured. No debug key will be used for a stable release."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > EditorsHub/app/release.jks
-          cat > EditorsHub/app/keystore.properties <<PROPS
-          storeFile=release.jks
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          PROPS
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/editorshub-release.jks"
+          test -s "$RUNNER_TEMP/editorshub-release.jks"
 
-      - name: Build signed APK + AAB
+      - name: Run Android tests and build release variant
         run: |
-          if [ -z "$ANDROID_HOME" ]; then export ANDROID_HOME="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"; fi
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          chmod +x EditorsHub/gradlew
-          cd EditorsHub
-          ./gradlew :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease --stacktrace
-          cd ..
+          chmod +x android/gradlew
+          cd android
+          ./gradlew :app:testDebugUnitTest :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Align, sign and verify production APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          UNSIGNED="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -s "$UNSIGNED"
           mkdir -p artifacts
-          cp EditorsHub/app/build/outputs/apk/release/app-release.apk artifacts/EditorsHub-release.apk
-          cp EditorsHub/app/build/outputs/bundle/release/app-release.aab artifacts/EditorsHub-release.aab
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose artifacts/EditorsHub-release.apk
+          "$BUILD_TOOLS/zipalign" -p -f 4 "$UNSIGNED" artifacts/EditorsHub-Motion-aligned.apk
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$RUNNER_TEMP/editorshub-release.jks" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
+            --out artifacts/EditorsHub-Motion.apk \
+            artifacts/EditorsHub-Motion-aligned.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose artifacts/EditorsHub-Motion.apk
+          "$BUILD_TOOLS/aapt" dump badging artifacts/EditorsHub-Motion.apk > artifacts/badging.txt
+          grep -q "package: name='com.editorshub' versionCode='18' versionName='4.5.1'" artifacts/badging.txt
+          sed -n '1,6p' artifacts/badging.txt
+          sha256sum artifacts/EditorsHub-Motion.apk > artifacts/SHA256SUMS.txt
+          rm -f artifacts/badging.txt
+          rm -f artifacts/EditorsHub-Motion-aligned.apk
+          ls -lh artifacts
 
-      - name: Remove decoded key from workspace
+      - name: Remove signing key
         if: always()
-        run: rm -f EditorsHub/app/release.jks EditorsHub/app/keystore.properties
+        run: rm -f "$RUNNER_TEMP/editorshub-release.jks"
 
-      - name: Publish signed release
+      - name: Upload production APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EditorsHub-v${{ steps.version.outputs.version }}-production
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Emulator install and launch smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          script: |
+            adb install -r artifacts/EditorsHub-Motion.apk
+            adb shell monkey -p com.editorshub -c android.intent.category.LAUNCHER 1
+            sleep 12
+            adb shell pidof com.editorshub
+
+      - name: Publish stable GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version }}
-          name: EditorsHub ${{ inputs.version }}
-          body: |
-            Signed production build of EditorsHub.
-            Configure KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD secrets.
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: EditorsHub ${{ steps.version.outputs.tag }} — Ultra Motion interaction polish
+          body_path: RELEASE_NOTES.md
           files: |
-            artifacts/EditorsHub-release.apk
-            artifacts/EditorsHub-release.aab
+            artifacts/EditorsHub-Motion.apk
+            artifacts/SHA256SUMS.txt
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
