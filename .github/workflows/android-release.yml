@@ -120,8 +120,11 @@ jobs:
             --out artifacts/EditorsHub-Motion.apk \
             artifacts/EditorsHub-Motion-aligned.apk
           "$BUILD_TOOLS/apksigner" verify --verbose artifacts/EditorsHub-Motion.apk
-          "$BUILD_TOOLS/aapt" dump badging artifacts/EditorsHub-Motion.apk | head -6
+          "$BUILD_TOOLS/aapt" dump badging artifacts/EditorsHub-Motion.apk > artifacts/badging.txt
+          grep -q "package: name='com.editorshub' versionCode='18' versionName='4.5.1'" artifacts/badging.txt
+          sed -n '1,6p' artifacts/badging.txt
           sha256sum artifacts/EditorsHub-Motion.apk > artifacts/SHA256SUMS.txt
+          rm -f artifacts/badging.txt
           rm -f artifacts/EditorsHub-Motion-aligned.apk
           ls -lh artifacts
 
