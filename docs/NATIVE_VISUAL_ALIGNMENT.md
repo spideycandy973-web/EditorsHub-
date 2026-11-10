@@ -64,3 +64,16 @@ coordinates. `.github/workflows/reference-frames.yml` can import those captures
 into `docs/screenshots/` with a `capture_run_id` workflow input. Visual parity
 must be checked against those imported captures before making any exact-parity
 claim.
+
+### Current imported evidence
+
+- Android CI run `42923181870` (build, unit tests, instrumentation tests and
+  emulator smoke) succeeded on commit `23994f1`.
+- Visual-evidence import run `42925036568` copied
+  `native-home-v4.5.2.png`, `native-projects-v4.5.2.png` and
+  `native-create-v4.5.2.png` from that CI run.
+- The native Projects header now follows the reference's tab → search →
+  section-heading order, and the creation sheet is bottom-aligned with the
+  FAB-to-close state visible. Remaining differences include the reference
+  device's taller screen, populated project rows (CI starts from cleared app
+  data), and the still-unverified editor/timeline state.

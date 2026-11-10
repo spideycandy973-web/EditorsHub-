@@ -15,7 +15,7 @@ on:
       capture_run_id:
         description: Android CI run id whose native state captures should be imported
         required: false
-        default: '42889182326'
+        default: '42923181870'
   push:
     branches:
       - arena/be31b8e1-editorshub
@@ -41,7 +41,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BRANCH: arena/be31b8e1-editorshub
       DRIVE_ID: 1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6
-      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '42889182326' }}
+      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '42923181870' }}
       CAPTURE_ARTIFACT: editorshub-native-home-capture
       NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.2.png
       STORYBOARD_OUT: docs/reference-frames
