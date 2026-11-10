@@ -1559,18 +1559,17 @@ fun ProjectCreationSheet(
                 }
                 if (advanced) {
                     Spacer(Modifier.height(8.dp))
-                    SliderRow("Project duration (s)", duration, 1f..120f) { duration = it }
+                    SliderRow("Project duration (s)", duration, 1f..120f, onChange = { duration = it })
                     LabeledSelect("Background type", bgType.name,
-                        BackgroundType.entries.map { it.name to it.name }) {
-                        bgType = BackgroundType.valueOf(it)
-                    }
+                        BackgroundType.entries.map { it.name to it.name },
+                        onChange = { bgType = BackgroundType.valueOf(it) })
                     if (bgType != BackgroundType.TRANSPARENT) {
                         ColorSwatchRow("Primary", bgColor) { bgColor = it }
                         if (bgType == BackgroundType.LINEAR_GRADIENT ||
                             bgType == BackgroundType.RADIAL_GRADIENT) {
                             ColorSwatchRow("Gradient end", bgEnd) { bgEnd = it }
                             if (bgType == BackgroundType.LINEAR_GRADIENT) {
-                                SliderRow("Gradient angle", bgAngle, 0f..360f) { bgAngle = it }
+                                SliderRow("Gradient angle", bgAngle, 0f..360f, onChange = { bgAngle = it })
                             }
                         }
                     }
