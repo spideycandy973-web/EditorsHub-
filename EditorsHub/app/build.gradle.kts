@@ -23,8 +23,8 @@ val committedReleaseStorePassword = "editorshub"
 val committedReleaseKeyAlias = "editorshub"
 val committedReleaseKeyPassword = "editorshub"
 
-val appVersionName = "4.4.0"
-val appVersionCode = 20
+val appVersionName = "4.5.2"
+val appVersionCode = 21
 
 android {
     namespace = "com.editorshub"

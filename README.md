@@ -72,12 +72,13 @@ then `node tools/frames-libs.mjs` and run against `npm run preview`.
 
 ## Android
 
-`EditorsHub-Motion.apk` (Capacitor, installable) is committed at the repository
-root and attached to `apk-latest`, `v4.5.0` and `editorshub-latest`, together
-with `EditorsHub-debug.apk`, `EditorsHub-release-unsigned.apk`,
-`EditorsHub-release.aab` and `EditorsHub-source-v4.5.0.zip`. Release APK/AAB are
-unsigned by design; see `EditorsHub/docs/RELEASE_SIGNING.md` for the keystore
-workflow. All Android builds run in GitHub Actions.
+`EditorsHub-Motion.apk` (legacy Capacitor APK) is committed at the repository
+root and attached to older releases. The native Kotlin/Compose project under
+`EditorsHub/` now builds a signed `EditorsHub-release.apk` from
+`keystore/editorshub.p12`; CI artifacts also include `EditorsHub-debug.apk`,
+`EditorsHub-release.aab` and `EditorsHub-source-v4.5.2.zip`. See
+`EditorsHub/docs/RELEASE_SIGNING.md` and `docs/RELEASE_POLICY.md`. All Android
+builds run in GitHub Actions.
 
 ## Releases
 

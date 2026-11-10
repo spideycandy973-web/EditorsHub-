@@ -63,8 +63,9 @@ Play or any app where update authenticity matters; see
 ## Current state
 
 The generated committed release keystore is now in place on this branch, and
-releases from this branch need no user-supplied key or secret. A dry-run build
-verified the signed APK without publishing. Separately, `main`'s legacy
-production workflow published `v4.5.1` during setup; this branch did not publish
-a release and does not modify `main`. Every future release from this branch
-follows this policy.
+releases from this branch need no user-supplied key or secret. This branch
+published `v4.5.2` as its first GamersHub-style stable **Latest** release; the
+release workflow built and verified the signed APK from source. Separately,
+`main`'s legacy production workflow published `v4.5.1` during setup. This
+session does not modify `main`. Every future release from this branch follows
+this policy.

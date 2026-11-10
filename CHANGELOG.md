@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.5.2 — first GamersHub-style signed release (2026-11-10)
+
+- Bumped the native Android app to version 4.5.2 / version code 21.
+- Added a generated, committed PKCS12 release keystore at `keystore/editorshub.p12`; no user-supplied key or repository secret is required.
+- Replaced secret-based release signing with `.github/workflows/release.yml`, which builds a signed release APK from source on `v*` tags.
+- Publishes a stable **Latest** release named exactly the tag, with one `EditorsHub-vX.Y.Z.apk` asset; no rolling `apk-latest` update, source archive, or checksum asset.
+- Verified the committed keystore with `keytool` and the produced APK with `apksigner`; a no-publish dry run passed before tagging.
+- This APK is signed with a new key. Android may refuse to update an existing installation signed with a different key; back up projects and uninstall the previous build first.
+- Exact pixel-clone parity to the supplied reference is not claimed.
+
 ## 4.4.0 — native Android release (2026-11-09)
 
 - Corrected the native app build metadata to version 4.4.0 / version code 20 after the rejected 4.6.0 label.
