@@ -793,7 +793,7 @@ fun ProjectsScreen(
                     onSettings = onSettings,
                     onAbout = { aboutExpanded = true }
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(25.dp))
                 Row(
                     Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(20.dp))
                         .background(ReferencePalette.Input).padding(4.dp),
@@ -806,9 +806,11 @@ fun ProjectsScreen(
                     ProjectSectionButton("Elements", section == ProjectSection.ELEMENTS,
                         Modifier.weight(1f)) { section = ProjectSection.ELEMENTS }
                 }
+                Spacer(Modifier.height(23.dp))
+                ReferenceSearchBar(searchValue, onSearchChange, searchPlaceholder)
                 if (showListHeader) {
                     Row(
-                        Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 10.dp),
+                        Modifier.fillMaxWidth().padding(top = 26.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -876,7 +878,6 @@ fun ProjectsScreen(
                         }
                     }
                 }
-                ReferenceSearchBar(searchValue, onSearchChange, searchPlaceholder)
                 Spacer(Modifier.height(10.dp))
             }
 

@@ -43,6 +43,8 @@ on both the taller source device and the narrower CI emulator.
 - `Elements` is backed by real persisted projects in `HomeViewModel`; creating
   an element creates and saves a composition, and removing one returns its
   project to the Projects list. The empty state's create action is functional.
+- The Projects header now follows the reference order: tabs, search field, then
+  the `Your projects` / `Sort by Date` row.
 - Project rows use the reference's larger 92 dp cards, real thumbnail with
   duration badge, date-group headings, and icon-backed duration/aspect/size/fps
   metadata. Missing or corrupt thumbnails still show the visible fallback.
