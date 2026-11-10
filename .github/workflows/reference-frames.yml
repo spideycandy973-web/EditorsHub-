@@ -16,7 +16,6 @@ on:
       - arena/be31b8e1-editorshub
     paths:
       - '.github/workflows/reference-frames.yml'
-      - 'tools/build-storyboard.py'
       - 'tools/reference-frames-trigger.txt'
 
 permissions:
@@ -41,7 +40,6 @@ jobs:
       CAPTURE_ARTIFACT: editorshub-native-home-capture
       NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.2.png
       STORYBOARD_OUT: docs/reference-frames
-      SHEETS_ONLY: '1'
       KEY_TIMES: '5,18,30,60,100,390,570,625'
     steps:
       - name: Checkout
@@ -55,7 +53,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
-          python3 -m pip install --quiet --disable-pip-version-check numpy pillow gdown
+          python3 -m pip install --quiet --disable-pip-version-check gdown
           ffmpeg -version | head -1
 
       - name: Import native home capture artifact
@@ -121,15 +119,98 @@ jobs:
       - name: Probe and extract the storyboard
         run: |
           set -euo pipefail
-          mkdir -p "$STORYBOARD_OUT"
+          OUT="$STORYBOARD_OUT"
+          mkdir -p "$OUT/sheets" "$OUT/timeline-sheets" "$OUT/key-states"
+          : > /tmp/storyboard.log
+          log() { echo "$@" | tee -a /tmp/storyboard.log; }
+
+          log "== probe =="
           ffprobe -v error -show_entries format=duration,size:stream=width,height,r_frame_rate,nb_frames \
-            -of json /tmp/reference.mp4 > "$STORYBOARD_OUT/probe.json"
-          python3 tools/build-storyboard.py /tmp/reference.mp4
-          echo "--- storyboard tree ---"
-          du -sh "$STORYBOARD_OUT"
-          find "$STORYBOARD_OUT" -type f | wc -l
-          ls -lh "$STORYBOARD_OUT/sheets" | head -8
-          ls -lh "$STORYBOARD_OUT/key-states" | head -12
+            -of json /tmp/reference.mp4 > "$OUT/probe.json" 2> >(tee -a /tmp/storyboard.log >&2)
+
+          log "== state sheets: 1 fps, 5x4 =="
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/reference.mp4 \
+            -vf "fps=1,scale=240:-2,tile=5x4:padding=4:margin=4:color=0x121214" \
+            -q:v 3 "$OUT/sheets/sheet-%03d.jpg" 2>&1 | tee -a /tmp/storyboard.log
+
+          log "== timeline sheets: 1 fps, 10x8 =="
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/reference.mp4 \
+            -vf "fps=1,scale=120:266,tile=10x8:padding=2:margin=2:color=0x121214" \
+            -q:v 5 "$OUT/timeline-sheets/tl-%03d.jpg" 2>&1 | tee -a /tmp/storyboard.log
+
+          log "== key stills =="
+          IFS=',' read -ra TIMES <<< "$KEY_TIMES"
+          for t in "${TIMES[@]}"; do
+            t="${t// /}"
+            [ -n "$t" ] || continue
+            name=$(printf 'key-%06.1fs.jpg' "$t")
+            ffmpeg -hide_banner -loglevel error -y -ss "$t" -i /tmp/reference.mp4 \
+              -frames:v 1 -vf "scale=610:-2" -q:v 3 "$OUT/key-states/$name" \
+              2>&1 | tee -a /tmp/storyboard.log
+            log "extracted $name at ${t}s"
+          done
+
+          log "== manifest =="
+          python3 - <<'PY' 2>&1 | tee -a /tmp/storyboard.log
+          import json, os, pathlib
+          out = pathlib.Path(os.environ["STORYBOARD_OUT"])
+          probe = json.loads((out / "probe.json").read_text()) if (out / "probe.json").exists() else {}
+          sheets = sorted((out / "sheets").glob("sheet-*.jpg"))
+          tl = sorted((out / "timeline-sheets").glob("tl-*.jpg"))
+          keys = sorted((out / "key-states").glob("key-*.jpg"))
+          times = [x.strip() for x in os.environ.get("KEY_TIMES", "").split(",") if x.strip()]
+          data = {
+              "source": "Screenrecorder-2026-11-04-20-36-00-405.mp4",
+              "drive_id": os.environ.get("DRIVE_ID", ""),
+              "probe": probe,
+              "state_sheets": len(sheets),
+              "timeline_sheets": len(tl),
+              "key_times": times,
+              "key_stills": [p.name for p in keys],
+          }
+          (out / "manifest.json").write_text(json.dumps(data, indent=2) + "\n")
+          (out / "INDEX.md").write_text(
+              "# Reference recording storyboard\n\n"
+              f"- **{len(sheets)}** labelled state contact sheets in `sheets/` "
+              "(1 fps, 5x4 tiles). Read these first, in order.\n"
+              f"- **{len(tl)}** timeline contact sheets in `timeline-sheets/` "
+              "(1 fps, 10x8 tiles) for animation timing.\n"
+              f"- **{len(keys)}** readable stills in `key-states/` at the "
+              "screen timestamps listed in `docs/VIDEO_AUDIT.md`.\n"
+              "- `probe.json` holds the source video's ffprobe metadata; "
+              "`manifest.json` records the extraction settings.\n\n"
+              "The Android status strip and gesture pill are present in the "
+              "frames but are excluded from the change-detection audit in "
+              "`docs/VIDEO_AUDIT.md`. The raw 301,626,146-byte MP4 is NOT in "
+              "the repository.\n"
+          )
+          print(f"wrote manifest: {len(sheets)} state sheets, {len(tl)} timeline sheets, {len(keys)} key stills")
+          PY
+
+          log "== summary =="
+          du -sh "$OUT" | tee -a /tmp/storyboard.log
+          find "$OUT" -type f | wc -l | tee -a /tmp/storyboard.log
+          ls -lh "$OUT/sheets" | head -8 | tee -a /tmp/storyboard.log
+          ls -lh "$OUT/key-states" | head -12 | tee -a /tmp/storyboard.log
+
+      - name: Save storyboard failure log
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = `ci-logs/reference-storyboard-${context.runId}.txt`;
+            const text = fs.existsSync('/tmp/storyboard.log')
+              ? fs.readFileSync('/tmp/storyboard.log', 'utf8')
+              : 'No storyboard log was produced.';
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path,
+              message: `ci: capture storyboard failure ${context.runId} [skip ci]`,
+              content: Buffer.from(text).toString('base64'),
+              branch: process.env.BRANCH,
+            });
 
       - name: Commit visual evidence to this branch
         run: |
