@@ -48,9 +48,10 @@ keys or repository secrets, so the repository contains a generated key at
 - Store/key password: `editorshub` (not a secret)
 - `EditorsHub/app/build.gradle.kts` signs release builds with it directly.
 
-No user-configured secrets are required. `.github/workflows/release.yml` uses
-GitHub's automatic built-in `GITHUB_TOKEN` to publish; there is no
-`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, or `KEY_PASSWORD` secret.
+No user-configured secrets are required for releases from this branch.
+`.github/workflows/release.yml` uses GitHub's automatic built-in
+`GITHUB_TOKEN` to publish; it does not read any signing secret. The separate
+legacy `main` workflow is outside this session's branch and is not modified.
 
 **Warning:** because the repository is public, the private key is public.
 Anyone can sign APKs with this certificate. This is a convenience key for a
@@ -61,6 +62,9 @@ Play or any app where update authenticity matters; see
 
 ## Current state
 
-The existing `v4.4.0` release is left as-is. The generated committed release
-keystore is now in place, and no user-supplied key or secret is needed. Every
-future release follows this policy.
+The generated committed release keystore is now in place on this branch, and
+releases from this branch need no user-supplied key or secret. A dry-run build
+verified the signed APK without publishing. Separately, `main`'s legacy
+production workflow published `v4.5.1` during setup; this branch did not publish
+a release and does not modify `main`. Every future release from this branch
+follows this policy.

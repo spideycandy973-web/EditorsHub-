@@ -27,9 +27,11 @@ then verifies the produced APK with `apksigner`.
 
 ## No repository secrets required
 
-The release workflow uses only GitHub's automatic built-in `GITHUB_TOKEN` to
-publish the release. No `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, or
-`KEY_PASSWORD` secrets need to be configured.
+The active-branch release workflow, `.github/workflows/release.yml`, uses only
+GitHub's automatic built-in `GITHUB_TOKEN` to publish. It does not require
+`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, or `KEY_PASSWORD` secrets.
+A separate legacy workflow on `main` is outside this branch's policy; this
+session does not modify `main`.
 
 ## Security warning
 

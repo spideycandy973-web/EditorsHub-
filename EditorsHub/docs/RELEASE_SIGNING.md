@@ -48,8 +48,10 @@ properties file or the private keystore.
 3. Verifies the APK with `apksigner verify --verbose --print-certs`.
 4. Publishes the single signed APK asset on a `v*` tag push.
 
-No repository secrets are configured. GitHub's automatic `GITHUB_TOKEN` is used
-only to create the release; it is not a user-managed secret.
+This branch's release workflow requires no user-managed secrets. GitHub's
+automatic `GITHUB_TOKEN` is used only to create the release. The `main` branch
+still has a separate legacy secret-based production workflow; this session does
+not modify `main`.
 
 ## Local verification
 
