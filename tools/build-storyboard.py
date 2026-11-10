@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 """Turn the reference screen recording into a compact, reviewable storyboard.
 
-Runs inside GitHub Actions (the raw MP4 never enters the agent workspace):
+Runs inside GitHub Actions (the raw MP4 never enters the agent workspace).
+By default it writes to ``analysis/``; set ``STORYBOARD_OUT`` to write elsewhere.
+Set ``SHEETS_ONLY=1`` to discard the individual state/timeline frames after the
+contact sheets are built, keeping only a few ``KEY_TIMES`` stills for close
+review. This keeps the committed evidence small.
 
-  analysis/probe.json             ffprobe metadata
-  analysis/states.json            timestamp + change score of every distinct UI state
-  analysis/states/s-0001.jpg      each distinct state at 610 px wide
-  analysis/sheets/sheet-001.jpg   20 states per sheet, labelled with timestamps
-  analysis/timeline/t-00001.jpg   1 fps timeline frames (animation timing)
-  analysis/timeline-sheets/*.jpg  80 timeline frames per sheet
-  analysis/INDEX.md               how to read the storyboard
+Outputs:
+
+  OUT/probe.json             ffprobe metadata
+  OUT/states.json            timestamp + change score of every distinct UI state
+  OUT/states/s-0001.jpg      each distinct state at 610 px wide
+  OUT/sheets/sheet-001.jpg   20 states per sheet, labelled with timestamps
+  OUT/timeline/t-00001.jpg   1 fps timeline frames (animation timing)
+  OUT/timeline-sheets/*.jpg  80 timeline frames per sheet
+  OUT/key-states/*.jpg       selected stills at KEY_TIMES seconds
+  OUT/INDEX.md               how to read the storyboard
 
 A "distinct state" is a 4 fps sample whose app content differs from the last
 kept state by more than DIFF_THRESHOLD (mean absolute 0-255 difference), with a
@@ -21,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -29,7 +37,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 VIDEO = sys.argv[1] if len(sys.argv) > 1 else "/tmp/reference.mp4"
-OUT = Path("analysis")
+OUT = Path(os.environ.get("STORYBOARD_OUT", "analysis"))
 SAMPLE_FPS = 4
 W, H = 120, 266                 # tiny comparison frame, forced by ffmpeg scale
 TOP_MASK, BOTTOM_MASK = 14, 8   # status strip + gesture pill rows to ignore
@@ -37,6 +45,10 @@ PIXELS = W * H * 3
 THRESHOLD = float(os.environ.get("DIFF_THRESHOLD", "3.2"))
 MAX_GAP = float(os.environ.get("MAX_GAP_SECONDS", "3.0"))
 MAX_STATES = int(os.environ.get("MAX_STATES", "900"))
+SHEETS_ONLY = os.environ.get("SHEETS_ONLY") == "1"
+KEY_TIMES = [float(x) for x in os.environ.get(
+    "KEY_TIMES", "5,18,30,60,100,390,570,625"
+).split(",") if x.strip()]
 RAW = "/tmp/um-tiny.raw"
 
 
@@ -50,7 +62,7 @@ def fmt(t: float) -> str:
 
 
 def main() -> None:
-    for d in ("states", "sheets", "timeline", "timeline-sheets"):
+    for d in ("states", "sheets", "timeline", "timeline-sheets", "key-states"):
         (OUT / d).mkdir(parents=True, exist_ok=True)
 
     # 1. Tiny raw frames for change detection.
@@ -90,13 +102,25 @@ def main() -> None:
     print(f"{len(kept)} distinct states retained", flush=True)
 
     # 2. Re-extract just those frames at a readable resolution.
-    expr = "+".join(f"eq(n\\,{k['index']})" for k in kept)
+    expr = "+".join(f"eq(n\\\\,{k['index']})" for k in kept)
     vf = f"fps={SAMPLE_FPS},select='{expr}',scale=610:-2"
     run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", VIDEO,
          "-vf", vf, "-fps_mode", "vfr", "-q:v", "3",
          str(OUT / "states" / "s-%04d.jpg")])
     state_files = sorted((OUT / "states").glob("s-*.jpg"))
     print(f"extracted {len(state_files)} state images", flush=True)
+
+    # 2b. Keep a handful of readable stills at known screen timestamps.
+    key_files: list[Path] = []
+    for t in KEY_TIMES:
+        if not state_files:
+            break
+        pos = min(range(len(kept)), key=lambda i: abs(kept[i]["time"] - t))
+        src = state_files[min(pos, len(state_files) - 1)]
+        dst = OUT / "key-states" / f"key-{t:06.1f}s-{src.name}"
+        shutil.copy2(src, dst)
+        key_files.append(dst)
+        print(f"key still {fmt(kept[pos]['time'])} -> {dst.name}", flush=True)
 
     # 3. 1 fps timeline for animation timing.
     run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", VIDEO,
@@ -132,6 +156,18 @@ def main() -> None:
     timeline_sheets = sheets(timeline_files, "timeline-sheets", 10, 8, 120, 266, "tl",
                              lambda n: fmt(float(n)))
 
+    # 5. Drop bulky individual frames when only the review sheets are needed.
+    retained_state_images = len(state_files)
+    retained_timeline_frames = len(timeline_files)
+    if SHEETS_ONLY:
+        for f in state_files:
+            f.unlink()
+        for f in timeline_files:
+            f.unlink()
+        retained_state_images = 0
+        retained_timeline_frames = 0
+        print("SHEETS_ONLY: removed individual state/timeline frames", flush=True)
+
     (OUT / "states.json").write_text(json.dumps({
         "sample_fps": SAMPLE_FPS, "threshold": THRESHOLD, "max_gap": MAX_GAP,
         "count": len(kept), "states": kept,
@@ -143,22 +179,31 @@ def main() -> None:
         "drive_id": "1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6",
         "probe": probe, "sample_fps": SAMPLE_FPS,
         "distinct_states": len(kept), "state_images": len(state_files),
+        "state_images_retained": retained_state_images,
         "state_sheets": len(state_sheets), "timeline_frames": len(timeline_files),
+        "timeline_frames_retained": retained_timeline_frames,
         "timeline_sheets": len(timeline_sheets),
+        "key_states": [f.name for f in key_files],
+        "sheets_only": SHEETS_ONLY,
     }, indent=2) + "\n")
 
     (OUT / "INDEX.md").write_text(
         "# Reference recording storyboard\n\n"
         f"- **{len(kept)} distinct UI states** at 4 fps sampling "
         f"(mean-abs-diff threshold {THRESHOLD}, forced sample every {MAX_GAP}s).\n"
-        f"- **{len(state_files)}** readable state images in `states/` (610 px wide).\n"
         f"- **{len(state_sheets)}** labelled contact sheets in `sheets/` "
         "(20 states each, 5x4). Read these first, in order.\n"
-        f"- **{len(timeline_files)}** one-second timeline frames in `timeline/` and "
-        f"**{len(timeline_sheets)}** contact sheets in `timeline-sheets/` for animation timing.\n"
-        "- `states.json` holds the exact timestamp and change score of every state;\n"
-        "  `probe.json` holds the source video's ffprobe metadata.\n\n"
-        "The Android status strip and gesture pill are excluded from change detection.\n"
+        f"- **{len(timeline_sheets)}** timeline contact sheets in "
+        "`timeline-sheets/` for animation timing.\n"
+        f"- **{len(key_files)}** readable stills in `key-states/` at the "
+        "screen timestamps listed in `docs/VIDEO_AUDIT.md`.\n"
+        "- `states.json` holds the exact timestamp and change score of every "
+        "state; `probe.json` holds the source video's ffprobe metadata.\n\n"
+        + ("Individual 610 px state frames and 1 fps timeline frames were "
+           "discarded after the sheets were built to keep the repository small.\n\n"
+           if SHEETS_ONLY else "")
+        + "The Android status strip and gesture pill are excluded from change "
+          "detection.\n"
         "The raw 301,626,146-byte MP4 is NOT in the repository.\n"
     )
     print(f"done: {len(state_sheets)} state sheets, {len(timeline_sheets)} timeline sheets", flush=True)

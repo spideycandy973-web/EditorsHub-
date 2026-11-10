@@ -5,39 +5,72 @@ name: Extract reference recording storyboard
 # full network access, so it downloads the recording from the public Drive link,
 # turns it into compact frames/storyboards, and commits ONLY those small files
 # back to this branch. The raw MP4 never enters the repository.
+#
+# This workflow also imports the small native-home capture artifact from the
+# Android CI run so the current Compose UI can be compared with the reference
+# stills in the agent workspace.
 on:
   workflow_dispatch:
   push:
     branches:
-      - arena/e30aca1f-editorshub
+      - arena/be31b8e1-editorshub
     paths:
       - '.github/workflows/reference-frames.yml'
       - 'tools/build-storyboard.py'
       - 'tools/reference-frames-trigger.txt'
 
 permissions:
+  actions: read
   contents: write
+
+concurrency:
+  group: reference-frames-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   extract:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message || '', '[import-visual-evidence]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      BRANCH: arena/be31b8e1-editorshub
+      DRIVE_ID: 1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6
+      CAPTURE_RUN_ID: '42889182326'
+      CAPTURE_ARTIFACT: editorshub-native-home-capture
+      NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.2.png
+      STORYBOARD_OUT: docs/reference-frames
+      SHEETS_ONLY: '1'
+      KEY_TIMES: '5,18,30,60,100,390,570,625'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.BRANCH }}
           fetch-depth: 0
 
       - name: Install tooling
         run: |
+          set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
           python3 -m pip install --quiet --disable-pip-version-check numpy pillow gdown
           ffmpeg -version | head -1
 
+      - name: Import native home capture artifact
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/native-capture
+          mkdir -p /tmp/native-capture
+          gh run download "$CAPTURE_RUN_ID" -n "$CAPTURE_ARTIFACT" -D /tmp/native-capture
+          find /tmp/native-capture -type f -printf '%p %s bytes\n'
+          test -s /tmp/native-capture/native-home.png
+          mkdir -p docs/screenshots
+          cp /tmp/native-capture/native-home.png "$NATIVE_CAPTURE"
+          file "$NATIVE_CAPTURE"
+
       - name: Download the reference recording
-        env:
-          DRIVE_ID: 1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6
         run: |
           set -euo pipefail
           V=/tmp/reference.mp4
@@ -86,28 +119,29 @@ jobs:
       - name: Probe and extract the storyboard
         run: |
           set -euo pipefail
-          mkdir -p analysis
+          mkdir -p "$STORYBOARD_OUT"
           ffprobe -v error -show_entries format=duration,size:stream=width,height,r_frame_rate,nb_frames \
-            -of json /tmp/reference.mp4 > analysis/probe.json
+            -of json /tmp/reference.mp4 > "$STORYBOARD_OUT/probe.json"
           python3 tools/build-storyboard.py /tmp/reference.mp4
-          echo "--- analysis tree ---"
-          du -sh analysis
-          find analysis -type f | wc -l
-          ls -lh analysis/sheets | head -8
+          echo "--- storyboard tree ---"
+          du -sh "$STORYBOARD_OUT"
+          find "$STORYBOARD_OUT" -type f | wc -l
+          ls -lh "$STORYBOARD_OUT/sheets" | head -8
+          ls -lh "$STORYBOARD_OUT/key-states" | head -12
 
-      - name: Commit storyboard to this branch
+      - name: Commit visual evidence to this branch
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f analysis/
-          git commit -m "analysis: every distinct UI state from the reference recording [skip ci]" || echo "no changes"
+          git add "$NATIVE_CAPTURE" "$STORYBOARD_OUT"
+          git commit -m "docs(evidence): import native capture and reference storyboard [skip ci]" || echo "no changes"
           pushed=0
           for attempt in 1 2 3 4; do
-            if git push origin HEAD:arena/e30aca1f-editorshub; then pushed=1; break; fi
+            if git push origin HEAD:"$BRANCH"; then pushed=1; break; fi
             echo "push attempt $attempt failed; refreshing"
             sleep 8
-            git fetch origin arena/e30aca1f-editorshub
-            git pull origin arena/e30aca1f-editorshub --no-rebase || true
+            git fetch origin "$BRANCH"
+            git pull origin "$BRANCH" --no-rebase || true
           done
           [ "$pushed" = "1" ]
