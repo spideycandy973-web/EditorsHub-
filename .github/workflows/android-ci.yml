@@ -151,12 +151,15 @@ jobs:
           # The script logs instrumentation output and then installs/launches the packaged APK.
           script: sh ci/android-smoke.sh
 
-      - name: Upload native home screen capture for visual QA
+      - name: Upload native UI state captures for visual QA
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: editorshub-native-home-capture
-          path: native-home.png
+          path: |
+            native-home.png
+            native-projects.png
+            native-create.png
           if-no-files-found: warn
 
       - name: Upload emulator diagnostics on failure

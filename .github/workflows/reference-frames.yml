@@ -11,6 +11,11 @@ name: Extract reference recording storyboard
 # stills in the agent workspace.
 on:
   workflow_dispatch:
+    inputs:
+      capture_run_id:
+        description: Android CI run id whose native state captures should be imported
+        required: false
+        default: '42889182326'
   push:
     branches:
       - arena/be31b8e1-editorshub
@@ -36,7 +41,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BRANCH: arena/be31b8e1-editorshub
       DRIVE_ID: 1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6
-      CAPTURE_RUN_ID: '42889182326'
+      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '42889182326' }}
       CAPTURE_ARTIFACT: editorshub-native-home-capture
       NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.2.png
       STORYBOARD_OUT: docs/reference-frames
@@ -56,7 +61,7 @@ jobs:
           python3 -m pip install --quiet --disable-pip-version-check gdown
           ffmpeg -version | head -1
 
-      - name: Import native home capture artifact
+      - name: Import native UI state captures
         run: |
           set -euo pipefail
           rm -rf /tmp/native-capture
@@ -67,6 +72,15 @@ jobs:
           mkdir -p docs/screenshots
           cp /tmp/native-capture/native-home.png "$NATIVE_CAPTURE"
           file "$NATIVE_CAPTURE"
+          for state in projects create; do
+            src="/tmp/native-capture/native-${state}.png"
+            if [ -s "$src" ]; then
+              cp "$src" "docs/screenshots/native-${state}-v4.5.2.png"
+              file "docs/screenshots/native-${state}-v4.5.2.png"
+            else
+              echo "Optional native-${state}.png capture is absent in run $CAPTURE_RUN_ID"
+            fi
+          done
 
       - name: Download the reference recording
         run: |
@@ -178,7 +192,10 @@ jobs:
               f"- **{len(keys)}** readable stills in `key-states/` at the "
               "screen timestamps listed in `docs/VIDEO_AUDIT.md`.\n"
               "- `probe.json` holds the source video's ffprobe metadata; "
-              "`manifest.json` records the extraction settings.\n\n"
+              "`manifest.json` records the extraction settings.\n"
+              "- Native CI captures belong in `docs/screenshots/`; "
+              "`docs/NATIVE_VISUAL_ALIGNMENT.md` records the measured comparison method "
+              "and current alignment pass.\n\n"
               "The Android status strip and gesture pill are present in the "
               "frames but are excluded from the change-detection audit in "
               "`docs/VIDEO_AUDIT.md`. The raw 301,626,146-byte MP4 is NOT in "
@@ -218,7 +235,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "$NATIVE_CAPTURE" "$STORYBOARD_OUT"
-          git commit -m "docs(evidence): import native capture and reference storyboard [skip ci]" || echo "no changes"
+          for shot in docs/screenshots/native-*-v4.5.2.png; do
+            if [ -e "$shot" ]; then git add "$shot"; fi
+          done
+          git commit -m "docs(evidence): import native captures and reference storyboard [skip ci]" || echo "no changes"
           pushed=0
           for attempt in 1 2 3 4; do
             if git push origin HEAD:"$BRANCH"; then pushed=1; break; fi

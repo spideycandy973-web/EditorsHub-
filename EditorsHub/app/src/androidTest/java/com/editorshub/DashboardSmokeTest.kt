@@ -30,7 +30,7 @@ class DashboardSmokeTest {
         compose.onNodeWithContentDescription("Home").performClick()
 
         compose.onNodeWithContentDescription("Create project").performClick()
-        compose.onNodeWithText("Project name").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Project name").assertIsDisplayed()
         compose.onNodeWithContentDescription("Close create project").performClick()
 
         compose.onNodeWithContentDescription("Create project").performClick()
@@ -40,5 +40,21 @@ class DashboardSmokeTest {
         }
         compose.onNodeWithContentDescription("Play / pause").assertIsDisplayed()
         compose.onNodeWithContentDescription("Add layer").assertIsDisplayed()
+    }
+
+    @Test
+    fun referenceProjectSectionsStayOnTheSameScreen() {
+        compose.onNodeWithContentDescription("Projects").performClick()
+        compose.onNodeWithText("Your projects").assertIsDisplayed()
+
+        compose.onNodeWithText("Your Templates").performClick()
+        compose.onNodeWithText("Search templates").assertIsDisplayed()
+
+        compose.onNodeWithText("Elements").performClick()
+        compose.onNodeWithText("No elements… yet!").assertIsDisplayed()
+        compose.onNodeWithText("Create an element").performClick()
+        compose.onNodeWithText("Create Element").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Close create project").performClick()
+        compose.onNodeWithContentDescription("Create project").assertIsDisplayed()
     }
 }

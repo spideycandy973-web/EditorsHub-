@@ -63,14 +63,31 @@ class HomeViewModel @Inject constructor(
     private val _grid = MutableStateFlow(false)
     val grid: StateFlow<Boolean> = _grid.asStateFlow()
 
-    val visible: StateFlow<List<ProjectSummary>> = combine(projects, _query, _sort) { list, q, s ->
-        val filtered = if (q.isBlank()) list else list.filter { it.name.contains(q, true) }
-        when (s) {
-            ProjectSort.DATE -> filtered.sortedByDescending { it.updatedAt }
-            ProjectSort.NAME -> filtered.sortedBy { it.name.lowercase() }
-            ProjectSort.DURATION -> filtered.sortedByDescending { it.durationMs }
-            ProjectSort.SIZE -> filtered.sortedByDescending { it.bytes }
-        }
+    // Elements are real, persisted compositions backed by project storage. A small
+    // preference keeps their ids separate from the Projects list, so creating an
+    // element never produces a decorative/dead control.
+    private val elementPrefs = context.getSharedPreferences("editorshub_elements", Context.MODE_PRIVATE)
+    private val _elementIds = MutableStateFlow(
+        elementPrefs.getStringSet("ids", emptySet())?.toSet() ?: emptySet()
+    )
+    private fun persistElementIds(ids: Set<String>) {
+        elementPrefs.edit().putStringSet("ids", ids).apply()
+    }
+
+    val visible: StateFlow<List<ProjectSummary>> =
+        combine(projects, _query, _sort, _elementIds) { list, q, s, elementIds ->
+            val candidates = list.filterNot { it.id in elementIds }
+            val filtered = if (q.isBlank()) candidates else candidates.filter { it.name.contains(q, true) }
+            when (s) {
+                ProjectSort.DATE -> filtered.sortedByDescending { it.updatedAt }
+                ProjectSort.NAME -> filtered.sortedBy { it.name.lowercase() }
+                ProjectSort.DURATION -> filtered.sortedByDescending { it.durationMs }
+                ProjectSort.SIZE -> filtered.sortedByDescending { it.bytes }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val elements: StateFlow<List<ProjectSummary>> = combine(projects, _elementIds) { list, ids ->
+        list.filter { it.id in ids }.sortedByDescending { it.updatedAt }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _open = MutableSharedFlow<String>()
@@ -92,6 +109,24 @@ class HomeViewModel @Inject constructor(
             saveThumbnail(project)
             _open.emit(project.id)
         }.onFailure { _message.emit("Could not create project: ${it.message}") }
+    }
+
+    fun createElement(spec: ProjectSpec) = viewModelScope.launch {
+        runCatching {
+            val project = repository.create(spec)
+            saveThumbnail(project)
+            val ids = _elementIds.value + project.id
+            _elementIds.value = ids
+            persistElementIds(ids)
+            _open.emit(project.id)
+        }.onFailure { _message.emit("Could not create element: ${it.message}") }
+    }
+
+    /** Unlinks an element from the Elements tab; its project stays in storage. */
+    fun removeElement(id: String) {
+        val ids = _elementIds.value - id
+        _elementIds.value = ids
+        persistElementIds(ids)
     }
 
     fun createFromTemplate(template: TemplateCatalog.Template) = viewModelScope.launch {

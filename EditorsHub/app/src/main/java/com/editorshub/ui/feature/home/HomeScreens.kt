@@ -27,8 +27,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -54,7 +57,25 @@ import com.editorshub.ui.components.SliderRow
 import com.editorshub.ui.components.pressScale
 import com.editorshub.ui.theme.*
 import java.io.File
+import java.util.Locale
 import kotlin.math.roundToInt
+
+enum class ProjectSection { PROJECTS, TEMPLATES, ELEMENTS }
+enum class CreateMode { PROJECT, ELEMENT }
+
+private fun gcd(a: Int, b: Int): Int = if (b == 0) kotlin.math.abs(a) else gcd(b, a % b)
+
+private fun aspectLabel(width: Int, height: Int): String {
+    if (width <= 0 || height <= 0) return "Custom"
+    val divisor = gcd(width, height)
+    return "${width / divisor}:${height / divisor}"
+}
+
+private fun formatProjectBytes(bytes: Long): String = when {
+    bytes >= 1_048_576L -> String.format(Locale.UK, "%.1fMB", bytes / 1_048_576.0)
+    bytes >= 1_024L -> String.format(Locale.UK, "%.1fKB", bytes / 1_024.0)
+    else -> "${bytes}B"
+}
 
 // ------------------------------------------------------------------ HOME
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,14 +85,12 @@ fun HomeScreen(
     importVm: ImportViewModel = hiltViewModel(),
     onOpenProject: (String) -> Unit,
     onSettings: () -> Unit,
-    onProjects: () -> Unit,
-    createRequest: Int = 0
+    onProjects: () -> Unit
 ) {
     val settings by vm.appSettings.collectAsState()
     val projects by vm.projects.collectAsState()
     val importState by importVm.ui.collectAsState()
     val recent = remember(projects) { projects.sortedByDescending { it.updatedAt }.take(4) }
-    var showCreate by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var packageUrl by remember { mutableStateOf("") }
     var packageBusy by remember { mutableStateOf(false) }
@@ -81,7 +100,6 @@ fun HomeScreen(
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) { vm.openProject.collect { onOpenProject(it) } }
     LaunchedEffect(Unit) { vm.message.collect { snackbar.showSnackbar(it) } }
-    LaunchedEffect(createRequest) { if (createRequest > 0) showCreate = true }
     LaunchedEffect(projects) { vm.ensureThumbnails(projects) }
 
     val xmlPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -126,7 +144,7 @@ fun HomeScreen(
             Modifier.padding(padding).fillMaxSize()
                 .background(ReferencePalette.Background)
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 24.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp)
         ) {
             ReferenceHomeHeader(
                 brand = settings.brandName,
@@ -166,9 +184,6 @@ fun HomeScreen(
         }
     }
 
-    if (showCreate) {
-        ProjectCreationSheet(vm, onDismiss = { showCreate = false }, onCreated = { showCreate = false })
-    }
     if (showAbout) {
         AlertDialog(
             onDismissRequest = { showAbout = false },
@@ -247,7 +262,7 @@ private fun ReferenceHomeHeader(
 @Composable
 private fun ReferenceUploadCard(busy: Boolean, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxWidth().height(96.dp),
+        modifier = Modifier.fillMaxWidth().height(101.dp),
         shape = RoundedCornerShape(20.dp),
         color = ReferencePalette.Card
     ) {
@@ -282,12 +297,12 @@ private fun ReferencePackageCard(
     onScan: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth().height(235.dp),
+        modifier = Modifier.fillMaxWidth().height(243.dp),
         shape = RoundedCornerShape(20.dp),
         color = ReferencePalette.Card
     ) {
         Column(
-            Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 25.dp)
+            Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 27.dp)
         ) {
             Row(Modifier.fillMaxWidth().height(36.dp), verticalAlignment = Alignment.CenterVertically) {
                 ReferencePackageGlyph(Modifier.size(30.dp))
@@ -358,7 +373,7 @@ private fun ReferenceSearchBar(
     placeholder: String
 ) {
     Row(
-        Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(10.dp))
+        Modifier.fillMaxWidth().height(38.dp).clip(RoundedCornerShape(10.dp))
             .background(ReferencePalette.Input).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -682,12 +697,12 @@ private fun ProjectCard(
 @Composable
 private fun ProjectSectionButton(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier.fillMaxHeight().clip(RoundedCornerShape(7.dp))
+        modifier.fillMaxHeight().clip(RoundedCornerShape(18.dp))
             .background(if (selected) Color(0xFF414147) else Color.Transparent)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, fontSize = 11.sp, maxLines = 1,
+        Text(label, fontSize = 12.sp, maxLines = 1,
             color = if (selected) ReferencePalette.Text else ReferencePalette.MutedText,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium)
     }
@@ -700,9 +715,7 @@ fun ProjectsScreen(
     vm: HomeViewModel = hiltViewModel(),
     onOpenProject: (String) -> Unit,
     onImport: () -> Unit,
-    onNew: () -> Unit,
-    onTemplates: () -> Unit,
-    onEffects: () -> Unit,
+    onNew: (CreateMode) -> Unit,
     onSettings: () -> Unit
 ) {
     val visible by vm.visible.collectAsState()
@@ -710,6 +723,10 @@ fun ProjectsScreen(
     val sort by vm.sort.collectAsState()
     val grid by vm.grid.collectAsState()
     val settings by vm.appSettings.collectAsState()
+    val elements by vm.elements.collectAsState()
+    val templates = vm.templates
+    var section by remember { mutableStateOf(ProjectSection.PROJECTS) }
+    var sectionQuery by remember { mutableStateOf("") }
     var actionTarget by remember { mutableStateOf<ProjectSummary?>(null) }
     var deleteTarget by remember { mutableStateOf<ProjectSummary?>(null) }
     var infoTarget by remember { mutableStateOf<ProjectSummary?>(null) }
@@ -721,9 +738,23 @@ fun ProjectsScreen(
     var sortExpanded by remember { mutableStateOf(false) }
     var actionsExpanded by remember { mutableStateOf(false) }
     var aboutExpanded by remember { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
 
-    LaunchedEffect(visible) { vm.ensureThumbnails(visible) }
+    LaunchedEffect(Unit) {
+        launch { vm.openProject.collect { onOpenProject(it) } }
+        launch { vm.message.collect { snackbar.showSnackbar(it) } }
+    }
+    LaunchedEffect(visible, elements) { vm.ensureThumbnails(visible + elements) }
 
+    val filteredTemplates = remember(templates, sectionQuery) {
+        templates.filter {
+            sectionQuery.isBlank() || it.name.contains(sectionQuery, true) ||
+                it.description.contains(sectionQuery, true)
+        }
+    }
+    val filteredElements = remember(elements, sectionQuery) {
+        elements.filter { sectionQuery.isBlank() || it.name.contains(sectionQuery, true) }
+    }
     val dateLabels = remember(visible, sort) {
         visible.map { project ->
             if (sort == ProjectSort.DATE) {
@@ -738,12 +769,25 @@ fun ProjectsScreen(
         ProjectSort.DURATION -> "Duration"
         ProjectSort.SIZE -> "Size"
     }
+    val searchValue = if (section == ProjectSection.PROJECTS) query else sectionQuery
+    val onSearchChange: (String) -> Unit = if (section == ProjectSection.PROJECTS) {
+        vm::setQuery
+    } else { { sectionQuery = it } }
+    val searchPlaceholder = when (section) {
+        ProjectSection.PROJECTS -> "Search projects"
+        ProjectSection.TEMPLATES -> "Search templates"
+        ProjectSection.ELEMENTS -> "Search elements"
+    }
+    val showListHeader = section != ProjectSection.ELEMENTS || filteredElements.isNotEmpty()
 
-    Scaffold(containerColor = ReferencePalette.Background) { padding ->
+    Scaffold(
+        containerColor = ReferencePalette.Background,
+        snackbarHost = { SnackbarHost(snackbar) }
+    ) { padding ->
         Column(
             Modifier.padding(padding).fillMaxSize().background(ReferencePalette.Background)
         ) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 22.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 24.dp)) {
                 ReferenceHomeHeader(
                     settings.brandName, settings.brandSubtitle,
                     onSettings = onSettings,
@@ -751,144 +795,209 @@ fun ProjectsScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(
-                    Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(10.dp))
+                    Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(20.dp))
                         .background(ReferencePalette.Input).padding(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ProjectSectionButton("Projects", true, Modifier.weight(1f)) { }
-                    ProjectSectionButton("Your Templates", false, Modifier.weight(1.2f), onTemplates)
-                    ProjectSectionButton("Effects", false, Modifier.weight(1f), onEffects)
+                    ProjectSectionButton("Projects", section == ProjectSection.PROJECTS,
+                        Modifier.weight(1f)) { section = ProjectSection.PROJECTS }
+                    ProjectSectionButton("Your Templates", section == ProjectSection.TEMPLATES,
+                        Modifier.weight(1.2f)) { section = ProjectSection.TEMPLATES }
+                    ProjectSectionButton("Elements", section == ProjectSection.ELEMENTS,
+                        Modifier.weight(1f)) { section = ProjectSection.ELEMENTS }
                 }
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        if (selectionMode) "${selectedIds.size} selected" else "Your projects",
-                        Modifier.weight(1f), fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold, color = ReferencePalette.Text
-                    )
-                    if (selectionMode) {
-                        TextButton(onClick = { selectedIds = emptySet() },
-                            contentPadding = PaddingValues(horizontal = 4.dp)) {
-                            Text("Cancel", fontSize = 11.sp, color = ReferencePalette.Mint)
-                        }
-                    } else {
-                        Box {
-                            TextButton(onClick = { sortExpanded = true },
+                if (showListHeader) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            when {
+                                selectionMode -> "${selectedIds.size} selected"
+                                section == ProjectSection.PROJECTS -> "Your projects"
+                                section == ProjectSection.TEMPLATES -> "Your templates"
+                                else -> "Your elements"
+                            },
+                            Modifier.weight(1f), fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold, color = ReferencePalette.Text
+                        )
+                        if (selectionMode) {
+                            TextButton(onClick = { selectedIds = emptySet() },
                                 contentPadding = PaddingValues(horizontal = 4.dp)) {
-                                Text("Sort by $sortLabel", fontSize = 11.sp, color = ReferencePalette.SecondaryText)
-                                Icon(Icons.Default.ExpandMore, null, Modifier.size(16.dp),
-                                    tint = ReferencePalette.SecondaryText)
+                                Text("Cancel", fontSize = 12.sp, color = ReferencePalette.Mint)
                             }
-                            DropdownMenu(expanded = sortExpanded, onDismissRequest = { sortExpanded = false }) {
-                                ProjectSort.entries.forEach { option ->
-                                    val label = when (option) {
-                                        ProjectSort.DATE -> "Sort by Date"
-                                        ProjectSort.NAME -> "Sort by Name"
-                                        ProjectSort.DURATION -> "Sort by Duration"
-                                        ProjectSort.SIZE -> "Sort by Size"
+                        } else {
+                            Box {
+                                TextButton(onClick = { sortExpanded = true },
+                                    contentPadding = PaddingValues(horizontal = 4.dp)) {
+                                    Text("Sort by $sortLabel", fontSize = 12.sp,
+                                        color = ReferencePalette.SecondaryText)
+                                    Icon(Icons.Default.ExpandMore, null, Modifier.size(16.dp),
+                                        tint = ReferencePalette.SecondaryText)
+                                }
+                                DropdownMenu(expanded = sortExpanded,
+                                    onDismissRequest = { sortExpanded = false }) {
+                                    ProjectSort.entries.forEach { option ->
+                                        val label = when (option) {
+                                            ProjectSort.DATE -> "Sort by Date"
+                                            ProjectSort.NAME -> "Sort by Name"
+                                            ProjectSort.DURATION -> "Sort by Duration"
+                                            ProjectSort.SIZE -> "Sort by Size"
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text(label) },
+                                            onClick = { vm.setSort(option); sortExpanded = false }
+                                        )
                                     }
+                                }
+                            }
+                            Box {
+                                IconButton(onClick = { actionsExpanded = true },
+                                    modifier = Modifier.size(30.dp)) {
+                                    Icon(Icons.Default.MoreHoriz, "Project list options",
+                                        Modifier.size(19.dp), tint = ReferencePalette.SecondaryText)
+                                }
+                                DropdownMenu(expanded = actionsExpanded,
+                                    onDismissRequest = { actionsExpanded = false }) {
                                     DropdownMenuItem(
-                                        text = { Text(label) },
-                                        onClick = { vm.setSort(option); sortExpanded = false }
+                                        text = { Text("Import project") },
+                                        leadingIcon = { Icon(Icons.Default.FileOpen, null) },
+                                        onClick = { actionsExpanded = false; onImport() }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(if (grid) "List view" else "Grid view") },
+                                        leadingIcon = {
+                                            Icon(if (grid) Icons.Default.ViewList else Icons.Default.GridView, null)
+                                        },
+                                        onClick = { vm.setGrid(!grid); actionsExpanded = false }
                                     )
                                 }
                             }
                         }
-                        Box {
-                            IconButton(onClick = { actionsExpanded = true }, modifier = Modifier.size(30.dp)) {
-                                Icon(Icons.Default.MoreHoriz, "Project list options", Modifier.size(19.dp),
-                                    tint = ReferencePalette.SecondaryText)
-                            }
-                            DropdownMenu(expanded = actionsExpanded, onDismissRequest = { actionsExpanded = false }) {
-                                DropdownMenuItem(
-                                    text = { Text("Import project") },
-                                    leadingIcon = { Icon(Icons.Default.FileOpen, null) },
-                                    onClick = { actionsExpanded = false; onImport() }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(if (grid) "List view" else "Grid view") },
-                                    leadingIcon = { Icon(if (grid) Icons.Default.ViewList else Icons.Default.GridView, null) },
-                                    onClick = { vm.setGrid(!grid); actionsExpanded = false }
-                                )
-                            }
-                        }
                     }
                 }
-                ReferenceSearchBar(query, vm::setQuery, "Search projects")
+                ReferenceSearchBar(searchValue, onSearchChange, searchPlaceholder)
                 Spacer(Modifier.height(10.dp))
             }
 
             AnimatedContent(
-                targetState = grid,
+                targetState = section,
                 modifier = Modifier.weight(1f),
                 transitionSpec = {
-                    fadeIn() + scaleIn(initialScale = 0.98f) togetherWith fadeOut() + scaleOut(targetScale = 0.98f)
+                    fadeIn() + scaleIn(initialScale = 0.985f) togetherWith
+                        fadeOut() + scaleOut(targetScale = 0.985f)
                 },
-                label = "project-layout"
-            ) { isGrid ->
-                if (visible.isEmpty()) {
-                    Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.FolderOpen, null, Modifier.size(38.dp), tint = ReferencePalette.MutedText)
-                            Text(if (query.isBlank()) "No projects… yet!" else "No projects match that search.",
-                                fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = ReferencePalette.Text)
-                            if (query.isBlank()) {
-                                Text("Create a project to start editing.", fontSize = 12.sp,
-                                    color = ReferencePalette.MutedText)
-                                TextButton(onClick = onNew) { Text("Create a project", color = ReferencePalette.Mint) }
+                label = "project-section"
+            ) { currentSection ->
+                when (currentSection) {
+                    ProjectSection.PROJECTS -> {
+                        if (visible.isEmpty()) {
+                            ReferenceEmptyState(
+                                icon = Icons.Default.FolderOpen,
+                                title = if (query.isBlank()) "No projects… yet!" else "No projects match that search.",
+                                body = "Create a project to start editing.",
+                                action = if (query.isBlank()) "Create a project" else null,
+                                onAction = { onNew(CreateMode.PROJECT) }
+                            )
+                        } else if (grid) {
+                            LazyVerticalGrid(
+                                GridCells.Adaptive(170.dp), Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                items(visible, key = { it.id }) { project ->
+                                    ProjectCard(
+                                        summary = project,
+                                        vm = vm,
+                                        selectionMode = selectionMode,
+                                        selected = project.id in selectedIds,
+                                        onClick = { onOpenProject(project.id) },
+                                        onSelect = {
+                                            selectedIds = if (project.id in selectedIds) selectedIds - project.id
+                                                else selectedIds + project.id
+                                        },
+                                        onAction = { actionTarget = project }
+                                    )
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                itemsIndexed(visible, key = { _, project -> project.id }) { index, project ->
+                                    val date = dateLabels.getOrNull(index)
+                                    Column {
+                                        if (date != null && (index == 0 || date != dateLabels.getOrNull(index - 1))) {
+                                            Text(date,
+                                                Modifier.padding(start = 2.dp, top = 10.dp, bottom = 4.dp),
+                                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                                color = ReferencePalette.SecondaryText)
+                                        }
+                                        ReferenceProjectRow(
+                                            project = project,
+                                            selectionMode = selectionMode,
+                                            selected = project.id in selectedIds,
+                                            onClick = { onOpenProject(project.id) },
+                                            onSelect = {
+                                                selectedIds = if (project.id in selectedIds) selectedIds - project.id
+                                                    else selectedIds + project.id
+                                            },
+                                            onMore = { actionTarget = project }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
-                } else if (isGrid) {
-                    LazyVerticalGrid(
-                        GridCells.Adaptive(170.dp), Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(visible, key = { it.id }) { project ->
-                            ProjectCard(
-                                summary = project,
-                                vm = vm,
-                                selectionMode = selectionMode,
-                                selected = project.id in selectedIds,
-                                onClick = { onOpenProject(project.id) },
-                                onSelect = {
-                                    selectedIds = if (project.id in selectedIds) selectedIds - project.id
-                                        else selectedIds + project.id
-                                },
-                                onAction = { actionTarget = project }
+                    ProjectSection.TEMPLATES -> {
+                        if (filteredTemplates.isEmpty()) {
+                            ReferenceEmptyState(
+                                icon = Icons.Default.Movie,
+                                title = "No templates match that search.",
+                                body = "Try another phrase or clear the search field."
                             )
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(filteredTemplates, key = { it.name }) { template ->
+                                    ReferenceTemplateRow(template) { vm.createFromTemplate(template) }
+                                }
+                            }
                         }
                     }
-                } else {
-                    LazyColumn(
-                        Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        itemsIndexed(visible, key = { _, project -> project.id }) { index, project ->
-                            val date = dateLabels.getOrNull(index)
-                            Column {
-                                if (date != null && (index == 0 || date != dateLabels.getOrNull(index - 1))) {
-                                    Text(date, Modifier.padding(start = 2.dp, top = 8.dp, bottom = 2.dp),
-                                        fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                                        color = ReferencePalette.MutedText, letterSpacing = 0.3.sp)
+                    ProjectSection.ELEMENTS -> {
+                        if (filteredElements.isEmpty()) {
+                            ReferenceEmptyState(
+                                icon = Icons.Default.FolderOpen,
+                                title = if (sectionQuery.isBlank()) "No elements… yet!" else "No elements match that search.",
+                                body = if (sectionQuery.isBlank()) "Create an element to reuse a composition." else null,
+                                action = if (sectionQuery.isBlank()) "Create an element" else null,
+                                onAction = { onNew(CreateMode.ELEMENT) }
+                            )
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(filteredElements, key = { it.id }) { element ->
+                                    ReferenceProjectRow(
+                                        project = element,
+                                        selectionMode = false,
+                                        selected = false,
+                                        onClick = { onOpenProject(element.id) },
+                                        onSelect = {},
+                                        moreIcon = Icons.Default.Close,
+                                        moreDescription = "Remove ${element.name} from Elements",
+                                        onMore = { vm.removeElement(element.id) }
+                                    )
                                 }
-                                ReferenceProjectRow(
-                                    project = project,
-                                    selectionMode = selectionMode,
-                                    selected = project.id in selectedIds,
-                                    onClick = { onOpenProject(project.id) },
-                                    onSelect = {
-                                        selectedIds = if (project.id in selectedIds) selectedIds - project.id
-                                            else selectedIds + project.id
-                                    },
-                                    onMore = { actionTarget = project }
-                                )
                             }
                         }
                     }
@@ -982,48 +1091,145 @@ private fun ReferenceProjectRow(
     selected: Boolean,
     onClick: () -> Unit,
     onSelect: () -> Unit,
-    onMore: () -> Unit
+    onMore: () -> Unit,
+    moreIcon: ImageVector = Icons.Default.MoreHoriz,
+    moreDescription: String = "Project options for ${project.name}"
 ) {
     val totalSeconds = project.durationMs / 1_000L
-    val duration = "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
+    val duration = String.format(
+        Locale.UK, "%02d:%02d:%02d",
+        totalSeconds / 3_600L, (totalSeconds / 60L) % 60L, totalSeconds % 60L
+    )
     Row(
-        Modifier.fillMaxWidth().height(58.dp).clip(RoundedCornerShape(12.dp))
+        Modifier.fillMaxWidth().height(92.dp).clip(RoundedCornerShape(14.dp))
             .background(if (selected) ReferencePalette.Input else ReferencePalette.Card)
             .combinedClickable(
                 onClick = { if (selectionMode) onSelect() else onClick() },
                 onLongClick = onSelect
             )
-            .padding(start = 10.dp, end = 6.dp),
+            .padding(start = 8.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ProjectThumbnail(
-            project = project,
-            modifier = Modifier.size(38.dp).clip(RoundedCornerShape(8.dp)),
-            iconSize = 18.dp
-        )
+        Box(Modifier.width(76.dp).height(80.dp)) {
+            ProjectThumbnail(
+                project = project,
+                modifier = Modifier.matchParentSize().clip(RoundedCornerShape(10.dp)),
+                iconSize = 26.dp,
+                showInitial = true
+            )
+            Box(
+                Modifier.align(Alignment.BottomStart).padding(5.dp)
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(Color.Black.copy(alpha = 0.78f))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
+            ) {
+                Text(duration, color = Color.White, fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold, maxLines = 1)
+            }
+        }
         Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(project.name, color = ReferencePalette.Text, fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold, maxLines = 1)
-            Text("$duration · ${project.width}×${project.height} · ${project.layerCount} layers",
-                color = ReferencePalette.MutedText, fontSize = 10.sp, maxLines = 1)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(project.name, color = ReferencePalette.Text, fontSize = 16.sp,
+                fontWeight = FontWeight.Bold, maxLines = 1)
+            Row(Modifier.fillMaxWidth()) {
+                ReferenceProjectMeta(Icons.Default.OpenWith,
+                    aspectLabel(project.width, project.height), Modifier.weight(1f))
+                ReferenceProjectMeta(Icons.Default.CropSquare,
+                    "${minOf(project.width, project.height)}p", Modifier.weight(1f))
+            }
+            Row(Modifier.fillMaxWidth()) {
+                ReferenceProjectMeta(Icons.Default.FolderOpen,
+                    formatProjectBytes(project.bytes), Modifier.weight(1f))
+                ReferenceProjectMeta(Icons.Default.Bolt,
+                    "${project.fpsExact.roundToInt()}fps", Modifier.weight(1f))
+            }
         }
         if (selectionMode) {
             IconButton(onClick = onSelect, modifier = Modifier.size(32.dp)) {
                 Icon(
                     if (selected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                     if (selected) "Selected ${project.name}" else "Select ${project.name}",
-                    Modifier.size(19.dp),
+                    Modifier.size(20.dp),
                     tint = if (selected) ReferencePalette.Mint else ReferencePalette.MutedText
                 )
             }
         } else {
             Box(
-                Modifier.size(32.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onMore),
+                Modifier.size(32.dp).clickable(
+                    role = androidx.compose.ui.semantics.Role.Button, onClick = onMore
+                ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.MoreHoriz, "Project options for ${project.name}", Modifier.size(18.dp),
+                Icon(moreIcon, moreDescription, Modifier.size(19.dp),
                     tint = ReferencePalette.MutedText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReferenceProjectMeta(icon: ImageVector, text: String, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, Modifier.size(14.dp), tint = ReferencePalette.MutedText)
+        Spacer(Modifier.width(5.dp))
+        Text(text, color = ReferencePalette.SecondaryText, fontSize = 11.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun ReferenceTemplateRow(
+    template: TemplateCatalog.Template,
+    onClick: () -> Unit
+) {
+    val interaction = remember(template.name) {
+        androidx.compose.foundation.interaction.MutableInteractionSource()
+    }
+    Row(
+        Modifier.fillMaxWidth().height(78.dp).clip(RoundedCornerShape(14.dp))
+            .background(ReferencePalette.Card)
+            .clickable(interactionSource = interaction,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick)
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(58.dp).clip(RoundedCornerShape(10.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF24263A), Color(0xFF1A2C3A)))),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Movie, null, Modifier.size(26.dp),
+                tint = EditorPalette.Purple)
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(template.name, color = ReferencePalette.Text, fontSize = 14.sp,
+                fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(template.description, color = ReferencePalette.MutedText, fontSize = 11.sp,
+                maxLines = 2)
+        }
+    }
+}
+
+@Composable
+private fun ReferenceEmptyState(
+    icon: ImageVector,
+    title: String,
+    body: String? = null,
+    action: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(icon, null, Modifier.size(40.dp), tint = ReferencePalette.MutedText)
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                color = ReferencePalette.Text)
+            if (body != null) {
+                Text(body, fontSize = 12.sp, color = ReferencePalette.MutedText)
+            }
+            if (action != null && onAction != null) {
+                TextButton(onClick = onAction) { Text(action, color = ReferencePalette.Mint) }
             }
         }
     }
@@ -1149,181 +1355,401 @@ private fun QuickExportDialog(p: ProjectSummary, vm: HomeViewModel, onDismiss: (
 }
 
 // ------------------------------------------------------------- CREATION SHEET
-private data class ResPreset(val label: String, val shortSide: Int)
-private val RES_PRESETS = listOf(
-    ResPreset("144p", 144), ResPreset("240p", 240), ResPreset("360p", 360),
-    ResPreset("480p", 480), ResPreset("720p", 720), ResPreset("1080p", 1080),
-    ResPreset("1440p", 1440), ResPreset("2160p (4K)", 2160), ResPreset("Custom", 0)
-)
-private val ASPECTS = listOf("1:1", "4:5", "9:16", "16:9", "3:4", "4:3", "21:9", "Custom")
+private val CREATE_ASPECTS = listOf("16:9", "9:16", "4:5", "1:1", "4:3")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectCreationSheet(vm: HomeViewModel, onDismiss: () -> Unit, onCreated: () -> Unit) {
-    var name by remember { mutableStateOf("New Project 1") }
-    var res by remember { mutableStateOf(RES_PRESETS[5]) }
-    var aspect by remember { mutableStateOf("9:16") }
-    var customW by remember { mutableStateOf("1080") }
-    var customH by remember { mutableStateOf("1920") }
-    var fps by remember { mutableStateOf(FrameRates.ALL[6]) }
+fun ProjectCreationSheet(
+    vm: HomeViewModel,
+    initialMode: CreateMode = CreateMode.PROJECT,
+    onDismiss: () -> Unit,
+    onCreated: () -> Unit
+) {
+    var mode by remember { mutableStateOf(initialMode) }
+    var name by remember {
+        mutableStateOf(if (initialMode == CreateMode.ELEMENT) "New Element" else "New Project 1")
+    }
+    var nameEdited by remember { mutableStateOf(false) }
+    var aspect by remember { mutableStateOf("16:9") }
+    var custom by remember { mutableStateOf(false) }
+    var widthText by remember { mutableStateOf("1920") }
+    var heightText by remember { mutableStateOf("1080") }
+    var fps by remember { mutableStateOf(FrameRates.ALL[10]) }
+    var fpsExpanded by remember { mutableStateOf(false) }
     var duration by remember { mutableFloatStateOf(10f) }
     var bgType by remember { mutableStateOf(BackgroundType.SOLID) }
-    var bgColor by remember { mutableStateOf("#FF0B0C14") }
+    var bgExpanded by remember { mutableStateOf(false) }
+    var bgColor by remember { mutableStateOf("#FF000000") }
     var bgEnd by remember { mutableStateOf("#FF22D3EE") }
     var bgAngle by remember { mutableFloatStateOf(45f) }
-    val sampleRate = "48000"
+    var advanced by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    val sampleRate = 48_000
     val colorSpace = ColorSpace.SRGB
     val quality = 0.75f
 
-    val (w, h) = remember(res, aspect, customW, customH) {
-        if (res.shortSide == 0 || aspect == "Custom") {
-            (customW.toIntOrNull() ?: 1080).coerceIn(16, 4096) to
-                (customH.toIntOrNull() ?: 1920).coerceIn(16, 4096)
-        } else {
-            val parts = aspect.split(":").mapNotNull { it.toFloatOrNull() }
-            val rw = parts.getOrNull(0) ?: 9f
-            val rh = parts.getOrNull(1) ?: 16f
-            if (rw >= rh) {
-                val height = res.shortSide
-                val width = (height * rw / rh).roundToInt()
-                (width / 2 * 2) to (height / 2 * 2)
-            } else {
-                val width = res.shortSide
-                val height = (width * rh / rw).roundToInt()
-                (width / 2 * 2) to (height / 2 * 2)
-            }
-        }
-    }
-    val timebase = remember(fps) {
-        when {
-            kotlin.math.abs(fps.exact - 23.976) < 0.01 -> "1001/24000"
-            kotlin.math.abs(fps.exact - 29.97) < 0.01 -> "1001/30000"
-            kotlin.math.abs(fps.exact - 59.94) < 0.01 -> "1001/60000"
-            else -> "1/${fps.exact.roundToInt()}"
+    fun selectMode(next: CreateMode) {
+        mode = next
+        if (!nameEdited) {
+            name = if (next == CreateMode.ELEMENT) "New Element" else "New Project 1"
         }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            Column(
-                Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = 16.dp)
-                    .heightIn(max = 700.dp).clip(RoundedCornerShape(22.dp))
-                    .background(ReferencePalette.Card).padding(16.dp)
+    fun applyAspect(next: String) {
+        val parts = next.split(":").mapNotNull { it.toFloatOrNull() }
+        val rw = parts.getOrNull(0) ?: 16f
+        val rh = parts.getOrNull(1) ?: 9f
+        val shortSide = 1080
+        if (rw >= rh) {
+            widthText = (shortSide * rw / rh).roundToInt().toString()
+            heightText = shortSide.toString()
+        } else {
+            widthText = shortSide.toString()
+            heightText = (shortSide * rh / rw).roundToInt().toString()
+        }
+        aspect = next
+        custom = false
+    }
+
+    val w = (widthText.toIntOrNull() ?: 1920).coerceIn(16, 4096)
+    val h = (heightText.toIntOrNull() ?: 1080).coerceIn(16, 4096)
+    val timebase = when {
+        kotlin.math.abs(fps.exact - 23.976) < 0.01 -> "1001/24000"
+        kotlin.math.abs(fps.exact - 29.97) < 0.01 -> "1001/30000"
+        kotlin.math.abs(fps.exact - 59.94) < 0.01 -> "1001/60000"
+        else -> "1/${fps.exact.roundToInt()}"
+    }
+
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val sheetHeight = if (maxHeight < 466.dp) maxHeight - 6.dp else 460.dp
+        Column(
+            Modifier.fillMaxWidth().height(sheetHeight)
+                .clip(RoundedCornerShape(28.dp))
+                .background(ReferencePalette.Card)
+                .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 18.dp)
+        ) {
+            Row(
+                Modifier.fillMaxWidth().height(38.dp)
+                    .clip(RoundedCornerShape(19.dp))
+                    .background(ReferencePalette.Input).padding(3.dp)
             ) {
-                Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Create project", fontSize = 17.sp, fontWeight = FontWeight.Bold,
-                            color = ReferencePalette.Text)
-                        Text("PROJECT", fontSize = 9.sp, fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp, color = ReferencePalette.Mint)
+                ReferenceCreateTab("Project", mode == CreateMode.PROJECT, Modifier.weight(1f)) {
+                    selectMode(CreateMode.PROJECT)
+                }
+                ReferenceCreateTab("Element", mode == CreateMode.ELEMENT, Modifier.weight(1f)) {
+                    selectMode(CreateMode.ELEMENT)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            ReferenceCreateNameField(
+                value = name,
+                onValueChange = { name = it; nameEdited = true },
+                onClear = { name = ""; nameEdited = true }
+            )
+            Spacer(Modifier.height(12.dp))
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
+                Row(Modifier.fillMaxWidth().height(48.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CREATE_ASPECTS.forEach { option ->
+                        ReferenceAspectChip(option, !custom && aspect == option) { applyAspect(option) }
                     }
                     Box(
-                        Modifier.size(36.dp).clip(CircleShape).background(ReferencePalette.Input)
-                            .clickable(onClick = onDismiss),
+                        Modifier.size(46.dp).clip(RoundedCornerShape(10.dp))
+                            .border(1.dp, ReferencePalette.SecondaryText, RoundedCornerShape(10.dp))
+                            .clickable(role = androidx.compose.ui.semantics.Role.Button,
+                                onClick = { custom = true; aspect = "Custom" }),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Close, "Close create project", Modifier.size(18.dp),
-                            tint = ReferencePalette.SecondaryText)
+                        Icon(Icons.Default.Edit, "Custom composition size",
+                            Modifier.size(19.dp), tint = ReferencePalette.Text)
                     }
                 }
-                HorizontalDivider(color = Color(0xFF333338))
-                Column(
-                    Modifier.weight(1f, fill = false).fillMaxWidth()
-                        .verticalScroll(rememberScrollState()).padding(top = 12.dp, bottom = 12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Project name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ReferencePalette.Mint,
-                            focusedLabelColor = ReferencePalette.Mint,
-                            cursorColor = ReferencePalette.Mint
-                        )
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth().height(60.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Resolution", color = ReferencePalette.Text, fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold)
+                        Text("Composition Size", color = ReferencePalette.MutedText, fontSize = 10.sp)
+                        Text("$w × $h", color = ReferencePalette.MutedText, fontSize = 10.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ReferenceCreateValueField(widthText, {
+                            widthText = it; custom = true; aspect = "Custom"
+                        }, Modifier.width(74.dp).height(46.dp))
+                        Box(
+                            Modifier.padding(horizontal = 5.dp).size(32.dp).clip(CircleShape)
+                                .background(Color(0xFF073C2C))
+                                .clickable(role = androidx.compose.ui.semantics.Role.Button,
+                                    onClick = {
+                                        val old = widthText
+                                        widthText = heightText
+                                        heightText = old
+                                        aspect = aspectLabel(w, h)
+                                        custom = aspect !in CREATE_ASPECTS
+                                    }),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("⇄", color = ReferencePalette.Mint, fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.semantics { contentDescription = "Swap width and height" })
+                        }
+                        ReferenceCreateValueField(heightText, {
+                            heightText = it; custom = true; aspect = "Custom"
+                        }, Modifier.width(74.dp).height(46.dp))
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth().height(50.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("Frame Rate", Modifier.weight(1f), color = ReferencePalette.Text,
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    ReferenceCreateDropdown(
+                        value = fps.label,
+                        expanded = fpsExpanded,
+                        onExpandedChange = { fpsExpanded = it },
+                        options = FrameRates.ALL.map { it.label to it.label },
+                        onSelect = { label ->
+                            fps = FrameRates.ALL.first { preset -> preset.label == label }
+                        },
+                        modifier = Modifier.width(190.dp).height(46.dp)
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Text("Aspect ratio", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                        color = ReferencePalette.Text)
-                    Spacer(Modifier.height(6.dp))
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                        ASPECTS.forEach { option ->
-                            ReferenceRatioChip(option, aspect == option) { aspect = option }
-                        }
-                    }
-                    if (res.shortSide == 0 || aspect == "Custom") {
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(customW, { customW = it }, label = { Text("Width") },
-                                modifier = Modifier.weight(1f), singleLine = true)
-                            OutlinedTextField(customH, { customH = it }, label = { Text("Height") },
-                                modifier = Modifier.weight(1f), singleLine = true)
-                        }
-                    }
-                    Text("Output: ${w} × ${h}", Modifier.padding(top = 6.dp),
-                        fontSize = 10.sp, color = ReferencePalette.MutedText)
+                }
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth().height(50.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("Background", Modifier.weight(1f), color = ReferencePalette.Text,
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    ReferenceCreateDropdown(
+                        value = when (bgType) {
+                            BackgroundType.SOLID -> "Black"
+                            BackgroundType.TRANSPARENT -> "Transparent"
+                            BackgroundType.LINEAR_GRADIENT -> "Linear gradient"
+                            BackgroundType.RADIAL_GRADIENT -> "Radial gradient"
+                        },
+                        leading = {
+                            Box(
+                                Modifier.size(18.dp).clip(RoundedCornerShape(4.dp))
+                                    .background(Color(ColorUtil.parse(bgColor)))
+                                    .border(1.dp, Color(0xFF3A3A40), RoundedCornerShape(4.dp))
+                            )
+                        },
+                        expanded = bgExpanded,
+                        onExpandedChange = { bgExpanded = it },
+                        options = BackgroundType.entries.map { it.name to it.name },
+                        onSelect = { bgType = BackgroundType.valueOf(it) },
+                        modifier = Modifier.width(190.dp).height(46.dp)
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    Modifier.fillMaxWidth().height(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(role = androidx.compose.ui.semantics.Role.Button,
+                            onClick = { advanced = !advanced })
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(if (advanced) "Hide advanced settings" else "More settings",
+                        Modifier.weight(1f), color = ReferencePalette.SecondaryText,
+                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Icon(if (advanced) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        null, Modifier.size(18.dp), tint = ReferencePalette.SecondaryText)
+                }
+                if (advanced) {
                     Spacer(Modifier.height(8.dp))
-                    LabeledSelect("Resolution", res.label, RES_PRESETS.map { it.label to it.label }) {
-                        res = RES_PRESETS.first { preset -> preset.label == it }
+                    SliderRow("Project duration (s)", duration, 1f..120f) { duration = it }
+                    LabeledSelect("Background type", bgType.name,
+                        BackgroundType.entries.map { it.name to it.name }) {
+                        bgType = BackgroundType.valueOf(it)
                     }
-                    LabeledSelect("Frame rate", fps.label, FrameRates.ALL.map { it.label to it.label }) {
-                        fps = FrameRates.ALL.first { preset -> preset.label == it }
-                    }
-                    SliderRow("Project duration (s)", duration, 1f..120f, { duration = it })
-                    LabeledSelect("Background", bgType.name,
-                        BackgroundType.entries.map { it.name to it.name }) { bgType = BackgroundType.valueOf(it) }
                     if (bgType != BackgroundType.TRANSPARENT) {
                         ColorSwatchRow("Primary", bgColor) { bgColor = it }
-                        if (bgType == BackgroundType.LINEAR_GRADIENT || bgType == BackgroundType.RADIAL_GRADIENT) {
+                        if (bgType == BackgroundType.LINEAR_GRADIENT ||
+                            bgType == BackgroundType.RADIAL_GRADIENT) {
                             ColorSwatchRow("Gradient end", bgEnd) { bgEnd = it }
                             if (bgType == BackgroundType.LINEAR_GRADIENT) {
-                                SliderRow("Gradient angle", bgAngle, 0f..360f, { bgAngle = it })
+                                SliderRow("Gradient angle", bgAngle, 0f..360f) { bgAngle = it }
                             }
                         }
                     }
                     Text("Timebase: $timebase", Modifier.padding(top = 8.dp),
                         fontSize = 9.sp, color = ReferencePalette.MutedText)
                 }
-                ReferenceButton(
-                    text = "Create Project",
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    background = ReferencePalette.Lavender,
-                    foreground = Color(0xFF111116),
-                    onClick = {
-                        vm.createProject(ProjectSpec(
-                            name = name.ifBlank { "Untitled project" },
-                            width = w, height = h, aspect = aspect, fpsExact = fps.exact,
-                            durationMs = (duration * 1000).toLong(),
-                            backgroundType = bgType, background = bgColor,
-                            backgroundEnd = bgEnd, backgroundAngle = bgAngle,
-                            audioSampleRate = sampleRate.toIntOrNull() ?: 48000,
-                            colorSpace = colorSpace, previewQuality = quality, timebase = timebase
-                        ))
-                        onCreated()
-                    }
-                )
             }
+            Spacer(Modifier.height(12.dp))
+            ReferenceButton(
+                text = if (mode == CreateMode.ELEMENT) "Create Element" else "Create Project",
+                modifier = Modifier.fillMaxWidth().height(46.dp),
+                background = ReferencePalette.Lavender,
+                foreground = Color(0xFF111116),
+                onClick = {
+                    val spec = ProjectSpec(
+                        name = name.ifBlank {
+                            if (mode == CreateMode.ELEMENT) "Untitled element" else "Untitled project"
+                        },
+                        width = w, height = h,
+                        aspect = if (custom) aspectLabel(w, h) else aspect,
+                        fpsExact = fps.exact,
+                        durationMs = (duration * 1000).toLong(),
+                        backgroundType = bgType, background = bgColor,
+                        backgroundEnd = bgEnd, backgroundAngle = bgAngle,
+                        audioSampleRate = sampleRate, colorSpace = colorSpace,
+                        previewQuality = quality, timebase = timebase
+                    )
+                    if (mode == CreateMode.ELEMENT) vm.createElement(spec) else vm.createProject(spec)
+                    onCreated()
+                }
+            )
         }
     }
 }
 
 @Composable
-private fun ReferenceRatioChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val interaction = remember(label) { androidx.compose.foundation.interaction.MutableInteractionSource() }
+private fun ReferenceCreateTab(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        Modifier.padding(end = 6.dp).height(32.dp).clip(RoundedCornerShape(9.dp))
-            .background(if (selected) ReferencePalette.Lavender else ReferencePalette.Input)
-            .clickable(interactionSource = interaction, indication = androidx.compose.foundation.LocalIndication.current,
-                role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
-            .padding(horizontal = 11.dp),
+        modifier.fillMaxHeight().clip(RoundedCornerShape(16.dp))
+            .background(if (selected) Color(0xFF414147) else Color.Transparent)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
-            color = if (selected) Color(0xFF111116) else ReferencePalette.SecondaryText)
+        Text(label, fontSize = 15.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) ReferencePalette.Text else ReferencePalette.MutedText)
+    }
+}
+
+@Composable
+private fun ReferenceCreateNameField(value: String, onValueChange: (String) -> Unit, onClear: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(14.dp))
+            .background(ReferencePalette.Input).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (value.isEmpty()) {
+                Text("New Project 1", color = ReferencePalette.MutedText, fontSize = 16.sp)
+            }
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Project name" },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = ReferencePalette.Text, fontSize = 16.sp
+                )
+            )
+        }
+        IconButton(onClick = onClear, modifier = Modifier.size(28.dp)) {
+            Icon(Icons.Default.Close, "Clear project name", Modifier.size(18.dp),
+                tint = ReferencePalette.SecondaryText)
+        }
+    }
+}
+
+@Composable
+private fun ReferenceAspectChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier.width(54.dp).height(46.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (selected) Color(0xFF2E2E33) else Color.Transparent)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        ReferenceAspectBrackets(
+            Modifier.matchParentSize().padding(3.dp),
+            if (selected) ReferencePalette.Text else ReferencePalette.SecondaryText
+        )
+        Text(label, color = ReferencePalette.Text, fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun ReferenceAspectBrackets(modifier: Modifier, tint: Color) {
+    androidx.compose.foundation.Canvas(modifier) {
+        val arm = 9.dp.toPx()
+        val stroke = 1.5.dp.toPx()
+        val right = size.width
+        val bottom = size.height
+        drawLine(tint, androidx.compose.ui.geometry.Offset(0f, 0f),
+            androidx.compose.ui.geometry.Offset(arm, 0f), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(0f, 0f),
+            androidx.compose.ui.geometry.Offset(0f, arm), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(right, 0f),
+            androidx.compose.ui.geometry.Offset(right - arm, 0f), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(right, 0f),
+            androidx.compose.ui.geometry.Offset(right, arm), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(0f, bottom),
+            androidx.compose.ui.geometry.Offset(arm, bottom), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(0f, bottom),
+            androidx.compose.ui.geometry.Offset(0f, bottom - arm), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(right, bottom),
+            androidx.compose.ui.geometry.Offset(right - arm, bottom), stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(right, bottom),
+            androidx.compose.ui.geometry.Offset(right, bottom - arm), stroke)
+    }
+}
+
+@Composable
+private fun ReferenceCreateValueField(value: String, onValueChange: (String) -> Unit, modifier: Modifier) {
+    Box(
+        modifier.clip(RoundedCornerShape(12.dp)).background(ReferencePalette.Input),
+        contentAlignment = Alignment.Center
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(
+                color = ReferencePalette.Text, fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            ),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+            )
+        )
+    }
+}
+
+@Composable
+private fun ReferenceCreateDropdown(
+    value: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    options: List<Pair<String, String>>,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    leading: (@Composable () -> Unit)? = null
+) {
+    Box(modifier) {
+        Row(
+            Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+                .background(ReferencePalette.Input)
+                .clickable(role = androidx.compose.ui.semantics.Role.Button,
+                    onClick = { onExpandedChange(true) })
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leading != null) {
+                leading()
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(value, Modifier.weight(1f), color = ReferencePalette.Text,
+                fontSize = 14.sp, maxLines = 1)
+            Icon(Icons.Default.ExpandMore, null, Modifier.size(19.dp),
+                tint = ReferencePalette.SecondaryText)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+            options.forEach { (label, key) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { onSelect(key); onExpandedChange(false) }
+                )
+            }
+        }
     }
 }
 

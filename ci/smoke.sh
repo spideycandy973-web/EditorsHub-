@@ -28,6 +28,10 @@ adb shell am start -W -n com.editorshub/.MainActivity >> "$OUT" 2>&1 ||
 sleep 12
 adb exec-out screencap -p > native-home.png 2>> "$OUT" || log "Could not capture native home screenshot"
 
+log "== native UI state captures =="
+python3 ci/capture-native-states.py >> "$OUT" 2>&1 ||
+  log "Could not capture Projects/creation-sheet states (continuing smoke test)"
+
 PROC=$(adb shell pidof com.editorshub 2>> "$OUT" | tr -d '\r' || true)
 log "PROC=[$PROC]"
 
