@@ -1,0 +1,162 @@
+name: Build & Release APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' EditorsHub/app/build.gradle.kts | head -1)
+          test -n "$APP_VERSION"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [[ ! "$TAG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Tag must be vMAJOR.MINOR.PATCH"
+              exit 1
+            fi
+            if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
+              echo "::error::Tag v$TAG_VERSION does not match versionName $APP_VERSION"
+              exit 1
+            fi
+            ASSET_TAG="$GITHUB_REF_NAME"
+            VERSION="$TAG_VERSION"
+          else
+            ASSET_TAG="nightly"
+            VERSION="$APP_VERSION"
+          fi
+          echo "asset_tag=$ASSET_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION; asset tag: $ASSET_TAG"
+
+      - name: Decode production signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            eval "value=\${$name}"
+            if [ -z "$value" ]; then
+              echo "::error::$name secret is not configured. Debug signing is not used for releases."
+              exit 1
+            fi
+          done
+          DATA="$KEYSTORE_BASE64"
+          DATA="${DATA#KEYSTORE_BASE64=}"
+          DATA="${DATA#\"}"
+          DATA="${DATA%\"}"
+          DATA="${DATA#\'}"
+          DATA="${DATA%\'}"
+          DATA="$(printf '%s' "$DATA" | tr -d '[:space:]')"
+          KEYSTORE="$RUNNER_TEMP/editorshub-release.jks"
+          printf '%s' "$DATA" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" >/dev/null
+          echo "KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          chmod +x EditorsHub/gradlew
+          cd EditorsHub
+          ./gradlew :app:testDebugUnitTest :app:assembleRelease --no-daemon --stacktrace \
+            -Pandroid.injected.signing.store.file="$KEYSTORE" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Verify and rename APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="EditorsHub/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt 2>/dev/null | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          test -n "$AAPT"
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | tee badging.txt
+          grep -q "versionName='${{ steps.version.outputs.version }}'" badging.txt
+          mkdir -p dist
+          cp "$APK" "dist/EditorsHub-${{ steps.version.outputs.asset_tag }}.apk"
+          ls -lh dist
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EditorsHub-apk
+          path: dist/*.apk
+          if-no-files-found: error
+
+      - name: Create GitHub Release (tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: dist/*.apk
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish nightly (manual run)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: EditorsHub — latest build
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          draft: false
+          prerelease: true
+          make_latest: false
+          files: dist/*.apk
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove signing key
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/editorshub-release.jks"
