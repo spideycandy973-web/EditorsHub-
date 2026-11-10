@@ -76,9 +76,9 @@ jobs:
           V=/tmp/reference.mp4
           rm -f "$V" /tmp/page.html /tmp/cj
           echo "--- try gdown ---"
-          python3 -m gdown --id "$DRIVE_ID" -O "$V" || true
-          if [ ! -s "$V" ] || [ "$(stat -c%s "$V")" -lt 300000000 ]; then
-            echo "--- gdown did not produce the full file, trying Drive confirm flow ---"
+          python3 -m gdown --id "$DRIVE_ID" --fuzzy -O "$V" || true
+          if [ ! -s "$V" ] || [ "$(stat -c%s "$V" 2>/dev/null || echo 0)" -lt 300000000 ]; then
+            echo "--- gdown did not produce the full file, using Drive confirm flow ---"
             rm -f "$V"
             curl -sSL -c /tmp/cj -b /tmp/cj \
               "https://drive.google.com/uc?export=download&id=$DRIVE_ID" -o /tmp/page.html || true
@@ -101,18 +101,20 @@ jobs:
               "https://drive.usercontent.google.com/download?id=$DRIVE_ID&export=download&confirm=$TOKEN&uuid=$UUID" \
               -o "$V" || true
           fi
-          if [ ! -s "$V" ] || [ "$(stat -c%s "$V")" -lt 300000000 ]; then
-            echo "--- last fallback: uc endpoint with confirm ---"
+          if [ ! -s "$V" ] || [ "$(stat -c%s "$V" 2>/dev/null || echo 0)" -lt 300000000 ]; then
+            echo "--- last fallback: direct usercontent with confirm=t ---"
             rm -f "$V"
             curl -sSL -c /tmp/cj -b /tmp/cj \
-              "https://drive.google.com/uc?export=download&confirm=t&id=$DRIVE_ID" -o "$V" || true
+              "https://drive.usercontent.google.com/download?id=$DRIVE_ID&export=download&confirm=t" \
+              -o "$V" || true
           fi
           SIZE=$(stat -c%s "$V" 2>/dev/null || echo 0)
           echo "Downloaded $SIZE bytes (expected 301626146)"
           file "$V" || true
           if [ "$SIZE" -lt 300000000 ]; then
             echo "::error::Could not obtain the full recording ($SIZE bytes)"
-            head -c 600 /tmp/page.html || true
+            head -c 600 "$V" 2>/dev/null || true
+            head -c 600 /tmp/page.html 2>/dev/null || true
             exit 1
           fi
 
