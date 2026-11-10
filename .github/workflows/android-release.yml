@@ -171,10 +171,35 @@ jobs:
           profile: pixel_5
           disable-animations: true
           script: |
-            adb install -r artifacts/EditorsHub-Motion.apk
+            set -euo pipefail
+            adb wait-for-device
+            # The emulator can report boot-complete before PackageManager is ready.
+            # Wait for the Android framework service instead of racing adb install.
+            PACKAGE_MANAGER_READY=0
+            for attempt in $(seq 1 90); do
+              if adb shell pm list packages >/dev/null 2>&1; then
+                PACKAGE_MANAGER_READY=1
+                break
+              fi
+              adb reconnect offline >/dev/null 2>&1 || true
+              sleep 3
+            done
+            if [ "$PACKAGE_MANAGER_READY" -ne 1 ]; then
+              echo "::error::Android PackageManager did not become available after emulator boot."
+              adb devices -l || true
+              adb logcat -d -t 400 || true
+              exit 1
+            fi
+            adb install --no-streaming -r artifacts/EditorsHub-Motion.apk
             adb shell monkey -p com.editorshub -c android.intent.category.LAUNCHER 1
             sleep 12
-            adb shell pidof com.editorshub
+            APP_PID="$(adb shell pidof com.editorshub | tr -d '\r')"
+            if [ -z "$APP_PID" ]; then
+              echo "::error::EditorsHub did not remain running after launch."
+              adb logcat -d -t 500 || true
+              exit 1
+            fi
+            echo "EditorsHub launch verified; PID=$APP_PID"
 
       - name: Publish stable GitHub release
         uses: softprops/action-gh-release@v2
