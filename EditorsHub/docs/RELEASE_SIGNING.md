@@ -1,48 +1,71 @@
-# Secure release signing
+# EditorsHub release signing
 
-**Debug signing is never used for a public production release.** CI publishes an *unsigned*
-release APK/AAB by default; no keystore, password or secret is committed to this repository.
+EditorsHub follows the **GamersHub** release pattern: the release keystore is
+committed, so no user-supplied key or repository secret is required.
 
-## Local signed build
+> **Security warning:** the private key in `keystore/editorshub.p12` is public
+> because this repository is public. Anyone can sign an APK with this
+> certificate. Use it only for this personal project; never reuse it for Google
+> Play, banking, or an app where update authenticity matters. See
+> `keystore/README.md`.
 
-1. Generate a key (keep it outside the repo):
-   ```bash
-   keytool -genkeypair -v -keystore ~/editorshub-release.jks \
-     -alias editorshub -keyalg RSA -keysize 2048 -validity 10000
-   ```
-2. Create `EditorsHub/app/keystore.properties` (gitignored):
-   ```properties
-   storeFile=/absolute/path/to/editorshub-release.jks
-   storePassword=YOUR_STORE_PASSWORD
-   keyAlias=editorshub
-   keyPassword=YOUR_KEY_PASSWORD
-   ```
-3. Build:
-   ```bash
-   cd EditorsHub
-   ./gradlew :app:assembleRelease :app:bundleRelease
-   ```
-   `app/build.gradle.kts` detects the properties file, creates the `release` signing config and
-   applies it. Without the file, artifacts are intentionally unsigned.
+## Committed key
 
-## Signed release in GitHub Actions
-
-`android-release.yml` (workflow_dispatch) expects these repository secrets:
-
-| Secret | Value |
+| Item | Value |
 | --- | --- |
-| `KEYSTORE_BASE64` | `base64 -w0 editorshub-release.jks` |
-| `KEYSTORE_PASSWORD` | store password |
-| `KEY_ALIAS` | key alias |
-| `KEY_PASSWORD` | key password |
+| File | `keystore/editorshub.p12` |
+| Format | PKCS12 |
+| Alias | `editorshub` |
+| Store/key password | `editorshub` (not a secret) |
+| Key | RSA 2048-bit, SHA-256 self-signed |
 
-The workflow decodes the keystore into the runner workspace, writes a temporary
-`keystore.properties`, builds signed APK + AAB, uploads them to a release, and never commits the
-key. Rotate the key if it is ever exposed.
+`app/build.gradle.kts` configures the `release` signing config directly from
+this file, so `assembleRelease` produces a signed `app-release.apk` both locally
+and in CI. Debug builds are unaffected.
 
-## Verification
+## Optional private override
+
+If a genuinely private key is added later, create the gitignored file
+`EditorsHub/app/keystore.properties` from the `EditorsHub/` project root:
+
+```properties
+storeFile=/absolute/path/to/private-release.jks
+storeType=JKS
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=YOUR_ALIAS
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+The build gives that file priority over the committed key. Do not commit the
+properties file or the private keystore.
+
+## GitHub Actions
+
+`.github/workflows/release.yml`:
+
+1. Verifies `keystore/editorshub.p12` with `keytool` and the public password.
+2. Runs `:app:testDebugUnitTest` and `:app:assembleRelease`.
+3. Verifies the APK with `apksigner verify --verbose --print-certs`.
+4. Publishes the single signed APK asset on a `v*` tag push.
+
+No repository secrets are configured. GitHub's automatic `GITHUB_TOKEN` is used
+only to create the release; it is not a user-managed secret.
+
+## Local verification
+
+From the repository root:
 
 ```bash
-apksigner verify --verbose app/build/outputs/apk/release/app-release.apk
-keytool -list -v -keystore editorshub-release.jks
+keytool -list -v \
+  -keystore keystore/editorshub.p12 \
+  -storetype PKCS12 \
+  -storepass editorshub \
+  -alias editorshub
+
+cd EditorsHub
+./gradlew :app:assembleRelease
+apksigner verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
 ```
+
+If the key is rotated, existing installs must be uninstalled before installing
+an APK signed with the new key.

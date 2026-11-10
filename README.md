@@ -83,11 +83,12 @@ workflow. All Android builds run in GitHub Actions.
 
 EditorsHub releases follow the **GamersHub** pattern: a `vX.Y.Z` tag triggers
 [`.github/workflows/release.yml`](.github/workflows/release.yml), which builds a
-signed release APK and publishes a stable **Latest** release named exactly the
-tag with one `EditorsHub-vX.Y.Z.apk` asset. See
-[`docs/RELEASE_POLICY.md`](docs/RELEASE_POLICY.md) for the standing rule and
-signing requirements. Rolling `apk-latest` updates and custom release titles
-are not used for future releases.
+signed release APK from the committed [`keystore/editorshub.p12`](keystore/editorshub.p12)
+and publishes a stable **Latest** release named exactly the tag with one
+`EditorsHub-vX.Y.Z.apk` asset. No user-supplied key or repository secret is
+required; see [`docs/RELEASE_POLICY.md`](docs/RELEASE_POLICY.md) and
+[`keystore/README.md`](keystore/README.md). Rolling `apk-latest` updates and
+custom release titles are not used for future releases.
 
 ## Boundary
 

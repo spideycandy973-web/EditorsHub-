@@ -9,13 +9,19 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
-// Release signing is configured ONLY when a local keystore.properties exists.
-// No keystore or password is ever committed. See docs/RELEASE_SIGNING.md.
+// A repository-local release key is committed so CI and local builds need no
+// secret. It is PUBLIC (anyone with the repository can sign with it); see
+// keystore/README.md and docs/RELEASE_SIGNING.md. A local
+// app/keystore.properties may override it with a private key.
 val keystorePropertiesFile = rootProject.file("app/keystore.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
+val committedReleaseKeystore = rootProject.file("../keystore/editorshub.p12")
+val committedReleaseStorePassword = "editorshub"
+val committedReleaseKeyAlias = "editorshub"
+val committedReleaseKeyPassword = "editorshub"
 
 val appVersionName = "4.4.0"
 val appVersionCode = 20
@@ -25,12 +31,19 @@ android {
     compileSdk = 35
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
-            create("release") {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storeType = keystoreProperties.getProperty("storeType") ?: "JKS"
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
+            } else {
+                storeFile = committedReleaseKeystore
+                storeType = "PKCS12"
+                storePassword = committedReleaseStorePassword
+                keyAlias = committedReleaseKeyAlias
+                keyPassword = committedReleaseKeyPassword
             }
         }
     }
@@ -52,10 +65,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Without a local keystore.properties the artifact is intentionally unsigned.
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

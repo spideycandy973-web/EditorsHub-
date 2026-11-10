@@ -7,7 +7,7 @@ Reference pattern: `spideycandy973-web/GamersHub`, e.g. `v6.11.2`.
 
 ## Required pattern
 
-1. Bump `versionName` (and normally `versionCode`) in
+1. Bump `appVersionName` (and normally `appVersionCode`) in
    `EditorsHub/app/build.gradle.kts`.
 2. Update `RELEASE_NOTES.md` with the user-facing notes for that version.
    GamersHub puts these notes in the PR body; EditorsHub uses
@@ -33,23 +33,34 @@ Reference pattern: `spideycandy973-web/GamersHub`, e.g. `v6.11.2`.
 - Do not substitute a debug APK, an old APK, or a rebuild of a previous
   release unless the user explicitly asks.
 - Do not retag/overwrite an existing version.
+- Do not require user-provided keys or repository secrets for a release.
 - Do not switch to or push to `main`; this session's release tag is created
   from `arena/be31b8e1-editorshub`.
 
 ## Signing
 
-GamersHub commits a PKCS12 keystore. EditorsHub must **not** commit a private
-key. The release workflow uses these repository secrets instead:
+Like GamersHub, EditorsHub **commits its release keystore**. The user has no
+keys or repository secrets, so the repository contains a generated key at
+`keystore/editorshub.p12`:
 
-- `KEYSTORE_BASE64`
-- `KEYSTORE_PASSWORD`
-- `KEY_ALIAS`
-- `KEY_PASSWORD`
+- Format: PKCS12
+- Alias: `editorshub`
+- Store/key password: `editorshub` (not a secret)
+- `EditorsHub/app/build.gradle.kts` signs release builds with it directly.
 
-If they are missing, the workflow fails with a clear error instead of silently
-publishing a debug-signed APK.
+No user-configured secrets are required. `.github/workflows/release.yml` uses
+GitHub's automatic built-in `GITHUB_TOKEN` to publish; there is no
+`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, or `KEY_PASSWORD` secret.
+
+**Warning:** because the repository is public, the private key is public.
+Anyone can sign APKs with this certificate. This is a convenience key for a
+personal project, not a secure production identity. Do not use it for Google
+Play or any app where update authenticity matters; see
+[`keystore/README.md`](../keystore/README.md) and
+[`EditorsHub/docs/RELEASE_SIGNING.md`](../EditorsHub/docs/RELEASE_SIGNING.md).
 
 ## Current state
 
-The existing `v4.4.0` release is left as-is. Every future release follows this
-policy.
+The existing `v4.4.0` release is left as-is. The generated committed release
+keystore is now in place, and no user-supplied key or secret is needed. Every
+future release follows this policy.

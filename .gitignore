@@ -26,6 +26,12 @@ EditorsHub/local.properties
 EditorsHub/app/keystore.properties
 EditorsHub/app/*.jks
 EditorsHub/app/*.keystore
+
+# Release keystore is intentionally committed (see keystore/README.md).
+!keystore/editorshub.p12
+# Derived/local keystores are never committed.
+/keystore/*.jks
+/editorshub-release.jks
 EditorsHub/.idea/
 EditorsHub/captures/
 EditorsHub/.cxx/
