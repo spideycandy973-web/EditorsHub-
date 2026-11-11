@@ -1,6 +1,7 @@
 package com.editorshub.ui.feature.editor
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -34,7 +35,7 @@ fun ReferenceEditorIcon(
             join = StrokeJoin.Round
         )
         fun line(a: Offset, b: Offset) = drawLine(tint, a, b, stroke.width, stroke.cap)
-        fun path(build: Path.() -> Unit, filled: Boolean = false) {
+        fun path(filled: Boolean = false, build: Path.() -> Unit) {
             val p = Path().apply(build)
             if (filled) drawPath(p, tint) else drawPath(p, tint, style = stroke)
         }
@@ -106,12 +107,12 @@ fun ReferenceEditorIcon(
                     lineTo(w * 0.52f, h * 0.70f)
                 }
             }
-            ReferenceEditorIcon.PLAY -> path({
+            ReferenceEditorIcon.PLAY -> path(filled = true) {
                 moveTo(w * 0.28f, h * 0.16f)
                 lineTo(w * 0.84f, h * 0.5f)
                 lineTo(w * 0.28f, h * 0.84f)
                 close()
-            }, filled = true)
+            }
             ReferenceEditorIcon.PAUSE -> {
                 drawRoundRect(
                     color = tint,
@@ -163,26 +164,26 @@ fun ReferenceEditorIcon(
                 line(Offset(w * 0.10f, h * 0.88f), Offset(w * 0.34f, h * 0.88f))
                 line(Offset(w * 0.66f, h * 0.88f), Offset(w * 0.90f, h * 0.88f))
                 line(Offset(w * 0.90f, h * 0.88f), Offset(w * 0.90f, h * 0.70f))
-                path({
+                path(filled = true) {
                     moveTo(w * 0.42f, h * 0.06f)
                     lineTo(w * 0.50f, h * 0.16f)
                     lineTo(w * 0.58f, h * 0.06f)
                     close()
-                }, filled = true)
-                path({
+                }
+                path(filled = true) {
                     moveTo(w * 0.42f, h * 0.94f)
                     lineTo(w * 0.50f, h * 0.84f)
                     lineTo(w * 0.58f, h * 0.94f)
                     close()
-                }, filled = true)
+                }
             }
-            ReferenceEditorIcon.DIAMOND -> path({
+            ReferenceEditorIcon.DIAMOND -> path {
                 moveTo(w * 0.5f, h * 0.08f)
                 lineTo(w * 0.92f, h * 0.5f)
                 lineTo(w * 0.5f, h * 0.92f)
                 lineTo(w * 0.08f, h * 0.5f)
                 close()
-            })
+            }
         }
     }
 }
