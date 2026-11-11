@@ -144,7 +144,7 @@ fun TimelineEditor(
         // Timecode pill sits on the ruler/track boundary like the reference.
         Text(
             timecode,
-            Modifier.offset(x = playheadX - 38.dp, y = 22.dp)
+            Modifier.offset(x = playheadX - 38.dp, y = 0.dp)
                 .width(76.dp).height(21.dp)
                 .background(Color(0xFF303034), RoundedCornerShape(5.dp))
                 .wrapContentHeight(Alignment.CenterVertically),
