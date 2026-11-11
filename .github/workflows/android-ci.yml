@@ -15,6 +15,7 @@ on:
       - 'EditorsHub/**'
       - 'ci/smoke.sh'
       - 'ci/android-smoke.sh'
+      - 'ci/capture-native-states.py'
       - '.github/workflows/android-ci.yml'
 
 permissions:
@@ -160,6 +161,12 @@ jobs:
             native-home.png
             native-projects.png
             native-create.png
+            native-editor.png
+            native-editor-add.png
+            native-editor-inspector.png
+            native-editor-properties.png
+            native-editor-transform.png
+            native-editor-keyframe.png
           if-no-files-found: warn
 
       - name: Upload emulator diagnostics on failure

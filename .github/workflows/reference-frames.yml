@@ -76,7 +76,7 @@ jobs:
           mkdir -p docs/screenshots
           cp /tmp/native-capture/native-home.png "$NATIVE_CAPTURE"
           file "$NATIVE_CAPTURE"
-          for state in projects create; do
+          for state in projects create editor editor-add editor-inspector editor-properties editor-transform editor-keyframe; do
             src="/tmp/native-capture/native-${state}.png"
             if [ -s "$src" ]; then
               cp "$src" "docs/screenshots/native-${state}-v4.5.2.png"

@@ -11,6 +11,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.editorshub.core.data.ProjectRepository
 import com.editorshub.core.data.ProjectSerializer
+import com.editorshub.core.data.TemplateCatalog
 import com.editorshub.core.domain.effects.EffectCatalog
 import com.editorshub.core.domain.keyframe.KeyframeEngine
 import com.editorshub.core.domain.model.*
@@ -58,7 +59,9 @@ data class EditorUiState(
     val multiSelect: Boolean = false,
     val playheadMs: Long = 0L,
     val playing: Boolean = false,
-    val zoomPxPerSecond: Float = 70f,
+    // The reference ruler shows roughly five seconds across the right half of a
+    // phone screen, i.e. about 44 dp/second at the emulator's density.
+    val zoomPxPerSecond: Float = 44f,
     val tab: EditorTab = EditorTab.ADD,
     val selectedProperty: String = "x",
     val autoKey: Boolean = false,
@@ -336,6 +339,109 @@ class EditorViewModel @Inject constructor(
             else -> EditorTab.TRANSFORM
         })
         message("$name added")
+    }
+
+    /** Real freehand/vector drawing layers for the reference Add sheet. */
+    fun addDrawingLayer(freehand: Boolean) {
+        val p = project()
+        val id = UUID.randomUUID().toString()
+        val startMs = _ui.value.playheadMs.coerceAtLeast(0L)
+        val durationMs = minOf(5000L, (p.durationMs - startMs).coerceAtLeast(500L))
+        val commands = if (freehand) listOf(
+            VectorCommand("M", listOf(-240f, 40f)),
+            VectorCommand("Q", listOf(-120f, -180f, 0f, 20f)),
+            VectorCommand("Q", listOf(120f, 220f, 240f, -40f))
+        ) else listOf(
+            VectorCommand("M", listOf(-200f, -160f)),
+            VectorCommand("L", listOf(210f, -160f)),
+            VectorCommand("L", listOf(0f, 200f)),
+            VectorCommand("Z")
+        )
+        val layer = Layer(
+            id = id,
+            name = if (freehand) "Freehand Drawing" else "Vector Drawing",
+            type = LayerType.VECTOR,
+            startMs = startMs,
+            durationMs = durationMs,
+            vector = VectorSpec(
+                commands = commands,
+                fillColor = if (freehand) "#00FFFFFF" else "#FFBA7E38",
+                fillColor2 = "#FF01FFA7",
+                gradient = GradientType.LINEAR,
+                strokeColor = "#FF01FFA7",
+                strokeWidth = if (freehand) 12f else 5f,
+                closed = !freehand
+            )
+        )
+        commit {
+            it.copy(
+                durationMs = maxOf(it.durationMs, startMs + durationMs),
+                layers = listOf(layer) + it.layers
+            )
+        }
+        _ui.value = _ui.value.copy(selectedLayerId = id, tab = EditorTab.VECTOR)
+        message("${layer.name} added")
+    }
+
+    /** Inserts a real, editable starter composition into the current project. */
+    fun addTemplateLayers() {
+        val p = project()
+        val startMs = _ui.value.playheadMs.coerceAtLeast(0L)
+        val template = TemplateCatalog.templates.first().build()
+        val layers = template.layers.map { layer ->
+            layer.copy(
+                id = UUID.randomUUID().toString(),
+                startMs = layer.startMs + startMs,
+                parentId = null
+            )
+        }
+        val endMs = layers.maxOfOrNull { it.startMs + it.durationMs } ?: p.durationMs
+        commit {
+            it.copy(durationMs = maxOf(it.durationMs, endMs), layers = layers + it.layers)
+        }
+        _ui.value = _ui.value.copy(
+            selectedLayerId = layers.firstOrNull()?.id,
+            tab = EditorTab.PROPERTIES
+        )
+        message("${template.name} layers added")
+    }
+
+    /**
+     * A camera/null is a real GROUP layer. Parents inherit its transform through
+     * RenderGraph.worldMatrix, so animating it actually moves the composition.
+     */
+    fun addCameraObject() {
+        val p = project()
+        val id = UUID.randomUUID().toString()
+        val camera = Layer(
+            id = id, name = "Camera 1", type = LayerType.GROUP,
+            startMs = 0L, durationMs = p.durationMs.coerceAtLeast(5000L)
+        )
+        commit {
+            it.copy(
+                layers = listOf(camera) + it.layers.map { layer -> layer.copy(parentId = id) }
+            )
+        }
+        _ui.value = _ui.value.copy(selectedLayerId = id, tab = EditorTab.TRANSFORM)
+        message("Camera 1 added; layers are parented to it")
+    }
+
+    fun addNullObject() {
+        val p = project()
+        val startMs = _ui.value.playheadMs.coerceAtLeast(0L)
+        val nullLayer = Layer(
+            id = UUID.randomUUID().toString(), name = "Null 1", type = LayerType.GROUP,
+            startMs = startMs,
+            durationMs = (p.durationMs - startMs).coerceAtLeast(5000L)
+        )
+        commit {
+            it.copy(
+                durationMs = maxOf(it.durationMs, startMs + nullLayer.durationMs),
+                layers = listOf(nullLayer) + it.layers
+            )
+        }
+        _ui.value = _ui.value.copy(selectedLayerId = nullLayer.id, tab = EditorTab.TRANSFORM)
+        message("Null 1 added")
     }
 
     private fun shapeLabel(kind: ShapeKind): String = when (kind) {

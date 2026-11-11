@@ -21,6 +21,7 @@ import com.editorshub.core.ai.EffectGraph
 import com.editorshub.core.ai.NodeEvaluator
 import com.editorshub.core.data.ProjectRepository
 import com.editorshub.core.domain.effects.EffectCatalog
+import com.editorshub.core.domain.effects.EffectDemoProject
 import com.editorshub.core.domain.model.*
 import com.editorshub.core.rendering.ThumbnailGenerator
 import com.editorshub.ui.components.RenderPreview
@@ -56,30 +57,7 @@ class EffectsLibraryViewModel @Inject constructor(
 
     init { refreshPresets() }
 
-    fun demo(type: EffectType): Project {
-        val effect = Effect(id = UUID.randomUUID().toString(), type = type,
-            params = EffectCatalog.defaults(type))
-        return Project(
-            id = "demo_$type", name = EffectCatalog.spec(type).label,
-            width = 480, height = 480, fps = 30, durationMs = 2000L,
-            background = "#FF12142A",
-            // Layer 0 is topmost in the compositor. Keep preview subjects above
-            // the solid background so the effect is actually visible.
-            layers = listOf(
-                Layer(id = "label", name = "Label", type = LayerType.TEXT,
-                    startMs = 0, durationMs = 2000L,
-                    text = TextSpec(text = EffectCatalog.spec(type).label, fontSize = 42f),
-                    effects = listOf(effect.copy(id = UUID.randomUUID().toString()))),
-                Layer(id = "shape", name = "Preview shape", type = LayerType.SHAPE,
-                    startMs = 0, durationMs = 2000L,
-                    shape = ShapeSpec(kind = ShapeKind.STAR, width = 260f, height = 260f,
-                        gradient = GradientType.RADIAL, fillColor = "#FFFFFFFF", fillColor2 = "#FF22D3EE"),
-                    effects = listOf(effect)),
-                Layer(id = "bg", name = "Background", type = LayerType.SOLID,
-                    startMs = 0, durationMs = 2000L)
-            )
-        )
-    }
+    fun demo(type: EffectType): Project = EffectDemoProject.forType(type)
 
     fun createWithEffect(type: EffectType) = viewModelScope.launch {
         val p = repository.create(ProjectSpec(name = EffectCatalog.spec(type).label,

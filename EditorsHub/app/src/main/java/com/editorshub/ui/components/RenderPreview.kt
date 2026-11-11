@@ -42,7 +42,12 @@ import kotlinx.coroutines.withContext
  * a hardware-accelerated AndroidView whose first draw can arrive with zero size.
  */
 @Composable
-fun RenderPreview(project: Project, timeMs: Long = 0L, modifier: Modifier = Modifier) {
+fun RenderPreview(
+    project: Project,
+    timeMs: Long = 0L,
+    modifier: Modifier = Modifier,
+    maxDimension: Int = 480
+) {
     val context = LocalContext.current
     val thumbnails = remember {
         EntryPointAccessors.fromApplication(
@@ -50,9 +55,9 @@ fun RenderPreview(project: Project, timeMs: Long = 0L, modifier: Modifier = Modi
             AppEntryPoint::class.java
         ).thumbnailGenerator()
     }
-    val bitmap by produceState<Bitmap?>(initialValue = null, project, timeMs) {
+    val bitmap by produceState<Bitmap?>(initialValue = null, project, timeMs, maxDimension) {
         value = withContext(Dispatchers.IO) {
-            thumbnails.renderBitmap(project, timeMs, maxDimension = 480)
+            thumbnails.renderBitmap(project, timeMs, maxDimension = maxDimension.coerceIn(32, 480))
         }
     }
     DisposableEffect(bitmap) {

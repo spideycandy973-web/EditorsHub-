@@ -96,7 +96,12 @@ fun EditorsHubRoot() {
         composable(
             route = Routes.EDITOR,
             arguments = listOf(navArgument("projectId") { type = NavType.StringType })
-        ) { EditorScreen(onBack = { rootNav.popBackStack() }) }
+        ) {
+            EditorScreen(
+                onBack = { rootNav.popBackStack() },
+                onOpenImporter = { rootNav.navigate(Routes.IMPORT) }
+            )
+        }
     }
 }
 

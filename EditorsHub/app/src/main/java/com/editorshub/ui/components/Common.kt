@@ -21,9 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.editorshub.ui.theme.AppMotion
+import com.editorshub.ui.theme.EditorPalette
 
 @Composable
 fun PanelSection(title: String, expanded: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
@@ -38,17 +42,19 @@ fun PanelSection(title: String, expanded: Boolean = true, content: @Composable C
             .fillMaxWidth()
             .padding(horizontal = 10.dp, vertical = 4.dp)
             .animateContentSize(tween(AppMotion.Normal, easing = AppMotion.Emphasized))
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+            .background(EditorPalette.SurfaceRaised, RoundedCornerShape(10.dp))
             .padding(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable { open = !open },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(title, modifier = Modifier.weight(1f), fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold, color = EditorPalette.TextSecondary)
             Icon(
                 Icons.Default.KeyboardArrowDown, null,
-                modifier = Modifier.size(18.dp).rotate(arrowRotation)
+                modifier = Modifier.size(16.dp).rotate(arrowRotation),
+                tint = EditorPalette.TextMuted
             )
         }
         AnimatedVisibility(
@@ -79,8 +85,12 @@ fun SliderRow(
                 modifier = Modifier.weight(1f))
             Text("%.2f%s".format(value, suffix), fontSize = 11.sp)
             if (onKeyframe != null) {
-                IconButton(onClick = onKeyframe, modifier = Modifier.size(26.dp)) {
-                    Text("◆", color = if (keyed) Color(0xFFFBBF24) else MaterialTheme.colorScheme.outline,
+                IconButton(
+                    onClick = onKeyframe,
+                    modifier = Modifier.size(26.dp)
+                        .semantics { contentDescription = "$label keyframe" }
+                ) {
+                    Text("◆", color = if (keyed) EditorPalette.Green else MaterialTheme.colorScheme.outline,
                         fontSize = 13.sp)
                 }
             }

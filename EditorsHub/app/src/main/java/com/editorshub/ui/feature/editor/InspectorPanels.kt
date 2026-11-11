@@ -26,10 +26,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.editorshub.core.domain.effects.EffectCatalog
+import com.editorshub.core.domain.effects.EffectDemoProject
 import com.editorshub.core.domain.keyframe.KeyframeEngine
+import com.editorshub.core.domain.keyframe.KeyframeGraphMath
 import com.editorshub.core.domain.model.*
 import com.editorshub.core.rendering.RenderGraph
 import com.editorshub.ui.components.*
@@ -55,7 +61,8 @@ fun Inspector(
     state: EditorUiState,
     vm: EditorViewModel,
     modifier: Modifier = Modifier,
-    onShapePicker: () -> Unit = {}
+    onShapePicker: () -> Unit = {},
+    onClosePanel: () -> Unit = {}
 ) {
     val project = state.project ?: return
     val layer = project.layers.firstOrNull { it.id == state.selectedLayerId }
@@ -63,34 +70,47 @@ fun Inspector(
         Column(
             Modifier.width(54.dp).fillMaxHeight().background(EditorPalette.SurfaceRaised),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(7.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             IconButton(onClick = {
-                if (state.tab in setOf(EditorTab.BORDER, EditorTab.BLEND, EditorTab.COLOR,
-                        EditorTab.SHAPE, EditorTab.TRANSFORM, EditorTab.EFFECTS, EditorTab.TEXT,
-                        EditorTab.VECTOR, EditorTab.MASKS, EditorTab.KEYFRAMES, EditorTab.AUDIO)) {
-                    vm.setTab(EditorTab.PROPERTIES)
-                } else vm.setTab(EditorTab.ADD)
-            }, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Default.ArrowBack, "Back to properties", tint = EditorPalette.TextPrimary)
+                if (state.tab == EditorTab.PROPERTIES || state.tab == EditorTab.ADD) {
+                    onClosePanel()
+                } else vm.setTab(EditorTab.PROPERTIES)
+            }, modifier = Modifier.size(44.dp)
+                .semantics { contentDescription = "Back to properties" }) {
+                Icon(Icons.Default.ArrowBack, null, Modifier.size(19.dp),
+                    tint = EditorPalette.TextPrimary)
             }
             IconButton(
-                onClick = { vm.addKeyframe(state.selectedProperty) },
+                onClick = { vm.toggleKeyframe(state.selectedProperty) },
                 enabled = layer != null && !layer.locked,
                 modifier = Modifier.size(42.dp)
+                    .semantics { contentDescription = "Toggle keyframe" }
             ) {
-                Icon(Icons.Default.Add, "Add keyframe", tint = EditorPalette.TextSecondary)
+                ReferenceEditorIcon(ReferenceEditorIcon.DIAMOND, Modifier.size(20.dp),
+                    tint = EditorPalette.Green)
             }
-            IconButton(onClick = { vm.setTab(EditorTab.TRANSFORM) }, modifier = Modifier.size(42.dp)) {
-                Icon(Icons.Default.ShowChart, "Transform and easing", tint = EditorPalette.TextSecondary)
+            IconButton(onClick = { vm.setTab(EditorTab.KEYFRAMES) },
+                modifier = Modifier.size(42.dp)
+                    .semantics { contentDescription = "Open keyframes panel" }) {
+                Icon(Icons.Default.ShowChart, null, Modifier.size(19.dp),
+                    tint = EditorPalette.TextSecondary)
+            }
+            IconButton(onClick = { vm.setTab(EditorTab.MASKS) },
+                modifier = Modifier.size(42.dp)
+                    .semantics { contentDescription = "Open masks panel" }) {
+                Icon(Icons.Default.Crop, null, Modifier.size(19.dp),
+                    tint = EditorPalette.TextSecondary)
             }
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { vm.undo() }, enabled = state.undoAvailable,
-                modifier = Modifier.size(42.dp)) {
-                Icon(Icons.Default.Undo, "Undo", tint = EditorPalette.TextMuted)
+                modifier = Modifier.size(42.dp)
+                    .semantics { contentDescription = "Undo" }) {
+                ReferenceEditorIcon(ReferenceEditorIcon.UNDO, Modifier.size(19.dp),
+                    tint = EditorPalette.TextMuted)
             }
         }
-        Box(Modifier.weight(1f).fillMaxHeight().padding(horizontal = 6.dp, vertical = 4.dp)) {
+        Box(Modifier.weight(1f).fillMaxHeight().padding(horizontal = 5.dp, vertical = 5.dp)) {
             AnimatedContent(
                 targetState = state.tab,
                 modifier = Modifier.fillMaxSize(),
@@ -112,7 +132,7 @@ fun Inspector(
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     when (panelTab) {
                         EditorTab.ADD -> AddPanel(state, vm, onShapePicker)
-                        EditorTab.PROPERTIES -> PropertiesPanel(vm, layer)
+                        EditorTab.PROPERTIES -> PropertiesPanel(state, vm, layer)
                         EditorTab.BORDER -> BorderPanel(state, vm, layer)
                         EditorTab.BLEND -> BlendPanel(vm, layer)
                         EditorTab.COLOR -> ColorPanel(vm, layer)
@@ -130,64 +150,138 @@ fun Inspector(
                 }
             }
         }
-        AnimatedVisibility(
-            visible = state.tab == EditorTab.BORDER,
-            enter = fadeIn(tween(AppMotion.Fast)) + slideInHorizontally(
-                initialOffsetX = { it / 3 }, animationSpec = tween(AppMotion.Normal, easing = AppMotion.Emphasized)
-            ),
-            exit = fadeOut(tween(AppMotion.Fast)) + slideOutHorizontally(
-                targetOffsetX = { it / 3 }, animationSpec = tween(AppMotion.Fast, easing = AppMotion.Standard)
-            )
+        Column(
+            Modifier.width(54.dp).fillMaxHeight().background(EditorPalette.Charcoal),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Column(
-                Modifier.width(62.dp).fillMaxHeight().background(EditorPalette.Charcoal),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(7.dp)
-            ) {
+            if (state.tab == EditorTab.BORDER) {
                 BorderModeButton("stroke", "Stroke", Icons.Default.Brush, state, vm)
                 BorderModeButton("border", "Border", Icons.Default.CropSquare, state, vm)
                 BorderModeButton("shadow", "Shadow", Icons.Default.Layers, state, vm)
+            } else {
+                RailButton("Move & Transform", Icons.Default.OpenWith, EditorPalette.Green) {
+                    vm.setTab(EditorTab.TRANSFORM)
+                }
+                RailButton("Duplicate layer", Icons.Default.ContentCopy, EditorPalette.TextSecondary) {
+                    layer?.let { vm.duplicateLayer(it.id) }
+                }
+                RailButton("Split layer", Icons.Default.ContentCut, EditorPalette.TextSecondary) {
+                    layer?.let { vm.splitLayer(it.id) }
+                }
+                RailButton("Delete layer", Icons.Default.Delete, EditorPalette.Red) {
+                    layer?.let { vm.deleteLayer(it.id) }
+                }
+                Spacer(Modifier.weight(1f))
+                RailButton("Close panel", Icons.Default.Close, EditorPalette.TextMuted, onClosePanel)
             }
         }
     }
 }
 
 @Composable
-private fun PropertiesPanel(vm: EditorViewModel, layer: Layer?) {
-    val entries = listOf(
-        Triple("Color & Fill", Icons.Default.Palette, EditorTab.COLOR),
-        Triple("Border & Shadow", Icons.Default.BorderColor, EditorTab.BORDER),
-        Triple("Blending & Opacity", Icons.Default.BlurOn, EditorTab.BLEND),
-        Triple("Move & Transform", Icons.Default.OpenWith, EditorTab.TRANSFORM),
-        Triple("Edit Shape", Icons.Default.Edit, EditorTab.SHAPE),
-        Triple("Effects", Icons.Default.AutoAwesome, EditorTab.EFFECTS),
-        Triple("Keyframes", Icons.Default.Add, EditorTab.KEYFRAMES),
-        Triple("Masks", Icons.Default.Crop, EditorTab.MASKS)
-    )
-    if (layer == null) { Hint("Select a layer to edit its properties"); return }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        entries.chunked(3).forEach { row ->
-            Row(Modifier.fillMaxWidth().height(62.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { (title, icon, tab) ->
-                    val interaction = remember(title) { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                    Card(
-                        Modifier.weight(1f).fillMaxHeight().pressScale(interaction, 0.95f)
-                            .clickable(interactionSource = interaction,
-                                indication = androidx.compose.foundation.LocalIndication.current) { vm.setTab(tab) },
-                        shape = RoundedCornerShape(9.dp),
-                        colors = CardDefaults.cardColors(containerColor = EditorPalette.SurfaceRaised)
-                    ) {
-                        Column(Modifier.fillMaxSize().padding(5.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center) {
-                            Icon(icon, null, Modifier.size(20.dp), tint = EditorPalette.TextPrimary)
-                            Spacer(Modifier.height(3.dp))
-                            Text(title, fontSize = 8.sp, color = EditorPalette.TextPrimary, maxLines = 2)
-                        }
-                    }
-                }
-                repeat((3 - row.size).coerceAtLeast(0)) { Spacer(Modifier.weight(1f)) }
-            }
+private fun RailButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick, modifier = Modifier.size(42.dp)
+        .semantics { contentDescription = label }) {
+        Icon(icon, null, Modifier.size(20.dp), tint = tint)
+    }
+}
+
+@Composable
+private fun PropertiesPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?) {
+    if (layer == null) {
+        Hint("Select a layer to edit its properties")
+        return
+    }
+    val frameMs = (1000.0 / (state.project?.fpsExact ?: 30.0)).toLong().coerceAtLeast(1L)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Row(Modifier.fillMaxWidth().height(38.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            PropertyTool(Icons.Default.Tune, "Timing") { vm.setTab(EditorTab.TRANSITIONS) }
+            PropertyTool(Icons.Default.ContentCut, "Trim start") { vm.trimStart(layer.id, frameMs) }
+            PropertyTool(Icons.Default.Crop, "Split") { vm.splitLayer(layer.id) }
+            PropertyTool(Icons.Default.CropSquare, "Trim end") { vm.trimEnd(layer.id, frameMs) }
+            PropertyTool(Icons.Default.VolumeOff, "Mute") { vm.toggleMuteLayer(layer.id) }
+        }
+        val entries = listOf(
+            Triple("Color & Fill", Icons.Default.Palette, EditorTab.COLOR),
+            Triple("Border & Shadow", Icons.Default.BorderColor, EditorTab.BORDER),
+            Triple("Blending & Opacity", Icons.Default.BlurOn, EditorTab.BLEND),
+            Triple("Move & Transform", Icons.Default.OpenWith, EditorTab.TRANSFORM),
+            Triple("Edit Shape", Icons.Default.Category, EditorTab.SHAPE),
+            Triple("Presets", Icons.Default.Star, EditorTab.TRANSITIONS),
+            Triple("Effects", Icons.Default.AutoAwesome, EditorTab.EFFECTS)
+        )
+        PropertyTileRow(entries.take(3), vm, 58.dp)
+        PropertyTileRow(entries.drop(3), vm, 62.dp)
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.PropertyTool(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Box(
+        Modifier.weight(1f).fillMaxHeight()
+            .background(EditorPalette.SurfaceRaised, RoundedCornerShape(7.dp))
+            .semantics { contentDescription = label }
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, null, Modifier.size(19.dp), tint = EditorPalette.TextPrimary)
+    }
+}
+
+@Composable
+private fun PropertyTileRow(
+    entries: List<Triple<String, androidx.compose.ui.graphics.vector.ImageVector, EditorTab>>,
+    vm: EditorViewModel,
+    height: androidx.compose.ui.unit.Dp
+) {
+    Row(Modifier.fillMaxWidth().height(height),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        entries.forEach { (title, icon, tab) ->
+            PropertyTile(title, icon, Modifier.weight(1f).fillMaxHeight()) { vm.setTab(tab) }
+        }
+    }
+}
+
+@Composable
+private fun PropertyTile(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    val interaction = remember(title) { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    Card(
+        modifier
+            .pressScale(interaction, 0.95f)
+            .semantics { contentDescription = title }
+            .clickable(
+                interactionSource = interaction,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick
+            ),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = EditorPalette.SurfaceRaised)
+    ) {
+        Column(Modifier.fillMaxSize().padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center) {
+            Icon(icon, null, Modifier.size(21.dp), tint = EditorPalette.TextPrimary)
+            Spacer(Modifier.height(3.dp))
+            Text(title, fontSize = 8.sp, fontWeight = FontWeight.Medium,
+                color = EditorPalette.TextMuted, maxLines = 2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 9.sp)
         }
     }
 }
@@ -393,6 +487,43 @@ private fun TransformPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
     val local = state.playheadMs - layer.startMs
     val frameTolerance = (1000.0 / project.fpsExact.coerceIn(1.0, 240.0)).toLong().coerceAtLeast(8L)
     val rt = RenderGraph.resolvedTransform(layer, state.playheadMs)
+    val density = LocalDensity.current.density
+    val latestX = rememberUpdatedState(rt.x)
+    val latestY = rememberUpdatedState(rt.y)
+    PanelSection("Move & Transform") {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            TransformValue("X", rt.x, Modifier.weight(1f), true)
+            TransformValue("Y", rt.y, Modifier.weight(1f), true)
+            TransformValue("ROT", rt.rotation, Modifier.weight(1f), false)
+        }
+        Spacer(Modifier.height(7.dp))
+        Box(
+            Modifier.fillMaxWidth().height(72.dp)
+                .background(EditorPalette.SurfaceRaised, RoundedCornerShape(8.dp))
+                .semantics { contentDescription = "Move layer pad" }
+                .pointerInput(layer.id) {
+                    var currentX = latestX.value
+                    var currentY = latestY.value
+                    detectDragGestures(
+                        onDragStart = {
+                            currentX = latestX.value
+                            currentY = latestY.value
+                        },
+                        onDrag = { change, drag ->
+                            change.consume()
+                            currentX += drag.x / density * 2f
+                            currentY += drag.y / density * 2f
+                            vm.setTransform("x", currentX)
+                            vm.setTransform("y", currentY)
+                        }
+                    )
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Swipe here to move layer", fontSize = 10.sp,
+                color = EditorPalette.TextMuted)
+        }
+    }
     PanelSection("Layer: ${layer.name}") {
         OutlinedTextField(value = layer.name, onValueChange = { vm.renameLayer(layer.id, it) },
             modifier = Modifier.fillMaxWidth(), singleLine = true, textStyle = LocalTextStyle.current.copy(fontSize = 12.sp))
@@ -467,6 +598,23 @@ private fun TransformPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
 }
 
 @Composable
+private fun TransformValue(label: String, value: Float, modifier: Modifier, accent: Boolean) {
+    Column(
+        modifier.height(34.dp)
+            .background(EditorPalette.Charcoal, RoundedCornerShape(5.dp))
+            .padding(horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("%.2f".format(value), fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (accent) EditorPalette.Green else EditorPalette.TextPrimary,
+            maxLines = 1)
+        Text(label.lowercase(), fontSize = 7.sp, color = EditorPalette.TextMuted)
+    }
+}
+
+@Composable
 private fun KeyframesPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer?) {
     if (layer == null) { Hint("Select a layer"); return }
     // Only expose properties the render engine actually evaluates. Effect parameters
@@ -478,7 +626,9 @@ private fun KeyframesPanel(state: EditorUiState, vm: EditorViewModel, layer: Lay
     PanelSection("Keyframe engine") {
         LabeledSelect("Property", property, properties.map { it to it }) { vm.setSelectedProperty(it) }
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Button(onClick = { vm.addKeyframe(property) }, modifier = Modifier.weight(1f)) {
+            Button(onClick = { vm.addKeyframe(property) },
+                modifier = Modifier.weight(1f)
+                    .semantics { contentDescription = "Add keyframe" }) {
                 Text("◆ Add", fontSize = 10.sp)
             }
             Button(onClick = { vm.copyKeyframes(property) }, modifier = Modifier.weight(1f)) {
@@ -555,6 +705,7 @@ private fun KeyframeGraph(track: KeyframeTrack, property: String, vm: EditorView
     val currentKfs = rememberUpdatedState(kfs)
     val bounds = rememberUpdatedState(Triple(maxT, minV, maxV))
     Canvas(modifier.background(Color(0xFF10121B)).border(1.dp, Color(0xFF2A2E40))
+        .semantics { contentDescription = "Keyframe graph editor" }
         .pointerInput(property) {
             var activeId: String? = null
             var originTimeMs = 0L
@@ -587,11 +738,16 @@ private fun KeyframeGraph(track: KeyframeTrack, property: String, vm: EditorView
                     change.consume()
                     totalX += drag.x
                     totalY += drag.y
-                    val newT = (originTimeMs + totalX / size.width * startMaxT)
-                        .toLong().coerceIn(0L, startMaxT.toLong())
-                    val newV = originValue - totalY / size.height * (startMaxV - startMinV)
-                    vm.moveKeyframe(property, id, newT)
-                    vm.setKeyframeValue(property, id, newV)
+                    val point = KeyframeGraphMath.dragged(
+                        origin = KeyframeGraphMath.Point(originTimeMs, originValue),
+                        horizontalRatio = totalX / size.width,
+                        verticalRatio = totalY / size.height,
+                        maxTimeMs = startMaxT,
+                        minValue = startMinV,
+                        maxValue = startMaxV
+                    )
+                    vm.moveKeyframe(property, id, point.timeMs)
+                    vm.setKeyframeValue(property, id, point.value)
                 },
                 onDragEnd = { activeId = null },
                 onDragCancel = { activeId = null }
@@ -658,6 +814,8 @@ private fun EffectsPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer
                             Icon(Icons.Default.Close, null, Modifier.size(13.dp))
                         }
                     }
+                    Text("${e.animated.size} animated parameters", fontSize = 8.sp,
+                        color = EditorPalette.TextMuted)
                     spec.params.forEach { p ->
                         val value = EffectCatalog.resolvedParams(e, local)[p.key] ?: p.default
                         val keyed = e.animated[p.key]?.keyframes
@@ -673,12 +831,33 @@ private fun EffectsPanel(state: EditorUiState, vm: EditorViewModel, layer: Layer
     }
     PanelSection("Effect catalog") {
         EffectCatalog.groups().forEach { group ->
-            Text(group, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
-            EffectCatalog.specs.filter { it.group == group }.forEach { s ->
-                OutlinedButton(onClick = { vm.addEffect(s.type) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-                    Text("+ ${s.label}", fontSize = 10.sp)
+            Text(group, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                color = EditorPalette.Green, modifier = Modifier.padding(vertical = 4.dp))
+            EffectCatalog.specs.filter { it.group == group }.chunked(3).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    row.forEach { spec ->
+                        Column(
+                            Modifier.weight(1f).height(66.dp)
+                                .background(EditorPalette.Charcoal, RoundedCornerShape(7.dp))
+                                .semantics { contentDescription = "Add ${spec.label} effect" }
+                                .clickable(role = androidx.compose.ui.semantics.Role.Button) {
+                                    vm.addEffect(spec.type)
+                                }
+                        ) {
+                            RenderPreview(
+                                EffectDemoProject.forType(spec.type), 900L,
+                                Modifier.fillMaxWidth().height(44.dp),
+                                maxDimension = 96
+                            )
+                            Text(spec.label, fontSize = 7.sp, maxLines = 1,
+                                color = EditorPalette.TextSecondary,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 3.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                    }
+                    repeat((3 - row.size).coerceAtLeast(0)) { Spacer(Modifier.weight(1f)) }
                 }
+                Spacer(Modifier.height(5.dp))
             }
         }
     }

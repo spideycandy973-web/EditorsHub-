@@ -10,6 +10,10 @@ frames and native CI captures remain the source of truth.
 - `docs/reference-frames/key-states/key-0018.0s.jpg` — Projects list.
 - `docs/reference-frames/key-states/key-0030.0s.jpg` — Project/Element creation sheet.
 - `docs/reference-frames/sheets/sheet-001.jpg` and `sheet-002.jpg` — tab and creation-flow transitions.
+- `docs/reference-frames/key-states/key-0055.0s.jpg`, `key-0060.0s.jpg` — empty editor and populated timeline.
+- `docs/reference-frames/key-states/key-0075.0s.jpg`, `key-0150.0s.jpg`, `key-0190.0s.jpg`, `key-0310.0s.jpg`, `key-0390.0s.jpg`, `key-0450.0s.jpg` — inspector/property/transform/effects states.
+- `docs/reference-frames/key-states/key-0230.0s.jpg` — Add sheet and FAB close state.
+- `docs/reference-frames/sheets/sheet-003.jpg` … `sheet-020.jpg` and `timeline-sheets/tl-001.jpg` — editor/timeline interaction sequence.
 - `docs/screenshots/native-home-v4.5.2.png` — pre-change native launcher capture from Android CI.
 
 The reference stills are 610×1356, half the 1220×2712 recording, and both the
@@ -55,10 +59,45 @@ on both the taller source device and the narrower CI emulator.
 - The bottom FAB rotates from `+` to `×` while the sheet is open and closes it;
   the scrim also dismisses the sheet.
 
+## Editor and timeline corrections
+
+The editor/timeline pass replaces the earlier desktop-style DAW timeline with the
+reference's mobile layout while keeping every editing target functional:
+
+| Element | Reference evidence | Native implementation |
+| --- | --- | --- |
+| Top strip / toolbar | ~65 px status strip, ~55 px dark toolbar in `key-0055.0s.jpg` | 34 dp breathing strip + 42 dp dark toolbar; back, project title, real tools menu and export icon |
+| Preview | 9:16 canvas ~386 reference-still px wide (~281 dp at 2×/2.75) | `PreviewSurface` fills the remaining weight, centered by aspect ratio; square zoom button with real preview zoom |
+| Transport | 7 thin outline icons in a ~63 px band | 48 dp custom single-stroke undo/redo/start/play/end/duplicate/fullscreen buttons |
+| Ruler / playhead | dense ticks, no time labels, centre white playhead, rounded timecode pill | 22 dp tick Canvas, fixed 50%-width playhead, 21 dp timecode pill; pan scrubs and pinch changes real zoom |
+| Tracks | compact eye/thumbnail chip, one 28 dp clip row, filmstrip thumbnails | 28 dp rows, real rendered `LayerFilmstrip` tiles, visibility toggle, clip move/trim, audio waveform |
+| Default timeline | deep black well below the clip, mint 50 dp FAB | 210 dp flexible timeline, 50 dp mint FAB with animated `+`→`×` |
+| Inspector | ~54 dp left/right rails and ~220 dp centre panel | 54 dp rails, 210 dp panel; diamond/keyframes/mask rail, real move/duplicate/split/delete/close rail |
+| Add sheet | dimmed screen, 4×2 grid plus Camera/Null/Empty Group bottom row | 292 dp bottom sheet with 11 real actions, `NEW` Template badge, chevrons, scrim dismissal |
+| Properties | five compact tool buttons, 3-tile then 4-tile grid | real timing/trim/split/mute buttons and tiles for Color, Border, Blending, Transform, Shape, Presets, Effects |
+| Transform | numeric X/Y/Z boxes and "Swipe here to move layer" pad | real resolved X/Y/rotation boxes and a drag pad writing Transform tracks; all sliders remain below |
+| Text toolbar | hamburger, font/size dropdowns, colour swatch and check | real `TextSpec` font, weight, italic, size, colour and uppercase controls |
+| Effects | thumbnail grid and parameter diamonds | real rendered effect demo thumbnails, animated-parameter count, and effect-parameter keyframe diamonds |
+
+Thumbnail and keyframe regressions are treated as part of this pass:
+`ThumbnailGenerator` now draws a visible branded poster for empty compositions
+or media layers pointing at missing/zero-byte files; corrupt/stale PNG files are
+still atomically replaced. Timeline chips and clips show actual rendered frames,
+with a visible "No frame" fallback. Transform/Effects diamonds, the Keyframes
+panel, the graph editor's pure drag mapping, and timeline markers all remain
+wired to the same real `KeyframeTrack` data. `EditorKeyframeRegressionTest`
+exercises those UI paths; `KeyframeContractTest` and `ThumbnailGeneratorTest`
+cover the engine and fallback contracts.
+
+The reference device is taller than the Pixel 5 emulator, so the preview and the
+empty timeline well flex with the available height. These measurements are
+alignment targets, not an exact-parity claim.
+
 ## Verification
 
 `.github/workflows/android-ci.yml` builds/tests the native APK and uploads
-`native-home.png`, `native-projects.png` and `native-create.png`.
+`native-home.png`, `native-projects.png`, `native-create.png`, and the editor,
+Add-sheet, inspector, properties, transform and keyframe captures.
 `ci/capture-native-states.py` uses UI Automator bounds rather than hard-coded
 coordinates. `.github/workflows/reference-frames.yml` can import those captures
 into `docs/screenshots/` with a `capture_run_id` workflow input. Visual parity

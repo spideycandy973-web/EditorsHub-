@@ -18,6 +18,7 @@ import com.editorshub.core.media.MediaRepository
 import com.editorshub.core.rendering.ThumbnailGenerator
 import com.editorshub.core.rendering.canvas.CanvasCompositor
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -144,6 +145,75 @@ class ThumbnailGeneratorTest {
                 y += 8
             }
             assertTrue("Effect preview should contain visible shape pixels", visiblePixels > 8)
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun corruptThumbnailFileIsReplacedWithFreshPng() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val generator = generator()
+        val project = Project(
+            id = "corrupt-thumbnail-regression",
+            name = "Corrupt thumbnail",
+            width = 720,
+            height = 1280,
+            durationMs = 4000L,
+            background = "#FF000000",
+            layers = listOf(
+                Layer(
+                    id = "shape", name = "Shape", type = LayerType.SHAPE,
+                    durationMs = 4000L,
+                    shape = ShapeSpec(width = 320f, height = 320f, fillColor = "#FF01FFA7")
+                )
+            )
+        )
+        val stale = File(context.filesDir, "thumbnails/${project.id}.png")
+        stale.parentFile?.mkdirs()
+        stale.writeBytes("not a PNG".toByteArray())
+
+        val path = generator.generate(project, 1000L)
+        assertNotNull("A corrupt thumbnail should be regenerated", path)
+        val file = File(path!!)
+        assertTrue("Replacement should contain PNG data", file.length() > 64L)
+        val decoded = BitmapFactory.decodeFile(path)
+        assertNotNull("Replacement should decode as a bitmap", decoded)
+        decoded!!.recycle()
+        file.delete()
+    }
+
+    @Test
+    fun missingMediaShowsVisiblePosterInsteadOfBlackFrame() {
+        val generator = generator()
+        val project = Project(
+            id = "missing-media-regression",
+            name = "Missing media",
+            width = 720,
+            height = 1280,
+            durationMs = 4000L,
+            background = "#FF000000",
+            layers = listOf(
+                Layer(
+                    id = "missing", name = "Missing image", type = LayerType.IMAGE,
+                    durationMs = 4000L,
+                    sourceUri = "file:///definitely-missing-editorshub-media.jpg"
+                )
+            )
+        )
+        val bitmap = generator.renderBitmap(project, 0L, maxDimension = 240)
+        assertNotNull("Fallback bitmap should be returned", bitmap)
+        bitmap!!
+        try {
+            val corner = bitmap.getPixel(4, 4)
+            assertNotEquals(
+                "A missing media layer should show the branded poster, not a black frame",
+                Color.BLACK, corner
+            )
+            assertTrue(
+                "Poster should be visibly non-black; got $corner",
+                Color.red(corner) + Color.green(corner) + Color.blue(corner) > 60
+            )
         } finally {
             bitmap.recycle()
         }

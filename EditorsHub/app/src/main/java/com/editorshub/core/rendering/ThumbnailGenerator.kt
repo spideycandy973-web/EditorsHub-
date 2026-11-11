@@ -8,7 +8,9 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.net.Uri
 import android.util.Log
+import com.editorshub.core.domain.model.LayerType
 import com.editorshub.core.domain.model.Project
 import com.editorshub.core.rendering.canvas.CanvasCompositor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -81,9 +83,10 @@ class ThumbnailGenerator @Inject constructor(
             bitmap = Bitmap.createBitmap(tw, th, Bitmap.Config.ARGB_8888)
             Canvas(bitmap).drawColor(Color.parseColor("#FF121214"))
         }
-        // An empty composition should still have a recognizable, branded poster
-        // instead of a near-black rectangle that reads as a missing thumbnail.
-        if (frame.layers.isEmpty()) drawPoster(Canvas(bitmap), project, tw, th)
+        // Empty compositions and layers whose media is missing/corrupt still get
+        // a recognizable, branded poster instead of a near-black rectangle that
+        // reads as a missing thumbnail.
+        if (!hasUsableContent(frame)) drawPoster(Canvas(bitmap), project, tw, th)
         bitmap
     } catch (e: OutOfMemoryError) {
         Log.w(TAG, "Not enough memory for a rendered preview; skipping")
@@ -108,6 +111,34 @@ class ThumbnailGenerator @Inject constructor(
         return (first.startMs + minOf(1000L, (first.durationMs / 2L).coerceAtLeast(1L)))
             .coerceIn(first.startMs, layerEnd)
             .coerceIn(0L, end)
+    }
+
+    /**
+     * A frame is useful when at least one active layer can actually draw pixels.
+     * A media layer pointing at a deleted/zero-byte file is treated as corrupt;
+     * content URIs are left to the compositor because their validity can only be
+     * checked by the content resolver.
+     */
+    private fun hasUsableContent(frame: RenderFrame): Boolean {
+        if (frame.layers.isEmpty()) return false
+        return frame.layers.any { resolved ->
+            val layer = resolved.layer
+            when (layer.type) {
+                LayerType.IMAGE, LayerType.VIDEO -> usableMedia(layer.sourceUri)
+                LayerType.AUDIO, LayerType.GROUP, LayerType.EFFECT -> false
+                else -> true
+            }
+        }
+    }
+
+    private fun usableMedia(sourceUri: String?): Boolean {
+        if (sourceUri.isNullOrBlank()) return false
+        val uri = Uri.parse(sourceUri)
+        return when (uri.scheme?.lowercase()) {
+            "content", "android.resource", "http", "https" -> true
+            "file" -> uri.path?.let { File(it).let { f -> f.isFile && f.length() > 0L } } ?: false
+            else -> File(sourceUri).let { f -> f.isFile && f.length() > 0L }
+        }
     }
 
     private fun drawPoster(canvas: Canvas, project: Project, width: Int, height: Int) {
