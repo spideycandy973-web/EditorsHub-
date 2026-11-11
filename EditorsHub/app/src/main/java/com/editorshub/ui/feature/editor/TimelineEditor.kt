@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -372,7 +373,6 @@ private fun ClipBar(
             .background(color, RoundedCornerShape(5.dp))
             .border(if (selected) 1.5.dp else 0.5.dp,
                 if (selected) Color.White else Color(0xFF5C6470), RoundedCornerShape(5.dp))
-            .clipToBounds()
     ) {
         LayerFilmstrip(project, layer, Modifier.fillMaxSize())
         Box(Modifier.fillMaxSize().background(color.copy(alpha = 0.46f)))
@@ -454,7 +454,13 @@ private fun KeyframeDiamond(
                     onLongPress = { longPress?.invoke() }
                 )
             }
-            .semantics { this.contentDescription = label }
+            .semantics {
+                this.contentDescription = label
+                onClick {
+                    tap()
+                    true
+                }
+            }
     )
 }
 
