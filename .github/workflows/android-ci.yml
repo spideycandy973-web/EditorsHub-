@@ -152,6 +152,23 @@ jobs:
           # The script logs instrumentation output and then installs/launches the packaged APK.
           script: sh ci/android-smoke.sh
 
+      - name: Surface native capture diagnostics
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('smoke-diagnostics.txt')) {
+              core.notice('No smoke-diagnostics.txt was produced.');
+              return;
+            }
+            const lines = fs.readFileSync('smoke-diagnostics.txt', 'utf8')
+              .split(/\r?\n/)
+              .filter(line => /native-|Could not find|Timed out|found |tapped |captured |Traceback|RuntimeError|error/i.test(line));
+            if (lines.length) {
+              core.warning(`Native capture diagnostics:\n${lines.slice(-100).join('\n')}`.slice(0, 9000));
+            }
+
       - name: Upload native UI state captures for visual QA
         if: success()
         uses: actions/upload-artifact@v4
