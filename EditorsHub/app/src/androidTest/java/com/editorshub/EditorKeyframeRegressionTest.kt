@@ -25,11 +25,25 @@ class EditorKeyframeRegressionTest {
         println("KEYFRAME_REGRESSION_STAGE=$value")
     }
 
+    private fun diagnostics(): String {
+        val labels = listOf(
+            "Open keyframes panel", "Add keyframe", "Move & Transform",
+            "Effects", "Back to properties", "Keyframe graph editor"
+        )
+        val texts = listOf("Keyframe engine", "1 keyframes", "2 keyframes", "Graph editor")
+        return (labels.map { label ->
+            "$label=${compose.onAllNodesWithContentDescription(label).fetchSemanticsNodes().size}"
+        } + texts.map { text ->
+            "text:$text=${compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().size}"
+        }).joinToString(", ")
+    }
+
     private fun waitFor(predicate: () -> Boolean, timeoutMillis: Long = 15_000L) {
         try {
             compose.waitUntil(timeoutMillis) { predicate() }
         } catch (error: Throwable) {
-            throw AssertionError("Timed out at stage '$stage'", error)
+            val detail = try { diagnostics() } catch (diagnosticError: Throwable) { "diagnostics failed: $diagnosticError" }
+            throw AssertionError("Timed out at stage '$stage'; $detail", error)
         }
     }
 
@@ -66,6 +80,9 @@ class EditorKeyframeRegressionTest {
         // Timeline marker -> Keyframes panel with the one real keyframe.
         mark("open-keyframes-panel")
         compose.onNodeWithContentDescription("Keyframe at 0 ms").performClick()
+        waitForDescription("Open keyframes panel")
+        mark("keyframes-panel-content")
+        waitForText("Keyframe engine")
         waitForDescription("Add keyframe")
         compose.onNodeWithText("1 keyframes · local playhead 0ms").assertIsDisplayed()
 
