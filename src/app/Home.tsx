@@ -220,7 +220,7 @@ function ProjectsBody() {
 
   const templates = [
     { name: 'Kinetic Intro', sub: 'Title animation · 9:16', w: 1080, h: 1920, a: '#8b5cf6', b: '#22d3ee', glyph: '✦' },
-    { name: 'Neon Lower Third', sub: 'Broadcast · 16:9', w: 1920, h: 1080, a: '#00ffa8', b: '#0ea5e9', glyph: '▰' },
+    { name: 'Neon Lower Third', sub: 'Broadcast · 16:9', w: 1920, h: 1080, a: '#01ffa7', b: '#0ea5e9', glyph: '▰' },
     { name: 'Photo Slideshow', sub: 'Editable layers · 4:5', w: 1080, h: 1350, a: '#fb7185', b: '#f59e0b', glyph: '▣' },
     { name: 'Glow Loop', sub: 'Effects · 1:1', w: 1080, h: 1080, a: '#22d3ee', b: '#6366f1', glyph: '✺' },
   ];

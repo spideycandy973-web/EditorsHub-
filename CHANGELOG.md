@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.5.1 — v4.5.1 design baseline restored (2026-11-11)
+
+- Restored the exact v4.5.1 web/Capacitor UI source under `src/` as the design source of truth; removed the later APK-measurement CSS token changes.
+- Realigned the native Kotlin/Compose theme (`Design.kt`) to the v4.5.1 `--um-*` tokens: `#121214`, `#1c1c1e`, `#262628`, `#d8dcff`, `#01ffa7`.
+- Set the native app `versionName` to `4.5.1`; version code 21 is retained for monotonic installs. Updated `AppVersionTest`.
+- Deleted the `v4.5.3` release/tag and made the exact linked `v4.5.1` release **Latest**, named exactly `v4.5.1`, with only `EditorsHub-Motion.apk`.
+- No new APK was built or published; the Latest asset remains the historical Capacitor APK. Exact reference parity is not claimed.
+
 ## 4.5.2 — first GamersHub-style signed release (2026-11-10)
 
 - Bumped the native Android app to version 4.5.2 / version code 21.

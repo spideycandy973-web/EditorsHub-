@@ -44,7 +44,7 @@ class EditorStore {
   playing = false;
   loop = true;
   autoKey = false;
-  timelineZoom = 53;       // reference ruler: ~53 px per second at 430×956
+  timelineZoom = 46;       // pixels per second
   previewZoom = 1;
   showGuides = false;
   showGrid = false;
@@ -307,10 +307,7 @@ class EditorStore {
     const maxDur = Math.max(0.5, this.project.duration - start);
     const layer = createLayer(type, {
       ...opts,
-      // Preserve the measured 200 × 200 Ultra Motion default for shapes;
-      // full-project dimensions are supplied only to layers that need them.
-      width: type === 'shape' ? opts.width : this.project.width,
-      height: type === 'shape' ? opts.height : this.project.height,
+      width: this.project.width, height: this.project.height,
       duration: Math.min(opts.duration ?? 5, maxDur),
       start,
     });

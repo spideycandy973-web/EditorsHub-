@@ -1,42 +1,18 @@
-# EditorsHub v4.5.2 — first GamersHub-style signed release
+# EditorsHub v4.5.1 — Ultra Motion interaction polish
 
-This is the first EditorsHub release published with the **GamersHub** pattern:
-a `vX.Y.Z` tag triggers a signed release build from source and publishes a
-stable **Latest** release named exactly the tag, with one asset:
-`EditorsHub-v4.5.2.apk`.
+> **Active-branch note (2026-11-11):** these are the original v4.5.1 release notes for the exact linked historical APK. On `arena/be31b8e1-editorshub` the source is a native Kotlin/Compose app using v4.5.1 as its visual baseline; no new native release has been published.
 
-Package `com.editorshub`, version 4.5.2 (version code 21). Built from the native
-Kotlin/Compose project in `EditorsHub/`. The version was chosen as the next
-patch after the repository's existing `v4.5.1` release.
+Package `com.editorshub`. This is the production Capacitor Android app; the release asset is the signed `EditorsHub-Motion.apk` only. Debug APKs are never attached to stable release tags.
 
-## Signing
+## What's new in 4.5.1
 
-- Signed with the repository's generated key at `keystore/editorshub.p12`.
-- Alias `editorshub`; PKCS12; RSA 2048-bit; SHA-256 self-signed.
-- No user-supplied key, password, or repository secret was required.
-- The key is committed and therefore public; see `keystore/README.md`.
-- GitHub's automatic built-in `GITHUB_TOKEN` was used only to publish the
-  release.
-
-## Install / update notice
-
-This APK is signed with a **new EditorsHub key**. Android may refuse to update
-an existing installation signed with a different key. Back up projects, then
-uninstall the previous EditorsHub build before installing this one.
+- Smooth spring feedback when selecting Home / Projects and opening the create action.
+- Consistent tactile press feedback for buttons, icons, project rows, property tiles, effect tiles and shape tiles.
+- Spring entrances and fading backdrops for sheets, dialogs, full-screen panels, media-replacement confirmations and popups.
+- Animated transient notifications and switches.
+- Respects Android/browser reduced-motion preferences.
+- Keeps the existing lightweight Ultra Motion-inspired UI and original canvas editor engine; no large native redesign.
 
 ## Verification
 
-- `keytool` verified the committed keystore and alias.
-- `apksigner verify --verbose --print-certs` verified the APK signature.
-- `aapt dump badging` verified package name, `versionName='4.5.2'`, and
-  `versionCode='21'`.
-- Unit tests and the signed release build ran in GitHub Actions.
-- A no-publish dry run previously built and verified the signed APK
-  successfully.
-
-## Scope
-
-- This release does **not** update the rolling `apk-latest` release.
-- It is **not** the historical exact-linked Capacitor APK.
-- It is a native Kotlin/Compose build; exact pixel-clone parity to the supplied
-  Ultra Motion reference is **not** claimed.
+The release workflow runs TypeScript checks, the Vite production build, Android unit tests, a signed release APK build, APK signature verification, and an Android emulator install/launch smoke test before publishing.

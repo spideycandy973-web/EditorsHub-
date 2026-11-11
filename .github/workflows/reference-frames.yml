@@ -45,9 +45,9 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BRANCH: arena/be31b8e1-editorshub
       DRIVE_ID: 1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6
-      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '42923181870' }}
+      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '42991308561' }}
       CAPTURE_ARTIFACT: editorshub-native-home-capture
-      NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.2.png
+      NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.1.png
       STORYBOARD_OUT: docs/reference-frames
       KEY_TIMES: ${{ inputs.key_times || '5,18,30,45,55,60,75,100,110,150,190,230,270,310,390,450,570,625' }}
     steps:
@@ -79,8 +79,8 @@ jobs:
           for state in projects create editor editor-add editor-inspector editor-properties editor-transform editor-keyframe; do
             src="/tmp/native-capture/native-${state}.png"
             if [ -s "$src" ]; then
-              cp "$src" "docs/screenshots/native-${state}-v4.5.2.png"
-              file "docs/screenshots/native-${state}-v4.5.2.png"
+              cp "$src" "docs/screenshots/native-${state}-v4.5.1.png"
+              file "docs/screenshots/native-${state}-v4.5.1.png"
             else
               echo "Optional native-${state}.png capture is absent in run $CAPTURE_RUN_ID"
             fi
@@ -239,7 +239,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "$NATIVE_CAPTURE" "$STORYBOARD_OUT"
-          for shot in docs/screenshots/native-*-v4.5.2.png; do
+          for shot in docs/screenshots/native-*-v4.5.1.png; do
             if [ -e "$shot" ]; then git add "$shot"; fi
           done
           git commit -m "docs(evidence): import native captures and reference storyboard [skip ci]" || echo "no changes"

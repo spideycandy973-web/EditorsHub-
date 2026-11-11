@@ -1,11 +1,8 @@
-# EditorsHub v4.5.0
+# EditorsHub — v4.5.1 design baseline
 
-A **real, working mobile video & motion-graphics editor** that runs entirely in
-the browser, packaged as an Android app (`com.editorshub`). Layers, keyframes,
-47 effects, blending, masks, media, XML project import/export, six real export
-encoders — all backed by a canvas compositor that draws every frame for real.
+> **Current baseline:** the [v4.5.1 release](https://github.com/spideycandy973-web/EditorsHub-/releases/tag/v4.5.1) UI/design is the visual source of truth. This branch builds a **native Kotlin/Compose** Android app (`com.editorshub`) with the restored v4.5.1 tokens/layout and real editing. The legacy web/Capacitor source under `src/` is retained as the exact design reference, not as the shipped runtime. The GitHub **Latest** release is the exact linked historical `v4.5.1` APK; no new APK was built or published for this rollback. See [`docs/V451_BASELINE.md`](docs/V451_BASELINE.md).
 
-**v4.5.0 — measured Ultra Motion editor alignment.** The latest pass is based
+**Historical v4.5.0 measurement pass (superseded by the v4.5.1 design baseline).** This pass was based
 on the supplied JPGs and fresh APK/REA/Ghidra structure: the 200 × 200 centered
 rounded square, `#ba7e38` fill and selection-only outline; the six-column,
 18-shape first picker page; the right preview rail's real show/hide state; and
@@ -76,7 +73,7 @@ then `node tools/frames-libs.mjs` and run against `npm run preview`.
 root and attached to older releases. The native Kotlin/Compose project under
 `EditorsHub/` now builds a signed `EditorsHub-release.apk` from
 `keystore/editorshub.p12`; CI artifacts also include `EditorsHub-debug.apk`,
-`EditorsHub-release.aab` and `EditorsHub-source-v4.5.2.zip`. See
+`EditorsHub-release.aab` and `EditorsHub-source-v4.5.1.zip`. See
 `EditorsHub/docs/RELEASE_SIGNING.md` and `docs/RELEASE_POLICY.md`. All Android
 builds run in GitHub Actions.
 

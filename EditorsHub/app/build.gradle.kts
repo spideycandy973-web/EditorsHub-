@@ -23,7 +23,7 @@ val committedReleaseStorePassword = "editorshub"
 val committedReleaseKeyAlias = "editorshub"
 val committedReleaseKeyPassword = "editorshub"
 
-val appVersionName = "4.5.2"
+val appVersionName = "4.5.1"
 val appVersionCode = 21
 
 android {

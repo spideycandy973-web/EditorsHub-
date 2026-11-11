@@ -19,7 +19,6 @@ export const defaultStyle = (): LayerStyle => ({
   color: '#ffffff',
   color2: '#8b5cf6',
   strokeColor: '#000000',
-  strokeEnabled: true,
   shape: 'rectangle',
   fit: 'cover',
   audio: false,
@@ -57,11 +56,9 @@ export function createLayer(type: LayerType, opts: CreateLayerOptions = {}): Lay
   const style = defaultStyle();
   const W = opts.width ?? 1080;
   const H = opts.height ?? 1920;
-  /* The reference property panes show a small orange rounded square with a
-     white selection outline and an unpainted (zero-width) black stroke.
-     Measured from the JPGs: 200 × 200 — the "Rounded Rectangle 1" clip. */
-  props.shapeWidth.value = opts.width ?? 200;
-  props.shapeHeight.value = opts.height ?? 200;
+  const minSide = Math.min(W, H);
+  props.shapeWidth.value = Math.round(minSide * 0.6);
+  props.shapeHeight.value = Math.round(minSide * 0.6);
   props.gradientAngle.value = 45;
 
   const layer: Layer = {
@@ -93,13 +90,10 @@ export function createLayer(type: LayerType, opts: CreateLayerOptions = {}): Lay
       break;
     case 'shape':
       layer.style.shape = opts.shape ?? 'rectangle';
-      layer.style.color = opts.color ?? '#ba7e38';
+      layer.style.color = opts.color ?? '#8b5cf6';
       layer.style.color2 = '#22d3ee';
-      layer.style.fillType = 'solid';
-      layer.style.strokeColor = '#000000';
-      layer.style.strokeEnabled = false;
-      props.cornerRadius.value = layer.style.shape === 'rounded' ? 25 : layer.style.shape === 'rectangle' ? 24 : 0;
-      props.strokeWidth.value = 4;   // retained while disabled, as in the reference Stroke panel.
+      layer.style.fillType = 'linear';
+      props.cornerRadius.value = layer.style.shape === 'rectangle' ? 40 : 0;
       break;
     case 'text':
       layer.style.text = opts.text ?? 'Your text';

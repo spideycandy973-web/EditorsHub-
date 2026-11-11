@@ -62,10 +62,29 @@ Play or any app where update authenticity matters; see
 
 ## Current state
 
-The generated committed release keystore is now in place on this branch, and
-releases from this branch need no user-supplied key or secret. This branch
-published `v4.5.2` as its first GamersHub-style stable **Latest** release; the
-release workflow built and verified the signed APK from source. Separately,
-`main`'s legacy production workflow published `v4.5.1` during setup. This
-session does not modify `main`. Every future release from this branch follows
-this policy.
+On 2026-11-11 the user rejected the newer `v4.5.3` native/RomKit output and
+reaffirmed that the [v4.5.1 release](https://github.com/spideycandy973-web/EditorsHub-/releases/tag/v4.5.1)
+is the main app because its UI/design is accurate. Two decisions were applied:
+
+- **App/design:** the active branch remains a **native Kotlin/Compose** app. It
+  uses the exact v4.5.1 `--um-*` tokens and restored v4.5.1 web/Capacitor source
+  as its design reference. It is not a return to a WebView/PWA runtime. The
+  native `versionName` is `4.5.1` (version code 21 retained).
+- **Release state:** the `v4.5.3` release and tag were deleted. `v4.5.1` is
+  **Latest**, renamed exactly `v4.5.1`, with one asset:
+  `EditorsHub-Motion.apk` (SHA-256
+  `70c597016f0a2d88cc2966af5329b3780c2791e18bd09a34c1a8331a39d115b8`). Its
+  extra `SHA256SUMS.txt` was removed. No new release, tag, or APK was created.
+
+The Latest asset is therefore the **historical Capacitor APK** from the linked
+release, while the active branch source is a **native Compose implementation of
+that design**. This is intentional per the user's selection; it is not a claim
+that the Latest APK is a native build. The release asset name is still
+`EditorsHub-Motion.apk` rather than `EditorsHub-v4.5.1.apk`, and the existing
+release body still describes the Capacitor app. `v4.5.2` remains a historical
+non-Latest release. Do not retag or overwrite `v4.5.1`.
+
+The default branch `main` still contains the newer RomKit/native code at
+`2432927`; this session works only on `arena/be31b8e1-editorshub` and does not
+modify or push to `main`. Future stable releases from this branch still follow
+the GamersHub pattern above, but require explicit new authorization.

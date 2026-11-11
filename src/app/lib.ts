@@ -27,7 +27,7 @@ export const DEFAULT_PREFS: Preferences = {
   lowQualityPreview: false,
   showOffTimeline: true,
   rememberAddPage: false,
-  defaultLayerDuration: 4,
+  defaultLayerDuration: 2,
   audioResampling: 'ultra',
   addPage: 'add',
   showDeviceChrome: true,
@@ -250,7 +250,7 @@ export function addVectorPath(pathData: string): void {
   editor.setProp(id, 'shapeWidth', Math.round(editor.project.width * 0.7));
   editor.setProp(id, 'shapeHeight', Math.round(editor.project.height * 0.7));
   editor.setProp(id, 'strokeWidth', 6);
-  editor.setStyle(id, { strokeColor: '#ffffff', strokeEnabled: true });
+  editor.setStyle(id, { strokeColor: '#ffffff' });
 }
 
 /** Save the selected layer as a standalone, re-importable XML preset. */

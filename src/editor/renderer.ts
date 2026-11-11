@@ -710,7 +710,7 @@ export class Renderer {
     switch (kind) {
       case 'rectangle':
       case 'rounded':
-        ctx.roundRect(-W, -H, w, h, kind === 'rounded' ? Math.max(r, R * 0.14) : Math.min(r, R));
+        ctx.roundRect(-W, -H, w, h, kind === 'rounded' ? Math.max(r, R * 0.28) : Math.min(r, R));
         break;
       case 'ellipse':
         ctx.ellipse(0, 0, W, H, 0, 0, Math.PI * 2);
@@ -866,12 +866,9 @@ export class Renderer {
           this.shapePath(ctx, layer, t, w, h);
           ctx.fillStyle = fill; ctx.fill('evenodd');
         }
-        if (stroke > 0 && layer.style.strokeEnabled !== false) {
+        if (stroke > 0) {
           ctx.lineWidth = stroke;
-          const cap = Math.round(prop(layer, 'strokeCap', t, 1));
-          const join = Math.round(prop(layer, 'strokeJoin', t, 0));
-          ctx.lineCap = cap === 0 ? 'butt' : cap === 2 ? 'square' : 'round';
-          ctx.lineJoin = join === 1 ? 'round' : join === 2 ? 'bevel' : 'miter';
+          ctx.lineJoin = 'round'; ctx.lineCap = 'round';
           ctx.strokeStyle = normalizeColor(style.strokeColor, '#000000');
           const dash = Math.round(prop(layer, 'strokeDash', t, 0));
           const wPx = Math.max(1, stroke);
@@ -958,17 +955,14 @@ export class Renderer {
     const y = prop(layer, 'y', t, 0) + fx.shake.y;
     const sx = prop(layer, 'scaleX', t, 100) / 100 * fx.pulse;
     const sy = prop(layer, 'scaleY', t, 100) / 100 * fx.pulse;
-    const z = prop(layer, 'z', t, 0);
-    const perspective = clamp(1000 / (1000 - z), 0.05, 20);
     const rot = prop(layer, 'rotation', t, 0);
-    const skewX = Math.tan(prop(layer, 'skewX', t, 0) * Math.PI / 180);
-    const skewY = Math.tan(prop(layer, 'skewY', t, 0) * Math.PI / 180);
+    const skew = Math.tan(prop(layer, 'skewX', t, 0) * Math.PI / 180);
     const ax = -prop(layer, 'anchorX', t, 0) / 100 * w;
     const ay = -prop(layer, 'anchorY', t, 0) / 100 * h;
     let m = new DOMMatrix([1, 0, 0, 1, x, y]);
     if (rot) m = m.rotateSelf(rot);
-    m = m.scaleSelf(sx * perspective, sy * perspective);
-    if (skewX || skewY) m = m.multiply(new DOMMatrix([1, skewY, skewX, 1, 0, 0]));
+    m = m.scaleSelf(sx, sy);
+    if (skew) m = m.multiply(new DOMMatrix([1, 0, skew, 1, 0, 0]));
     m = m.translateSelf(ax, ay);
     return m;
   }

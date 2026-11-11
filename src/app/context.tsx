@@ -20,8 +20,6 @@ export interface UIState {
   property: PropertyId;
   moveView: MoveView;
   setMoveView: (v: MoveView) => void;
-  shapeRatioLocked: boolean;
-  setShapeRatioLocked: (v: boolean) => void;
   activePropKey: string;
   setActivePropKey: (k: string) => void;
   homeTab: 'home' | 'projects';
@@ -64,7 +62,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<SheetId>('none');
   const [property, setProperty] = useState<PropertyId>('move');
   const [moveView, setMoveView] = useState<MoveView>('pos');
-  const [shapeRatioLocked, setShapeRatioLocked] = useState(true);
   const [activePropKey, setActivePropKey] = useState('x');
   const [homeTab, setHomeTab] = useState<'home' | 'projects'>('home');
   const [homeSegment, setHomeSegment] = useState<'projects' | 'templates' | 'elements'>('projects');
@@ -73,7 +70,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [xmlResult, setXmlResult] = useState<XmlImportResult | null>(null);
   const [importUrl, setImportUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [effectBrowser, setEffectBrowser] = useState(false);
   const [presetsDialog, setPresetsDialog] = useState(false);
@@ -85,8 +82,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<UIState>(() => ({
     sheet, setSheet,
-    property, moveView, setMoveView, shapeRatioLocked, setShapeRatioLocked,
-    activePropKey, setActivePropKey,
+    property, moveView, setMoveView, activePropKey, setActivePropKey,
     homeTab, setHomeTab, homeSegment, setHomeSegment,
     createTab, setCreateTab, prefs, setPrefs,
     xmlResult, setXmlResult, importUrl, setImportUrl,
@@ -95,19 +91,14 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     aboutOpen, setAboutOpen,
     effectBrowser, setEffectBrowser, presetsDialog, setPresetsDialog,
     flow, setFlow, missingFonts, setMissingFonts,
-    openProperty: (p) => {
-      setProperty(p);
-      if (p === 'move') setMoveView('pos');
-      setSheet('property');
-      setSelectedIds([]);
-    },
+    openProperty: (p) => { setProperty(p); setSheet('property'); setSelectedIds([]); },
     openAdd: () => {
       const page = prefs.rememberAddPage ? prefs.addPage : 'add';
       setSheet(page === 'shape' ? 'shape' : page === 'templates' ? 'templates' : 'add');
       setSelectedIds([]);
     },
     setAddPage,
-  }), [sheet, property, moveView, shapeRatioLocked, activePropKey, homeTab, homeSegment, createTab, prefs,
+  }), [sheet, property, moveView, activePropKey, homeTab, homeSegment, createTab, prefs,
     xmlResult, importUrl, selectedIds, toolsOpen, aboutOpen, effectBrowser, presetsDialog, flow, missingFonts]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

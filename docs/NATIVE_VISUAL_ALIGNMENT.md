@@ -1,8 +1,13 @@
 # Native Compose visual-alignment pass
 
-This is an evidence-based alignment pass for the **native Kotlin/Compose** app. It
-does not claim exact parity with Ultra Motion v8.0.1; the imported reference
-frames and native CI captures remain the source of truth.
+> **Current design source of truth (2026-11-11): the
+> [v4.5.1 release](https://github.com/spideycandy973-web/EditorsHub-/releases/tag/v4.5.1)
+> UI/design.** The active branch builds a native Kotlin/Compose app with the
+> restored v4.5.1 `--um-*` tokens and layout as its visual baseline. The legacy
+> web/Capacitor source under `src/` is retained as the exact design reference,
+> not as the shipped runtime. The reference-frame sheets and alignment notes
+> below are historical research evidence, not a newer design target. Exact
+> parity is not claimed.
 
 ## Evidence used
 
@@ -14,10 +19,10 @@ frames and native CI captures remain the source of truth.
 - `docs/reference-frames/key-states/key-0075.0s.jpg`, `key-0150.0s.jpg`, `key-0190.0s.jpg`, `key-0310.0s.jpg`, `key-0390.0s.jpg`, `key-0450.0s.jpg` — inspector/property/transform/effects states.
 - `docs/reference-frames/key-states/key-0230.0s.jpg` — Add sheet and FAB close state.
 - `docs/reference-frames/sheets/sheet-003.jpg` … `sheet-020.jpg` and `timeline-sheets/tl-001.jpg` — editor/timeline interaction sequence.
-- `docs/screenshots/native-{home,projects,create}-v4.5.2.png` — CI-verified launcher, Projects and creation captures.
-- `docs/screenshots/native-editor-v4.5.2.png` — empty 9:16 editor with transport, ruler, fixed playhead and FAB.
-- `docs/screenshots/native-editor-add-v4.5.2.png` — reference-style Add sheet and rotating close FAB.
-- `docs/screenshots/native-editor-{inspector,properties,transform,keyframe}-v4.5.2.png` — text inspector, property grid, scrolled Transform panel and a real timeline keyframe marker.
+- `docs/screenshots/native-{home,projects,create}-v4.5.1.png` — CI-verified launcher, Projects and creation captures.
+- `docs/screenshots/native-editor-v4.5.1.png` — empty 9:16 editor with transport, ruler, fixed playhead and FAB.
+- `docs/screenshots/native-editor-add-v4.5.1.png` — reference-style Add sheet and rotating close FAB.
+- `docs/screenshots/native-editor-{inspector,properties,transform,keyframe}-v4.5.1.png` — text inspector, property grid, scrolled Transform panel and a real timeline keyframe marker.
 
 The reference stills are 610×1356, half the 1220×2712 recording, and both the
 reference device and the Pixel 5 CI emulator use approximately 2.75 px/dp.
@@ -140,8 +145,11 @@ diamond. `.github/workflows/reference-frames.yml` imports those captures into
   entry point.
 
 The reference device is taller than the Pixel 5 emulator, so the preview and the
-empty timeline well flex with the available height. The imported captures show
-reference-matched layout and working controls, but this document still does
-**not** claim pixel-exact parity: remaining differences include the reference
-device's taller screen, populated project rows (CI starts from cleared app
-data), proprietary artwork/fonts, and reference-only animation detail.
+empty timeline well flex with the available height. The current visual target is
+the v4.5.1 release design, not the reference-frame alignment pass. The imported
+captures show working native controls with v4.5.1 tokens, but this document
+still does **not** claim pixel-exact parity: remaining differences include the
+reference device's taller screen, populated project rows (CI starts from
+cleared app data), proprietary artwork/fonts, reference-only animation detail,
+and the fact that the Latest release APK is the historical Capacitor build while
+this branch builds a native Compose app.

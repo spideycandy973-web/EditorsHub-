@@ -110,12 +110,11 @@ export function NumField({ label, value, onChange, min = -100000, max = 100000, 
 }
 
 /** A real range control drawn over a fine tick ruler, like the reference dials. */
-export function RulerSlider({ label, value, min, max, step = 1, onChange, unit = '', accent = false, precision }: {
+export function RulerSlider({ label, value, min, max, step = 1, onChange, unit = '', accent = false }: {
   label: string; value: number; min: number; max: number; step?: number;
-  onChange: (v: number) => void; unit?: string; accent?: boolean; precision?: number;
+  onChange: (v: number) => void; unit?: string; accent?: boolean;
 }) {
   const pct = Math.max(0, Math.min(100, (value - min) / (max - min || 1) * 100));
-  const valueLabel = precision === undefined ? Math.round(value * 100) / 100 : value.toFixed(precision);
   return (
     <div className={`um-ruler-row ${accent ? 'accent' : ''}`}>
       <span className="um-ruler-label">{label}</span>
@@ -124,7 +123,7 @@ export function RulerSlider({ label, value, min, max, step = 1, onChange, unit =
           aria-label={label} onChange={ev => onChange(Number(ev.target.value))}
           style={{ ['--pct' as string]: `${pct}%` }} />
       </div>
-      <span className="um-ruler-val">{valueLabel}{unit}</span>
+      <span className="um-ruler-val">{Math.round(value * 100) / 100}{unit}</span>
     </div>
   );
 }
@@ -187,6 +186,6 @@ export function Swatches({ colors, value, onChange }: {
 
 export const PALETTE = [
   '#000000', '#ffffff', '#c8c8f2', '#02ffa7', '#22d3ee', '#8b5cf6',
-  '#f472b6', '#fb7185', '#f59e0b', '#eab676', '#84cc16', '#1c1c1f',
+  '#f472b6', '#fb7185', '#f59e0b', '#eab676', '#84cc16', '#1c1c1e',
   '#3b82f6', '#14b8a6', '#a3a3a3', '#6b7280',
 ];

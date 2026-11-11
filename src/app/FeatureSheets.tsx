@@ -19,7 +19,7 @@ import { useUI } from './context';
 export function ColorPickerBody() {
   const e = useEditor();
   const layer = e.selectedLayer;
-  const [hex, setHex] = useState(layer?.style.color ?? '#ba7e38');
+  const [hex, setHex] = useState(layer?.style.color ?? '#d9a15b');
   const apply = (v: string) => {
     setHex(v);
     if (layer) e.setStyle(layer.id, { color: v, color2: v });
