@@ -114,7 +114,8 @@ diamond. `.github/workflows/reference-frames.yml` imports those captures into
   Kotlin compilation, unit tests, all 18 instrumentation tests (including
   `EditorKeyframeRegressionTest`, `ThumbnailGeneratorTest` and the other
   emulator regressions), APK packaging, emulator launch smoke and UI-state
-  capture all passed.
+  capture all passed. Final CI run `42991308561` on commit `0f34f0c` also
+  passed with all nine state captures produced.
 - Visual-evidence import run `42990761782` copied all nine captures into
   `docs/screenshots/`; commit `135338d` recorded the imported evidence.
 - The captured empty editor shows the dark toolbar, centered 9:16 preview,
