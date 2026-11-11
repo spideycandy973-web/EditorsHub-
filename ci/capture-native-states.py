@@ -19,7 +19,7 @@ STEPS = [
     ("native-editor-inspector.png", "content-desc", "Add Text layer", 2.0),
     ("native-editor-properties.png", "content-desc", "Back to properties", 1.6),
     ("native-editor-transform.png", "content-desc", "Move & Transform", 1.6),
-    ("native-editor-keyframe.png", "content-desc", "Opacity keyframe", 1.6),
+    ("native-editor-keyframe.png", "content-desc", "Position X keyframe", 1.6),
 ]
 
 
@@ -87,8 +87,8 @@ def main():
         elif value == "Add Text layer":
             wait_for_description("Back to properties")
         elif value == "Move & Transform":
-            wait_for_description("Opacity keyframe")
-        elif value == "Opacity keyframe":
+            wait_for_description("Position X keyframe")
+        elif value == "Position X keyframe":
             wait_for_description("Keyframe at 0 ms")
         time.sleep(delay)
         capture(path)
