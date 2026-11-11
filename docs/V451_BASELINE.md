@@ -72,7 +72,20 @@ new release.
 
 ## Verification
 
-- Pending: fresh Android CI run on the rollback commit (build, unit tests,
-  instrumentation tests, emulator smoke, nine native state captures).
-- Pending: import and review of `native-*-v4.5.1.png` captures against the
-  v4.5.1 design.
+- Android CI run `43114300889` on commit `8068c11` succeeded: debug/release
+  Kotlin compilation, unit tests, all 18 instrumentation tests (including
+  `EditorKeyframeRegressionTest`, `ThumbnailGeneratorTest` and the other
+  emulator regressions), APK packaging, emulator launch smoke, and all nine
+  `native-*.png` state captures.
+- Visual-evidence import run `43116353207` copied the nine captures into
+  `docs/screenshots/native-*-v4.5.1.png`; commit `c05bae1` recorded them.
+- The home, empty editor, Add-sheet and keyframe captures were reviewed. The
+  home uses the v4.5.1 lavender Upload/Import buttons, mint FAB, graphite
+  cards and ULTRA MOTION wordmark. The empty editor uses the v4.5.1-style dark
+  canvas, seven-icon transport, ruler, centre playhead and FAB. The Add sheet
+  and keyframe inspector use the v4.5.1 `--um-*` tokens and show real controls
+  (a green timeline keyframe diamond and lavender Transform sliders).
+- These are alignment/working-control checks, not pixel-exact parity. The
+  Add-sheet, inspector and Transform layouts come from the native
+  reference-matched implementation rather than the older web sheets, and the
+  reference device is taller than the Pixel 5 CI emulator.

@@ -113,7 +113,24 @@ coordinates, and scrolls the inspector to reach the first Transform keyframe
 diamond. `.github/workflows/reference-frames.yml` imports those captures into
 `docs/screenshots/` with a `capture_run_id` workflow input.
 
-### Verified editor/timeline evidence
+### v4.5.1 baseline verification
+
+- Android CI run `43114300889` on commit `8068c11` succeeded: debug/release
+  Kotlin compilation, unit tests, all 18 instrumentation tests, APK packaging,
+  emulator launch smoke, and all nine state captures.
+- Visual-evidence import run `43116353207` copied all nine captures into
+  `docs/screenshots/native-*-v4.5.1.png`; commit `c05bae1` recorded them.
+- The home, empty editor, Add-sheet and keyframe captures were reviewed against
+  the v4.5.1 design. The home shows the v4.5.1 lavender Upload/Import buttons,
+  mint FAB, graphite cards and ULTRA MOTION wordmark. The empty editor shows the
+  dark canvas, transport, ruler, centre playhead and FAB. The Add sheet and
+  keyframe inspector use the restored `--um-*` tokens and show real controls,
+  including a green timeline keyframe diamond and lavender Transform sliders.
+- These are alignment/working-control checks, not pixel-exact parity. The
+  Add-sheet, inspector and Transform layouts come from the native
+  reference-matched implementation rather than the older web sheets.
+
+### Historical pre-rollback verification
 
 - Android CI run `42988769349` succeeded on commit `53acf58`: debug/release
   Kotlin compilation, unit tests, all 18 instrumentation tests (including
