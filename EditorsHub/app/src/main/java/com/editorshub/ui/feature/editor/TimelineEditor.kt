@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -24,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -448,19 +448,11 @@ private fun KeyframeDiamond(
                 RoundedCornerShape(2.dp)
             )
             .border(1.dp, if (active) Color.White else EditorPalette.TextMuted, RoundedCornerShape(2.dp))
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { tap() },
-                    onLongPress = { longPress?.invoke() }
-                )
-            }
-            .semantics {
-                this.contentDescription = label
-                onClick {
-                    tap()
-                    true
-                }
-            }
+            .combinedClickable(
+                onLongClick = longPress,
+                onClick = { tap() }
+            )
+            .semantics { this.contentDescription = label }
     )
 }
 
