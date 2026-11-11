@@ -14,7 +14,10 @@ frames and native CI captures remain the source of truth.
 - `docs/reference-frames/key-states/key-0075.0s.jpg`, `key-0150.0s.jpg`, `key-0190.0s.jpg`, `key-0310.0s.jpg`, `key-0390.0s.jpg`, `key-0450.0s.jpg` — inspector/property/transform/effects states.
 - `docs/reference-frames/key-states/key-0230.0s.jpg` — Add sheet and FAB close state.
 - `docs/reference-frames/sheets/sheet-003.jpg` … `sheet-020.jpg` and `timeline-sheets/tl-001.jpg` — editor/timeline interaction sequence.
-- `docs/screenshots/native-home-v4.5.2.png` — pre-change native launcher capture from Android CI.
+- `docs/screenshots/native-{home,projects,create}-v4.5.2.png` — CI-verified launcher, Projects and creation captures.
+- `docs/screenshots/native-editor-v4.5.2.png` — empty 9:16 editor with transport, ruler, fixed playhead and FAB.
+- `docs/screenshots/native-editor-add-v4.5.2.png` — reference-style Add sheet and rotating close FAB.
+- `docs/screenshots/native-editor-{inspector,properties,transform,keyframe}-v4.5.2.png` — text inspector, property grid, scrolled Transform panel and a real timeline keyframe marker.
 
 The reference stills are 610×1356, half the 1220×2712 recording, and both the
 reference device and the Pixel 5 CI emulator use approximately 2.75 px/dp.
@@ -96,23 +99,48 @@ alignment targets, not an exact-parity claim.
 ## Verification
 
 `.github/workflows/android-ci.yml` builds/tests the native APK and uploads
-`native-home.png`, `native-projects.png`, `native-create.png`, and the editor,
-Add-sheet, inspector, properties, transform and keyframe captures.
+nine native state captures: `native-home.png`, `native-projects.png`,
+`native-create.png`, `native-editor.png`, `native-editor-add.png`,
+`native-editor-inspector.png`, `native-editor-properties.png`,
+`native-editor-transform.png` and `native-editor-keyframe.png`.
 `ci/capture-native-states.py` uses UI Automator bounds rather than hard-coded
-coordinates. `.github/workflows/reference-frames.yml` can import those captures
-into `docs/screenshots/` with a `capture_run_id` workflow input. Visual parity
-must be checked against those imported captures before making any exact-parity
-claim.
+coordinates, and scrolls the inspector to reach the first Transform keyframe
+diamond. `.github/workflows/reference-frames.yml` imports those captures into
+`docs/screenshots/` with a `capture_run_id` workflow input.
 
-### Current imported evidence
+### Verified editor/timeline evidence
 
-- Android CI run `42923181870` (build, unit tests, instrumentation tests and
-  emulator smoke) succeeded on commit `23994f1`.
-- Visual-evidence import run `42925036568` copied
-  `native-home-v4.5.2.png`, `native-projects-v4.5.2.png` and
-  `native-create-v4.5.2.png` from that CI run.
-- The native Projects header now follows the reference's tab → search →
-  section-heading order, and the creation sheet is bottom-aligned with the
-  FAB-to-close state visible. Remaining differences include the reference
-  device's taller screen, populated project rows (CI starts from cleared app
-  data), and the still-unverified editor/timeline state.
+- Android CI run `42988769349` succeeded on commit `53acf58`: debug/release
+  Kotlin compilation, unit tests, all 18 instrumentation tests (including
+  `EditorKeyframeRegressionTest`, `ThumbnailGeneratorTest` and the other
+  emulator regressions), APK packaging, emulator launch smoke and UI-state
+  capture all passed.
+- Visual-evidence import run `42990761782` copied all nine captures into
+  `docs/screenshots/`; commit `135338d` recorded the imported evidence.
+- The captured empty editor shows the dark toolbar, centered 9:16 preview,
+  seven-icon transport, dense ruler, fixed centre playhead, timecode pill and
+  empty timeline well. The Add-sheet capture shows the dimmed 11-action sheet,
+  `NEW` Template badge and rotating FAB. The inspector capture shows the text
+  toolbar and real Text panel; the properties capture shows the compact tool
+  row and property tile grid; the transform capture shows the scrolled
+  auto-key/Transform controls; and the keyframe capture shows a real green
+  keyframe diamond added to the selected Text clip by a UI Automator tap.
+- `EditorKeyframeRegressionTest` covers Transform diamond → timeline marker →
+  Keyframes panel → Add keyframe → graph drag → Gaussian Blur effect → Radius
+  diamond. The marker uses a `combinedClickable` control with an unrotated hit
+  target; the test invokes its semantics click action directly, while the
+  capture evidence verifies the real adb tap on the Transform diamond and the
+  resulting timeline marker. `KeyframeContractTest` and
+  `ThumbnailGeneratorTest` cover the engine, graph-drag and thumbnail-fallback
+  contracts.
+- Thumbnail fallbacks and keyframe behavior were left intact and are covered by
+  the passing suite: real rendered project/effect/timeline frames, visible
+  posters for empty/corrupt data, and real animated tracks from every keyframe
+  entry point.
+
+The reference device is taller than the Pixel 5 emulator, so the preview and the
+empty timeline well flex with the available height. The imported captures show
+reference-matched layout and working controls, but this document still does
+**not** claim pixel-exact parity: remaining differences include the reference
+device's taller screen, populated project rows (CI starts from cleared app
+data), proprietary artwork/fonts, and reference-only animation detail.

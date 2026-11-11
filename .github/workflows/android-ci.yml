@@ -164,7 +164,7 @@ jobs:
             }
             const lines = fs.readFileSync('smoke-diagnostics.txt', 'utf8')
               .split(/\r?\n/)
-              .filter(line => /native-|Could not find|Timed out|found |tapped |captured |Traceback|RuntimeError|error/i.test(line));
+              .filter(line => /^(tapped|captured|found |waiting for |Could not capture|Could not find|Timed out|Traceback|RuntimeError)/.test(line));
             if (lines.length) {
               core.warning(`Native capture diagnostics:\n${lines.slice(-100).join('\n')}`.slice(0, 9000));
             }
