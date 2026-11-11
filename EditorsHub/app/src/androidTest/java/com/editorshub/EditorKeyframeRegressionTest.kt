@@ -1,6 +1,7 @@
 package com.editorshub
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -79,7 +80,11 @@ class EditorKeyframeRegressionTest {
 
         // Timeline marker -> Keyframes panel with the one real keyframe.
         mark("open-keyframes-panel")
-        compose.onNodeWithContentDescription("Keyframe at 0 ms").performClick()
+        // The marker exposes a real click action via combinedClickable; invoke it
+        // directly so the regression verifies the control rather than the tiny
+        // rotated diamond's touch geometry.
+        compose.onNodeWithContentDescription("Keyframe at 0 ms")
+            .performSemanticsAction(SemanticsActions.OnClick)
         waitForDescription("Open keyframes panel")
         mark("keyframes-panel-content")
         waitForText("Keyframe engine")
