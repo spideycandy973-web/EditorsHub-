@@ -443,19 +443,28 @@ private fun KeyframeDiamond(
     val longPress by rememberUpdatedState(onLongPress)
     Box(
         modifier
-            .size(11.dp)
-            .rotate(45f)
-            .background(
-                if (active) EditorPalette.Green else Color(0xFF35353A),
-                RoundedCornerShape(2.dp)
-            )
-            .border(1.dp, if (active) Color.White else EditorPalette.TextMuted, RoundedCornerShape(2.dp))
+            .size(16.dp)
             .combinedClickable(
                 onLongClick = longPress,
                 onClick = { tap() }
             )
-            .semantics { this.contentDescription = label }
-    )
+            .semantics { this.contentDescription = label },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier.size(11.dp)
+                .rotate(45f)
+                .background(
+                    if (active) EditorPalette.Green else Color(0xFF35353A),
+                    RoundedCornerShape(2.dp)
+                )
+                .border(
+                    1.dp,
+                    if (active) Color.White else EditorPalette.TextMuted,
+                    RoundedCornerShape(2.dp)
+                )
+        )
+    }
 }
 
 @Composable
