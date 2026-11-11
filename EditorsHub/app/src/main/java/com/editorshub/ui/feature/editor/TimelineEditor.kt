@@ -361,10 +361,10 @@ private fun ClipBar(
     val color = when {
         layer.name.startsWith("Camera", ignoreCase = true) -> Color(0xFFD6247A)
         layer.type == LayerType.TEXT -> Color(0xFFF5C542)
-        layer.type == LayerType.IMAGE, layer.type == LayerType.VIDEO -> Color(0xFF3D8BEF)
+        layer.type == LayerType.IMAGE || layer.type == LayerType.VIDEO -> Color(0xFF3D8BEF)
         layer.type == LayerType.AUDIO -> Color(0xFF9B6CE0)
         layer.type == LayerType.SOLID -> Color(0xFFF06A6A)
-        layer.type == LayerType.SHAPE, layer.type == LayerType.VECTOR -> Color(0xFF20C6B2)
+        layer.type == LayerType.SHAPE || layer.type == LayerType.VECTOR -> Color(0xFF20C6B2)
         else -> Color(0xFF5A6478)
     }
     Box(
