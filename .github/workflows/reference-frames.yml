@@ -45,7 +45,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BRANCH: arena/be31b8e1-editorshub
       DRIVE_ID: 1Wqk73fNhe1NqiwwlQC53fjLgZZXtTzq6
-      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '42991308561' }}
+      CAPTURE_RUN_ID: ${{ inputs.capture_run_id || '43114300889' }}
       CAPTURE_ARTIFACT: editorshub-native-home-capture
       NATIVE_CAPTURE: docs/screenshots/native-home-v4.5.1.png
       STORYBOARD_OUT: docs/reference-frames
