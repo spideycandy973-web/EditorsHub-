@@ -65,6 +65,25 @@ def wait_for_description(label, timeout=30):
     raise RuntimeError(f"Timed out waiting for content-desc {label!r}")
 
 
+def wait_and_scroll_for_description(label, timeout=30):
+    """Find a node in the scrollable inspector, scrolling down between dumps."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            if any(node.attrib.get("content-desc") == label for node in dump_nodes()):
+                print(f"found {label!r}", flush=True)
+                return
+        except Exception as error:
+            print(f"waiting for {label!r}: {error}", flush=True)
+        run(
+            ["adb", "shell", "input", "swipe", "540", "2150", "540", "1650", "200"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(1)
+    raise RuntimeError(f"Timed out waiting for content-desc {label!r}")
+
+
 def capture(path):
     with open(path, "wb") as out:
         out.write(subprocess.check_output(["adb", "exec-out", "screencap", "-p"]))
@@ -87,7 +106,7 @@ def main():
         elif value == "Add Text layer":
             wait_for_description("Back to properties")
         elif value == "Move & Transform":
-            wait_for_description("Position X keyframe")
+            wait_and_scroll_for_description("Position X keyframe")
         elif value == "Position X keyframe":
             wait_for_description("Keyframe at 0 ms")
         time.sleep(delay)
