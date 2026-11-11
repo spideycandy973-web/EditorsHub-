@@ -413,7 +413,7 @@ private fun ClipBar(
                 KeyframeDiamond(
                     active = true,
                     modifier = Modifier.align(Alignment.CenterStart)
-                        .offset(x = (keyframe.timeMs / 1000f * zoom - 6f).dp),
+                        .offset(x = (keyframe.timeMs / 1000f * zoom + 10f).dp),
                     contentDescription = "Keyframe at ${layer.startMs + keyframe.timeMs} ms",
                     onTap = {
                         vm.selectLayer(layer.id)
