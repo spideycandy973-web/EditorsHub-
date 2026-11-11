@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture reference-matched native home, Projects, creation and editor states.
+"""Capture v4.5.1-baseline native home, Projects, creation and editor states.
 
 The Android CI smoke script already captures the launcher. This helper uses the
 UI hierarchy (text/content-description, not hard-coded screen coordinates) to
@@ -22,6 +22,11 @@ STEPS = [
     ("native-editor-keyframe.png", "content-desc", "Position X keyframe", 1.6),
 ]
 
+# Pixel 5 CI emulator screen. Bounds outside this area are not tappable even if
+# a semantics node with the requested label exists in the hierarchy.
+SCREEN_WIDTH = 1080
+SCREEN_HEIGHT = 2340
+
 
 def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
@@ -37,8 +42,9 @@ def dump_nodes():
     return list(ET.fromstring(xml.decode("utf-8", "replace")).iter("node"))
 
 
-def find_bounds(attribute, value):
-    for node in dump_nodes():
+def bounds_from_nodes(nodes, attribute, value):
+    """Return the centre of a visible, tappable matching node, or None."""
+    for node in nodes:
         if node.attrib.get(attribute) != value:
             continue
         bounds = node.attrib.get("bounds", "")
@@ -46,10 +52,25 @@ def find_bounds(attribute, value):
         parts = bounds.replace("][", ",").strip("[]").split(",")
         if len(parts) != 4:
             continue
-        left, top, right, bottom = (int(item) for item in parts)
-        if right > left and bottom > top:
+        try:
+            left, top, right, bottom = (int(item) for item in parts)
+        except ValueError:
+            continue
+        if (
+            right > left
+            and bottom > top
+            and 0 <= left < SCREEN_WIDTH
+            and 0 <= top < SCREEN_HEIGHT
+        ):
             return (left + right) // 2, (top + bottom) // 2
-    raise RuntimeError(f"Could not find a node with {attribute}={value!r}")
+    return None
+
+
+def find_bounds(attribute, value):
+    center = bounds_from_nodes(dump_nodes(), attribute, value)
+    if center is None:
+        raise RuntimeError(f"Could not find a tappable node with {attribute}={value!r}")
+    return center
 
 
 def wait_for_description(label, timeout=30):
@@ -65,14 +86,15 @@ def wait_for_description(label, timeout=30):
     raise RuntimeError(f"Timed out waiting for content-desc {label!r}")
 
 
-def wait_and_scroll_for_description(label, timeout=30):
-    """Find a node in the scrollable inspector, scrolling down between dumps."""
+def wait_and_scroll_for_bounds(label, timeout=30):
+    """Scroll until the labelled node is both present and tappable."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            if any(node.attrib.get("content-desc") == label for node in dump_nodes()):
-                print(f"found {label!r}", flush=True)
-                return
+            center = bounds_from_nodes(dump_nodes(), "content-desc", label)
+            if center is not None:
+                print(f"found tappable {label!r} at {center[0]},{center[1]}", flush=True)
+                return center
         except Exception as error:
             print(f"waiting for {label!r}: {error}", flush=True)
         run(
@@ -81,7 +103,7 @@ def wait_and_scroll_for_description(label, timeout=30):
             stderr=subprocess.DEVNULL,
         )
         time.sleep(1)
-    raise RuntimeError(f"Timed out waiting for content-desc {label!r}")
+    raise RuntimeError(f"Timed out waiting for tappable content-desc {label!r}")
 
 
 def capture(path):
@@ -92,13 +114,24 @@ def capture(path):
 
 def tap(attribute, value):
     x, y = find_bounds(attribute, value)
+    tap_xy(x, y, attribute, value)
+
+
+def tap_xy(x, y, attribute, value):
     run(["adb", "shell", "input", "tap", str(x), str(y)], stdout=subprocess.DEVNULL)
     print(f"tapped {attribute}={value!r} at {x},{y}", flush=True)
 
 
 def main():
     for path, attribute, value, delay in STEPS:
-        tap(attribute, value)
+        if value == "Position X keyframe":
+            # Re-resolve immediately before tapping: scrolling the inspector can
+            # leave a transient/zero-bounds semantics node in the dump.
+            x, y = wait_and_scroll_for_bounds(value)
+            tap_xy(x, y, attribute, value)
+        else:
+            tap(attribute, value)
+
         if value == "Create Project":
             wait_for_description("Play / pause")
         elif value == "Add layer":
@@ -106,7 +139,7 @@ def main():
         elif value == "Add Text layer":
             wait_for_description("Back to properties")
         elif value == "Move & Transform":
-            wait_and_scroll_for_description("Position X keyframe")
+            wait_and_scroll_for_bounds("Position X keyframe")
         elif value == "Position X keyframe":
             wait_for_description("Keyframe at 0 ms")
         time.sleep(delay)
