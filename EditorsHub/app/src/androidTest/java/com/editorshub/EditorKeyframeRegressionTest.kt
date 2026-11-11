@@ -18,45 +18,65 @@ class EditorKeyframeRegressionTest {
     @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
 
-    private fun waitForDescription(label: String, timeoutMillis: Long = 15_000L) {
-        compose.waitUntil(timeoutMillis) {
-            compose.onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+    private var stage = "start"
+
+    private fun mark(value: String) {
+        stage = value
+        println("KEYFRAME_REGRESSION_STAGE=$value")
+    }
+
+    private fun waitFor(predicate: () -> Boolean, timeoutMillis: Long = 15_000L) {
+        try {
+            compose.waitUntil(timeoutMillis) { predicate() }
+        } catch (error: Throwable) {
+            throw AssertionError("Timed out at stage '$stage'", error)
         }
     }
 
+    private fun waitForDescription(label: String, timeoutMillis: Long = 15_000L) =
+        waitFor({ compose.onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty() }, timeoutMillis)
+
+    private fun waitForText(text: String, substring: Boolean = false) =
+        waitFor({ compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty() })
+
     @Test
     fun keyframesWorkFromTransformTimelineMarkersPanelGraphAndEffects() {
+        mark("open-editor")
         compose.onNodeWithContentDescription("Create project").performClick()
         compose.onNodeWithText("Create Project").performClick()
         waitForDescription("Play / pause")
 
+        mark("open-add-sheet")
         compose.onNodeWithContentDescription("Add layer").performClick()
         waitForDescription("Add sheet")
+        mark("add-text-layer")
         compose.onNodeWithContentDescription("Add Text layer").performClick()
         waitForDescription("Back to properties")
 
         // Transform diamond -> a real opacity track and timeline marker.
+        mark("open-transform")
         compose.onNodeWithContentDescription("Back to properties").performClick()
         waitForDescription("Move & Transform")
         compose.onAllNodesWithContentDescription("Move & Transform")[0].performClick()
         waitForDescription("Opacity keyframe")
+        mark("toggle-opacity-keyframe")
         compose.onNodeWithContentDescription("Opacity keyframe").performScrollTo().performClick()
         waitForDescription("Keyframe at 0 ms")
 
         // Timeline marker -> Keyframes panel with the one real keyframe.
+        mark("open-keyframes-panel")
         compose.onNodeWithContentDescription("Keyframe at 0 ms").performClick()
         waitForDescription("Add keyframe")
         compose.onNodeWithText("1 keyframes · local playhead 0ms").assertIsDisplayed()
 
         // Keyframes panel -> a second real keyframe at the project end.
+        mark("add-second-keyframe")
         compose.onNodeWithContentDescription("Go to end").performClick()
         compose.onNodeWithContentDescription("Add keyframe").performScrollTo().performClick()
-        compose.waitUntil(15_000L) {
-            compose.onAllNodesWithText("2 keyframes", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        }
+        waitForText("2 keyframes", substring = true)
 
         // Graph editor accepts a continuous drag without losing the track.
+        mark("drag-graph")
         compose.onNodeWithContentDescription("Keyframe graph editor")
             .performScrollTo()
             .performTouchInput {
@@ -65,16 +85,16 @@ class EditorKeyframeRegressionTest {
         compose.onNodeWithContentDescription("Keyframe graph editor").assertIsDisplayed()
 
         // Effects diamond -> a real animated effect parameter.
+        mark("open-effects")
         compose.onNodeWithContentDescription("Back to properties").performClick()
         waitForDescription("Effects")
         compose.onNodeWithContentDescription("Effects").performClick()
         waitForDescription("Add Gaussian Blur effect")
+        mark("add-gaussian-blur")
         compose.onNodeWithContentDescription("Add Gaussian Blur effect").performScrollTo().performClick()
         waitForDescription("Radius keyframe")
+        mark("toggle-radius-keyframe")
         compose.onNodeWithContentDescription("Radius keyframe").performScrollTo().performClick()
-        compose.waitUntil(15_000L) {
-            compose.onAllNodesWithText("1 animated parameters")
-                .fetchSemanticsNodes().isNotEmpty()
-        }
+        waitForText("1 animated parameters")
     }
 }
