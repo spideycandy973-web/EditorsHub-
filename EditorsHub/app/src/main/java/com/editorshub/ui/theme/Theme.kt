@@ -23,50 +23,50 @@ val LocalUiScale = staticCompositionLocalOf { 1f }
 
 private val DarkColors = darkColorScheme(
     primary = EditorPalette.Purple,
-    onPrimary = EditorPalette.Black,
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF000000),
     secondary = EditorPalette.Cyan,
-    onSecondary = EditorPalette.Black,
-    tertiary = EditorPalette.Pink,
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF000000),
+    tertiary = EditorPalette.Amber,
     background = EditorPalette.Black,
     onBackground = EditorPalette.TextPrimary,
     surface = EditorPalette.Surface,
     onSurface = EditorPalette.TextPrimary,
     surfaceVariant = EditorPalette.SurfaceVariant,
-    onSurfaceVariant = EditorPalette.TextSecondary,
+    onSurfaceVariant = EditorPalette.TextMuted,
     outline = EditorPalette.Outline,
     outlineVariant = EditorPalette.OutlineSoft,
     error = EditorPalette.Red
 )
 
-// The reference design is a near-black studio UI in both system themes.
+// The existing light variant stays functional but is not extended into RomKit.
 private val LightColors = darkColorScheme(
-    primary = EditorPalette.Purple,
-    onPrimary = EditorPalette.Black,
-    secondary = EditorPalette.Cyan,
-    onSecondary = EditorPalette.Black,
-    tertiary = EditorPalette.Pink,
-    background = EditorPalette.Black,
-    onBackground = EditorPalette.TextPrimary,
-    surface = EditorPalette.Surface,
-    onSurface = EditorPalette.TextPrimary,
-    surfaceVariant = EditorPalette.SurfaceVariant,
-    onSurfaceVariant = EditorPalette.TextSecondary,
-    outline = EditorPalette.Outline,
-    error = EditorPalette.Red
+    primary = androidx.compose.ui.graphics.Color(0xFFD8DCFF),
+    onPrimary = androidx.compose.ui.graphics.Color(0xFF121214),
+    secondary = androidx.compose.ui.graphics.Color(0xFF01FFA7),
+    onSecondary = androidx.compose.ui.graphics.Color(0xFF121214),
+    tertiary = androidx.compose.ui.graphics.Color(0xFFFF3B7F),
+    background = androidx.compose.ui.graphics.Color(0xFF121214),
+    onBackground = androidx.compose.ui.graphics.Color(0xFFF3F3F6),
+    surface = androidx.compose.ui.graphics.Color(0xFF1C1C1E),
+    onSurface = androidx.compose.ui.graphics.Color(0xFFF3F3F6),
+    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF262628),
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFC8C8D2),
+    outline = androidx.compose.ui.graphics.Color(0xFF2E2E33),
+    error = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
 )
 
 private val AppTypography = Typography(
-    displaySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 30.sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 23.sp),
-    titleLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 20.sp),
-    titleMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 15.sp),
-    titleSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 13.sp),
-    bodyLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 15.sp),
-    bodyMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 13.sp),
-    bodySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 11.sp),
-    labelLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
-    labelMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 11.sp),
-    labelSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 9.sp)
+    displaySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight(800), fontSize = 30.sp, letterSpacing = (-0.5).sp, lineHeight = 36.sp),
+    headlineMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp),
+    titleLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp),
+    titleMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    titleSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp),
+    bodyMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 17.sp),
+    bodySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 11.sp, lineHeight = 15.sp),
+    labelLarge = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium, fontSize = 10.sp, letterSpacing = 1.sp, lineHeight = 14.sp),
+    labelMedium = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium, fontSize = 9.5f.sp, letterSpacing = 0.4.sp, lineHeight = 13.sp),
+    labelSmall = TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Normal, fontSize = 10.sp, lineHeight = 14.sp)
 )
 
 @Composable

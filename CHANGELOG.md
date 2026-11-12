@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.5.4 — RomKit presentation re-skin (2026-11-11)
+
+- Re-skinned the existing native Compose presentation with RomKit ink, panel, hairline, Ember/Cyan semantic accents, typography and motion tokens.
+- Preserved the app's existing screens, controls, routes, data and behavior; no business logic or capability changes are intended.
+- Retained thumbnail generation and keyframe workflows.
+- Signed native Android APK built from the active branch and verified by the release workflow.
+
 ## 4.5.1 — v4.5.1 design baseline restored (2026-11-11)
 
 - Restored the exact v4.5.1 web/Capacitor UI source under `src/` as the design source of truth; removed the later APK-measurement CSS token changes.
