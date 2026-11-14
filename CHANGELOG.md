@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-11-14 — Layer Bar, Template Cards, Storage Cleanup & Safety Fixes
+
+### Editor fixes
+
+- Make the layer header bar work: the trash button deletes the layer and the name field renames it. Both called `history.push()` from a late patch script, where `history` is the browser's History object, so they threw and did nothing. Renaming is undoable and refreshes the timeline row.
+- Fix the Inspector **Tautkan Ulang** tile throwing `openRelinkMenu is not defined` when tapped right after the Inspector opened.
+- Fix a malformed `transition` declaration on the transform number popover; its `width` part was ignored.
+
+### Home and New Project dialog
+
+- Home template cards now always start a new project and apply the template to it. They called a function that does not exist and fell back to the blank New Project dialog, or added the template to whichever project was still loaded.
+- Add the missing `fade-scale` template used by the fourth Home template card.
+- Remove the PROYEK / ELEMEN switch from the New Project dialog; it had no function.
+- Make the New Project dialog title readable on phones and tablets (dark text on the dark sheet).
+
+### Browser storage
+
+- Deleting projects on Home now also removes stored media that no remaining project uses. Media records are shared by asset id, so anything still referenced by another project, a local fallback snapshot or the open project's undo stack is kept.
+
+### Safety
+
+- Escape the project name wherever the editor title is rewritten. A project file with markup in its name could run script when the title was tapped.
+- AM Link export: accept only an http(s) link from the publish response and escape it in the result dialog.
+- Project import: keep the canvas (16–8192 px), frame rate (1–120) and duration inside the New Project limits, ignore non-object layer entries and refuse files with more than 10,000 layers.
+
+### Accessibility
+
+- Label the form controls that had none (New Project dialog, export sheet, canvas zoom) and mark the New Project dialog as a dialog.
+
 ## 2026-11-08 — Timeline Playhead, Layer Header & Export Menu Fixes
 
 ## Timeline and playhead
