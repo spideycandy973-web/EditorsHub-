@@ -287,7 +287,7 @@ input[type=range]{accent-color:var(--accent)}
 [data-positionaxis],[data-positionaxis] *:not(button),[data-camera-rotation-axis],[data-camera-rotation-axis] *:not(button),[data-transform-inline-number]{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 [data-transform-inline-number]{pointer-events:none;cursor:pointer}
 [data-positionaxis]::selection,[data-positionaxis] *::selection,[data-camera-rotation-axis]::selection,[data-camera-rotation-axis] *::selection{background:transparent;color:inherit}
-.transformNumberPopover{position:fixed;left:10px;top:10px;width:calc(100% - 20px);z-index:240;display:grid;grid-template-columns:38px minmax(88px,1fr) 38px 58px 62px;grid-template-rows:auto 42px;gap:6px;padding:9px;background:rgba(18,22,34,.97);border:1px solid #4a5571;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.55),0 0 0 1px rgba(0,215,167,.12);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:top .12s ease,left .12s ease;width .12s ease}
+.transformNumberPopover{position:fixed;left:10px;top:10px;width:calc(100% - 20px);z-index:240;display:grid;grid-template-columns:38px minmax(88px,1fr) 38px 58px 62px;grid-template-rows:auto 42px;gap:6px;padding:9px;background:rgba(18,22,34,.97);border:1px solid #4a5571;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.55),0 0 0 1px rgba(0,215,167,.12);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:top .12s ease,left .12s ease,width .12s ease}
 .transformNumberPopover .tnpLabel{grid-column:1/-1;color:#9cefdc;font-size:9px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .transformNumberPopover button,.transformNumberPopover input{height:42px;border-radius:9px;border:1px solid #3b455e;background:#232a3d;color:#e9edf7}
 .transformNumberPopover button{padding:0;font-weight:800;touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
@@ -6654,6 +6654,12 @@ html.omsIOSStandalone #editor.editor:not(.hidden) {
     color: #ffffff !important;
   }
 
+  /* The sheet above is dark, but the dialog title kept the dark text colour of
+     the light desktop dialog and could not be read. */
+  #newModal .modalHead {
+    color: #ffffff !important;
+  }
+
   /* Bottom sheet slide-up and slide-down animation */
   #newModal:not(.hidden) {
     animation: omsModalFadeIn 0.22s ease-out forwards !important;
@@ -7776,7 +7782,7 @@ body #desktopCanvasSplitToolbarBtn,
         </div>
         <div class="previewTools">
           <div class="grow editorSplitSlot"><button id="editorSplitHandle" class="editorSplitHandle" type="button" aria-label="Geser batas preview dan timeline" title="Tahan lalu geser vertikal untuk mengatur tinggi timeline"><span class="editorSplitGrip" aria-hidden="true"></span></button></div><div class="tc" id="previewTime">00:00:00</div>
-          <div class="zoomCtl"><span>−</span><input id="zoom" type="range" min="10" max="300" value="70"><span>＋</span></div>
+          <div class="zoomCtl"><span>−</span><input id="zoom" type="range" min="10" max="300" value="70" aria-label="Zoom kanvas"><span>＋</span></div>
         </div>
       </section>
       
@@ -7908,11 +7914,10 @@ body #desktopCanvasSplitToolbarBtn,
   </section>
 </div>
 
-<div id="newModal" class="modalShade hidden">
+<div id="newModal" class="modalShade hidden" role="dialog" aria-modal="true" aria-label="Proyek Baru">
   <div class="modal">
     <div class="modalHead">Proyek Baru <button id="closeNew">×</button></div>
-    <div class="seg"><button class="active">PROYEK</button><button>ELEMEN</button></div>
-    <input id="newName" style="width:100%;height:38px;border:1px solid #dfe1e7;border-radius:8px;padding:0 10px" value="Project Baru">
+    <input id="newName" aria-label="Nama proyek" style="width:100%;height:38px;border:1px solid #dfe1e7;border-radius:8px;padding:0 10px" value="Project Baru">
     <div class="aspectGrid" id="aspectGrid">
       <button class="aspect" data-r="16:9"><div class="ratioIcon"><i class="r169"></i></div>16:9</button>
       <button class="aspect active" data-r="9:16"><div class="ratioIcon"><i class="r916"></i></div>9:16</button>
@@ -7923,10 +7928,10 @@ body #desktopCanvasSplitToolbarBtn,
     </div>
     <div class="settingsList">
       <div class="settingRow" id="newCustomRow" style="display:none"><label>Ukuran Kustom (px)</label><div style="display:flex;gap:6px;align-items:center;min-width:0"><input id="newCustomW" type="number" inputmode="numeric" min="16" max="8192" step="2" value="1080" aria-label="Lebar" style="width:100%;min-width:0"><span style="color:#888">×</span><input id="newCustomH" type="number" inputmode="numeric" min="16" max="8192" step="2" value="1920" aria-label="Tinggi" style="width:100%;min-width:0"></div></div>
-      <div class="settingRow"><label>Resolusi</label><select id="newRes"><option value="720">720p (HD)</option><option value="1080" selected>1080p (FHD)</option><option value="1440">1440p (2K)</option></select></div>
-      <div class="settingRow"><label>Frame Rate</label><select id="newFps"><option>15</option><option>18</option><option>20</option><option>24</option><option>25</option><option selected>30</option><option>48</option><option>50</option><option>60</option><option>90</option><option>120</option></select></div>
-      <div class="settingRow"><label>Durasi</label><select id="newDur"><option value="10">10 detik</option><option value="15">15 detik</option><option value="30">30 detik</option><option value="60">60 detik</option></select></div>
-      <div class="settingRow"><label>Latar Belakang</label><input id="newBg" type="color" value="#ffffff"></div>
+      <div class="settingRow"><label for="newRes">Resolusi</label><select id="newRes"><option value="720">720p (HD)</option><option value="1080" selected>1080p (FHD)</option><option value="1440">1440p (2K)</option></select></div>
+      <div class="settingRow"><label for="newFps">Frame Rate</label><select id="newFps"><option>15</option><option>18</option><option>20</option><option>24</option><option>25</option><option selected>30</option><option>48</option><option>50</option><option>60</option><option>90</option><option>120</option></select></div>
+      <div class="settingRow"><label for="newDur">Durasi</label><select id="newDur"><option value="10">10 detik</option><option value="15">15 detik</option><option value="30">30 detik</option><option value="60">60 detik</option></select></div>
+      <div class="settingRow"><label for="newBg">Latar Belakang</label><input id="newBg" type="color" value="#ffffff"></div>
     </div>
     <button id="createProject" class="createBtn">BUAT PROYEK</button>
   </div>
@@ -8090,7 +8095,7 @@ body #desktopCanvasSplitToolbarBtn,
     <div class="exportOption exportOptionVideo" data-export-format="video">
       <div class="radioRow active"><span class="radioDot"></span><div><b>Video</b><small style="display:block;color:#888">Animasi penuh</small></div><span>›</span></div>
       <div id="videoExportSettings">
-        <label>Resolusi Ekspor</label>
+        <label for="exportRes">Resolusi Ekspor</label>
         <select id="exportRes"></select>
         <div id="resolutionSupportHint" style="margin-top:7px;font-size:10px;color:#7d8492;line-height:1.4">
           Mendeteksi kemampuan encoder perangkat…
@@ -8114,8 +8119,8 @@ body #desktopCanvasSplitToolbarBtn,
           <div><b>Eksperimental</b> Pipeline WebCodecs lama dengan decoder persisten dan persiapan frame berikutnya.</div>
           <div><b>Cepat Realtime</b> Merekam preview langsung; cepat, tetapi proyek berat dapat menjatuhkan frame.</div>
         </div>
-        <div style="height:10px"></div><label>Frame Rate</label><select id="exportFps"><option>15</option><option>18</option><option>20</option><option>24</option><option>25</option><option selected>30</option><option>48</option><option>50</option><option>60</option><option>90</option><option>120</option></select>
-        <div style="height:10px"></div><label>Kualitas</label><input id="qualityRange" style="width:100%" type="range" min="3" max="16" value="10"><div class="progress"><i id="exportProgress"></i></div>
+        <div style="height:10px"></div><label for="exportFps">Frame Rate</label><select id="exportFps"><option>15</option><option>18</option><option>20</option><option>24</option><option>25</option><option selected>30</option><option>48</option><option>50</option><option>60</option><option>90</option><option>120</option></select>
+        <div style="height:10px"></div><label for="qualityRange">Kualitas</label><input id="qualityRange" style="width:100%" type="range" min="3" max="16" value="10"><div class="progress"><i id="exportProgress"></i></div>
       </div>
     </div>
     <div class="exportOption nonVideoExportOption" data-export-format="png"><div class="radioRow"><span class="radioDot"></span><div><b>Frame Saat Ini sebagai PNG</b><small style="display:block;color:#888">Simpan frame aktif</small></div><button id="exportPng" type="button" style="border:0;background:#eef1f5;border-radius:7px;padding:7px;cursor:pointer">PNG</button></div></div>
@@ -20934,6 +20939,42 @@ class OMSPersistentStore{
     try{const last=localStorage.getItem('oms4_last_saved_project');if(set.has(last))localStorage.removeItem('oms4_last_saved_project')}catch(e){}
     return true
   }
+  // Stored media is keyed by asset id and shared between projects (a duplicated
+  // project reuses the same records), so deleting a project cannot simply delete
+  // "its" assets. This sweep removes every stored asset that nothing mentions any
+  // more: no remaining project record, no local fallback snapshot, and not the
+  // scene or undo stack currently in memory. Matching is a plain substring test
+  // on the asset id, so any data that names an id anywhere keeps that asset.
+  pruneUnusedAssets(){
+    const task=async()=>{
+      let removed=0;
+      try{
+        const texts=[],keep=new Set();
+        let localKeys=[];try{localKeys=Object.keys(localStorage)}catch(e){}
+        for(const key of localKeys){if(!key.startsWith('oms4_lite_')&&!key.startsWith('oms3_'))continue;try{const v=localStorage.getItem(key);if(v)texts.push(v)}catch(e){}}
+        try{if(model.project)for(const id of history.referencedAssetIds())keep.add(id)}catch(e){}
+        const used=id=>keep.has(id)||texts.some(t=>t.includes(id));
+        const db=await this.open(),rtx=db.transaction(['projects','assets'],'readonly');
+        const [rows,assetIds]=await Promise.all([this.request(rtx.objectStore('projects').getAll()),this.request(rtx.objectStore('assets').getAllKeys())]);
+        await this.txDone(rtx);
+        for(const row of rows||[])texts.push(JSON.stringify(row?.data??row));
+        const unused=(assetIds||[]).filter(id=>typeof id==='string'&&id&&!used(id));
+        if(unused.length){
+          const wtx=db.transaction('assets','readwrite'),store=wtx.objectStore('assets');
+          for(const id of unused)store.delete(id);
+          await this.txDone(wtx);
+          removed=unused.length;
+          for(const id of unused)this.knownAssets.delete(id);
+          // Other tabs re-check these ids before their next save.
+          this.invalidateAssetVerification?.(unused);this.announceAssetWrites?.(unused);
+        }
+        // Small media mirrored into localStorage after a failed IndexedDB save.
+        for(const key of localKeys){if(!key.startsWith('oms4_asset_'))continue;const id=key.slice(11);if(id&&!used(id)){try{localStorage.removeItem(key)}catch(e){}}}
+      }catch(e){console.warn('Media cleanup failed:',e)}
+      return removed
+    };
+    this.writeQueue=this.writeQueue.catch(()=>{}).then(task);return this.writeQueue
+  }
   async requestDurableStorage(){try{if(navigator.storage?.persist)await navigator.storage.persist()}catch(e){}}
 }
 const persistentStore=new OMSPersistentStore();
@@ -23388,10 +23429,11 @@ class UIController{
     const state=this.vectorPenState;if(!state)return;if(forceClosed&&state.nodes.length>=3&&!state.closed){history.push();state.closed=true}this.vectorPenSyncLiveLayer({allowCreate:true});this.exitVectorPenTool()
   }
   applyTemplate(name){history.push();if(name==='title'){const l=model.addLayer('text',{text:'OPEN MOTION',fontSize:model.project.height*.08}),t0=l.start,t1=Math.min(t0+.7,t0+l.duration),tf=Math.min(t0+.45,t0+l.duration);model.anim.setKey(l,'scaleX',t0,.45,'ease-out');model.anim.setKey(l,'scaleX',t1,1,'overshoot');model.anim.setKey(l,'scaleY',t0,.45,'ease-out');model.anim.setKey(l,'scaleY',t1,1,'overshoot');model.anim.setKey(l,'opacity',t0,0,'ease-out');model.anim.setKey(l,'opacity',tf,1,'ease-out')}
+    if(name==='fade-scale'){const side=Math.min(model.project.width,model.project.height)*.5,l=model.addLayer('shape',{shape:'rect',name:'Fade & Scale',w:side,h:side}),t0=l.start,t1=Math.min(t0+.6,t0+l.duration);for(const prop of ['scaleX','scaleY']){model.anim.setKey(l,prop,t0,.6,'ease-out');model.anim.setKey(l,prop,t1,1,'ease-out')}model.anim.setKey(l,'opacity',t0,0,'ease-out');model.anim.setKey(l,'opacity',t1,1,'ease-out')}
     if(name==='parallax'){model.mode3d=true;[-420,0,420].forEach((z,i)=>{model.addLayer('shape',{shape:'rect',name:'Parallax '+(i+1),space3d:true,z,x:model.project.width*(.3+i*.2),y:model.project.height*(.38+i*.13),w:model.project.width*.34,h:model.project.height*.14,color:['#6ca8ff','#27d3b5','#ff907c'][i]})})}
     if(name==='camera'){model.mode3d=true;const c=model.addLayer('camera'),t0=c.start,t1=t0+c.duration,z=c.z;model.anim.setKey(c,'z',t0,z,'ease-in-out');model.anim.setKey(c,'z',t1,z*.55,'ease-in-out');model.anim.setKey(c,'roll',t0,0,'ease-in-out');model.anim.setKey(c,'roll',t1,3,'ease-in-out')}
     this.rebuildAll();this.openInspectorRoot()}
-  openInspectorRoot(){if(['effects','effect-browser'].includes(this.drawerMode)){this._effectPanelSessionOpen=false;this.effectEaseEditorOpen=false;this.effectCurveReturnToEasing=false}const l=model.selectedLayer();if(!l){this.closeDrawer();return}this.drawerMode='root';timeline.refreshKeyframeInteractionState?.();const ins=(id,ico,txt,extra='')=>`<button class="insBtn" data-ins="${id}" ${extra}><span>${ico}</span>${txt}</button>`;const mediaTools=(l.type==='video'||l.type==='audio')?this.mediaQuickHTML(l):this.layerQuickHTML(l);const isRelinkable=['image','video','audio'].includes(l.type);const isBlendable=!['audio','camera','null','group'].includes(l.type);const blendTile=isBlendable?ins('blend','◒','Blending & Opacity','aria-label="Buka Blending dan Opacity"'):'';const relinkTile=isRelinkable?ins('relink','↻','Tautkan Ulang','id="omsInspectorRelinkBtn" aria-label="Tautkan ulang media"'):'';const html=`<div class="drawerBody"><div class="propTitle">${esc(l.name)} ${model.layer3DEnabled(l)?'<span class="badge3d">TRUE 3D</span>':''}</div>${mediaTools}<div class="inspectorGrid">${ins('move','✥','Transform')}${ins('color','◉','Warna & Fill')}${blendTile}${ins('effects','✦','Efek')}${ins('mask','⬡','Mask')}${l.type==='text'?ins('text','T','Edit Teks'):''}${l.type==='shape'?ins('shape',l.shape==='vector'?'✎':'◇','Edit Bentuk'):''}${ins('keys','⌁','Keyframes')}${ins('hier','◎','Scene Graph')}${ins('three','◇','Ruang 3D')}${relinkTile}</div><div style="height:10px"></div><button id="deleteLayer" class="createBtn" style="background:#3b1e2a;color:#ff91a6">HAPUS LAYER</button></div>`;this.drawerShell('Inspector',html);this.setTimelineInspectorScope?.(true);$$('[data-ins]').forEach(b=>b.onclick=()=>{if(b.dataset.ins==='relink'){openRelinkMenu(l);return}this.openInspector(b.dataset.ins)});this.bindMediaQuick(l);$('#deleteLayer').onclick=()=>{history.push();for(const camera of model.layers.filter(x=>x.type==='camera'&&x.orbitTargetId===l.id))this.cameraOrbitDisable(camera);model.removeLayer(l.id);this.closeDrawer();this.rebuildAll()}}
+  openInspectorRoot(){if(['effects','effect-browser'].includes(this.drawerMode)){this._effectPanelSessionOpen=false;this.effectEaseEditorOpen=false;this.effectCurveReturnToEasing=false}const l=model.selectedLayer();if(!l){this.closeDrawer();return}this.drawerMode='root';timeline.refreshKeyframeInteractionState?.();const ins=(id,ico,txt,extra='')=>`<button class="insBtn" data-ins="${id}" ${extra}><span>${ico}</span>${txt}</button>`;const mediaTools=(l.type==='video'||l.type==='audio')?this.mediaQuickHTML(l):this.layerQuickHTML(l);const isRelinkable=['image','video','audio'].includes(l.type);const isBlendable=!['audio','camera','null','group'].includes(l.type);const blendTile=isBlendable?ins('blend','◒','Blending & Opacity','aria-label="Buka Blending dan Opacity"'):'';const relinkTile=isRelinkable?ins('relink','↻','Tautkan Ulang','id="omsInspectorRelinkBtn" aria-label="Tautkan ulang media"'):'';const html=`<div class="drawerBody"><div class="propTitle">${esc(l.name)} ${model.layer3DEnabled(l)?'<span class="badge3d">TRUE 3D</span>':''}</div>${mediaTools}<div class="inspectorGrid">${ins('move','✥','Transform')}${ins('color','◉','Warna & Fill')}${blendTile}${ins('effects','✦','Efek')}${ins('mask','⬡','Mask')}${l.type==='text'?ins('text','T','Edit Teks'):''}${l.type==='shape'?ins('shape',l.shape==='vector'?'✎':'◇','Edit Bentuk'):''}${ins('keys','⌁','Keyframes')}${ins('hier','◎','Scene Graph')}${ins('three','◇','Ruang 3D')}${relinkTile}</div><div style="height:10px"></div><button id="deleteLayer" class="createBtn" style="background:#3b1e2a;color:#ff91a6">HAPUS LAYER</button></div>`;this.drawerShell('Inspector',html);this.setTimelineInspectorScope?.(true);$$('[data-ins]').forEach(b=>b.onclick=()=>{if(b.dataset.ins==='relink'){window.openMediaRelinkMenu?.(l);return}this.openInspector(b.dataset.ins)});this.bindMediaQuick(l);$('#deleteLayer').onclick=()=>{history.push();for(const camera of model.layers.filter(x=>x.type==='camera'&&x.orbitTargetId===l.id))this.cameraOrbitDisable(camera);model.removeLayer(l.id);this.closeDrawer();this.rebuildAll()}}
   mediaQuickContext(l){
     const frame=1/Math.max(1,timeline.projectFPS?.()||model.project?.fps||30);
     const t=+model.time||0,start=Math.max(0,+l.start||0),end=start+Math.max(0,+l.duration||0);
@@ -27444,6 +27486,9 @@ class UIController{
     if(!confirm(msg))return;
     const ok=await persistentStore.deleteProjectIds(ids);if(!ok){toast('Gagal menghapus proyek');return}
     if(model.project?.id&&ids.includes(model.project.id)){model.reset();history.clear();autosave.lastFingerprint='';try{sessionStorage.removeItem('oms4_resume_project')}catch(e){}}
+    // Free the media that no remaining project uses (after the reset above, so a
+    // deleted project that was still loaded no longer counts as a user).
+    try{await persistentStore.pruneUnusedAssets()}catch(e){console.warn('Media cleanup failed:',e)}
     this.exitProjectSelection({silent:true});await this.loadProjectList();toast(homeLanguage==='id'?`${ids.length} proyek dihapus`:`${ids.length} project${ids.length===1?'':'s'} deleted`)
   }
   bindProjectCardActivation(card,id){
@@ -27489,6 +27534,12 @@ class UIController{
 const ui=new UIController();
 window.model = model;
 window.ui = ui;
+// The late patch scripts at the end of this file run outside this IIFE. There the
+// bare names `history`, `toast` and `timeline` mean the browser's History object
+// or nothing at all, so give those scripts explicit handles to the app objects.
+window.omsHistory = history;
+window.omsToast = toast;
+window.omsTimeline = timeline;
 
 
 /* =========================================================
@@ -35756,7 +35807,12 @@ class Exporter{
         throw Error(errMsg);
       }
 
-      this.showAMLinkResultModal(data.link,title);
+      // data.link is server-supplied text: accept only an http(s) URL. The result
+      // modal escapes it again before it is written into markup.
+      let link='';
+      try{const u=new URL(String(data.link));if(u.protocol==='https:'||u.protocol==='http:')link=u.href}catch(e){}
+      if(!link)throw Error(isId?'Server mengembalikan tautan yang tidak valid.':'Server returned an invalid link.');
+      this.showAMLinkResultModal(link,title);
       toast(isId?'Link Alight Motion berhasil dibuat!':'Alight Motion link created successfully!');
     }catch(err){
       console.error('[AM Link Export]',err);
@@ -35782,7 +35838,7 @@ class Exporter{
       <h3 style="margin:0 0 6px 0;font-size:18px;font-weight:700">${isId?'Link Alight Motion Siap!':'Alight Motion Link Ready!'}</h3>
       <p style="margin:0 0 16px 0;font-size:12px;color:#94a3b8;line-height:1.45">${isId?'Tautan resmi alightcreative.com berhasil diterbitkan. Siapa saja dapat membuka proyek ini di Alight Motion (Android & iOS).':'Official alightcreative.com link published. Anyone can open this project directly in Alight Motion (Android & iOS).'}</p>
       <div style="background:#0f131a;border:1px solid #2a3346;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:16px">
-        <input type="text" readonly value="${link}" style="background:transparent;border:none;outline:none;color:#00ffa8;font-size:12px;width:100%;text-overflow:ellipsis;font-family:monospace" id="omsAMLinkInput">
+        <input type="text" readonly value="${esc(link)}" style="background:transparent;border:none;outline:none;color:#00ffa8;font-size:12px;width:100%;text-overflow:ellipsis;font-family:monospace" id="omsAMLinkInput">
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <button type="button" id="omsAMLinkCopyBtn" style="background:#00ffa8;color:#0a1a15;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
@@ -35790,7 +35846,7 @@ class Exporter{
           ${isId?'Salin Tautan':'Copy Link'}
         </button>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <a href="${link}" target="_blank" rel="noopener" style="text-decoration:none;background:#242c3d;color:#f1f5f9;border:1px solid #3d4a65;border-radius:9px;padding:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <a href="${esc(link)}" target="_blank" rel="noopener" style="text-decoration:none;background:#242c3d;color:#f1f5f9;border:1px solid #3d4a65;border-radius:9px;padding:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">
             ${isId?'Buka Link ↗':'Open Link ↗'}
           </a>
           <button type="button" id="omsAMLinkCloseBtn" style="background:transparent;color:#94a3b8;border:1px solid #2f384c;border-radius:9px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">
@@ -38525,6 +38581,33 @@ function closeLanguageModal(){const modal=$('#languageModal');if(modal)modal.cla
 
 function createProject(){const name=$('#newName').value||'Project Baru',res=+$('#newRes').value,fps=Math.min(120,Math.max(1,+$('#newFps').value||30)),dur=+$('#newDur').value,bg=$('#newBg').value,bgHex=String(bg||'#ffffff').replace('#',''),rgb=parseInt(bgHex,16),lum=(((rgb>>16)&255)*.2126+((rgb>>8)&255)*.7152+(rgb&255)*.0722),titleColor=lum>145?'#111827':'#ffffff';model.reset();const customSize=ui.newRatio==='custom'?{width:+$('#newCustomW')?.value,height:+$('#newCustomH')?.value}:null;model.project=model.defaultProject(name,ui.newRatio,res,fps,dur,bg,customSize);model.resetEditorCamera();model.mode3d=false;model.cameraView=true;renderer.resize();history.clear();$('#newModal').classList.add('hidden');const homeFab=$('#newProjectFab');if(homeFab){homeFab.style.display='none';homeFab.style.pointerEvents='none'}ui.authorizeEditorOpen();ui.showEditor();history.push();model.addLayer('camera',{name:'Main Camera'});const title=model.addLayer('text',{text:'OPEN MOTION',name:'Title',fontSize:model.project.height*.075,y:model.project.height*.44,color:titleColor});model.anim.setKey(title,'opacity',0,0,'ease-out');model.anim.setKey(title,'opacity',.45,1,'ease-out');model.anim.setKey(title,'scaleX',0,.72,'overshoot');model.anim.setKey(title,'scaleX',.7,1,'overshoot');model.anim.setKey(title,'scaleY',0,.72,'overshoot');model.anim.setKey(title,'scaleY',.7,1,'overshoot');history.clear();ui.rebuildAll();timeline.activateInitialSecondsFit(2);try{sessionStorage.removeItem('oms4_resume_project')}catch(e){}persistentStore.requestDurableStorage();autosave.check(true)}
 
+// Home-screen template cards ([data-template-use]). A card always starts a NEW
+// project through createProject() and applies the template to it. It must never
+// touch a project that is still loaded from an earlier editing session.
+let omsTemplateProjectBusy=false;
+async function createProjectFromTemplate(name){
+  const labels={title:'Judul Animasi Teks',parallax:'Efek Parallax 3D',camera:'Kamera Sinematik','fade-scale':'Transisi Fade & Scale'};
+  if(!Object.prototype.hasOwnProperty.call(labels,name))return false;
+  if(omsTemplateProjectBusy)return true;
+  omsTemplateProjectBusy=true;
+  try{
+    // Save whatever is still loaded before createProject() resets the model.
+    try{await autosave.flush()}catch(e){}
+    const nameEl=$('#newName'),bgEl=$('#newBg'),oldName=nameEl.value,oldBg=bgEl.value;
+    // Template text and shapes use light default colours, so start on black.
+    nameEl.value=labels[name];bgEl.value='#000000';
+    try{createProject()}finally{nameEl.value=oldName;bgEl.value=oldBg}
+    // These two templates bring their own centred content; the default animated
+    // "Title" layer that createProject() adds would overlap it.
+    if(name==='title'||name==='fade-scale'){const t=model.layers.find(l=>l.type==='text'&&l.name==='Title');if(t)model.removeLayer(t.id)}
+    ui.applyTemplate(name);
+    history.clear();
+    toast(homeLanguage==='id'?'Templat berhasil diterapkan':'Template applied');
+    return true;
+  }finally{omsTemplateProjectBusy=false}
+}
+window.omsCreateProjectFromTemplate=createProjectFromTemplate;
+
 function canvasPointFromClient(clientX,clientY,rect){
   return {
     x:(clientX-rect.left)*(renderer.canvas.width/rect.width),
@@ -38812,7 +38895,25 @@ $('#home')?.addEventListener('pointerdown',e=>{
   ui.exitProjectSelection();
 },{passive:true});
 applyHomeLanguage();
-$('#projectInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const text=await f.text(),isXML=/\.xml$/i.test(f.name)||/^\s*</.test(text),raw=isXML?XMLBridge.parse(text,f.name):JSON.parse(text),payload=!isXML&&['open-motion-v3','open-motion-v4'].includes(raw.format)?{project:raw.project,layers:raw.layers,selected:raw.selected,time:raw.time,mode3d:raw.mode3d,cameraView:raw.cameraView,snap:raw.snap}:raw;if(!payload.project||!Array.isArray(payload.layers))throw Error('schema');model.restore(payload,{timeOverride:0});history.clear();ui.authorizeEditorOpen();ui.showEditor();try{await persistentStore.saveCurrent();ui.loadProjectList?.()}catch(e){}setTimeout(()=>{try{ui?.fit?.();renderer?.render?.()}catch(e){}},30);toast(isXML?'XML dimigrasikan ke scene 3D':'Paket proyek dibuka')}catch(err){console.error(err);toast('File proyek/XML tidak valid')}e.target.value=''};
+// Imported project files are untrusted input. Keep the project header inside the
+// limits the New Project dialog enforces (16-8192 px sides, 1-120 fps, a positive
+// duration) and refuse absurd layer counts, so a damaged or hand-edited file
+// cannot open with a 0x0 or 100000x100000 canvas or freeze the tab.
+const OMS_IMPORT_MAX_LAYERS=10000;
+function omsSanitizeImportedProject(payload){
+  const p=payload.project;
+  if(!p||typeof p!=='object'||Array.isArray(p))throw Error('schema');
+  payload.layers=payload.layers.filter(l=>l&&typeof l==='object'&&!Array.isArray(l));
+  if(payload.layers.length>OMS_IMPORT_MAX_LAYERS)throw Error('too-many-layers');
+  const side=(v,fallback)=>{const n=Math.round(+v);return Number.isFinite(n)&&n>=16?Math.min(8192,n):fallback};
+  p.width=side(p.width,1080);p.height=side(p.height,1920);
+  p.fps=Math.min(120,Math.max(1,+p.fps||30));
+  p.duration=Number.isFinite(+p.duration)&&+p.duration>0?+p.duration:10;
+  if(typeof p.id!=='string'||!p.id)p.id=uid('project');
+  p.name=String(p.name??'').slice(0,200)||'Project Baru';
+  return payload;
+}
+$('#projectInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const text=await f.text(),isXML=/\.xml$/i.test(f.name)||/^\s*</.test(text),raw=isXML?XMLBridge.parse(text,f.name):JSON.parse(text),payload=!isXML&&['open-motion-v3','open-motion-v4'].includes(raw.format)?{project:raw.project,layers:raw.layers,selected:raw.selected,time:raw.time,mode3d:raw.mode3d,cameraView:raw.cameraView,snap:raw.snap}:raw;if(!payload.project||!Array.isArray(payload.layers))throw Error('schema');omsSanitizeImportedProject(payload);model.restore(payload,{timeOverride:0});history.clear();ui.authorizeEditorOpen();ui.showEditor();try{await persistentStore.saveCurrent();ui.loadProjectList?.()}catch(e){}setTimeout(()=>{try{ui?.fit?.();renderer?.render?.()}catch(e){}},30);toast(isXML?'XML dimigrasikan ke scene 3D':'Paket proyek dibuka')}catch(err){console.error(err);toast(err?.message==='too-many-layers'?'Proyek memiliki terlalu banyak layer untuk dibuka':'File proyek/XML tidak valid')}e.target.value=''};
 $('#settingsBtn').onclick=()=>{if(!model.project)return;omsDiagnostics.log('ui','OPEN_SETTINGS','',{time:model.time});ui.setTimelineInspectorScope?.(false);const d=ui.drawerShell('Project & Environment',`<div class="drawerBody propPanel"><div class="true3dCard"><i>4</i><div><b>Open Motion Scene 4</b><small>WebGL • matriks 4×4 • XML interchange • satu file HTML</small></div></div><div class="propRow"><label>Nama</label><input id="projectNameEdit" value="${esc(model.project.name)}"><span></span></div><div class="colorRow"><input id="bgEdit" type="color" value="${model.project.bg}"><input value="Background" disabled></div><div class="switchRow"><span>Grid Dunia 3D</span><input id="gridEdit" type="checkbox" ${model.project.grid?'checked':''}></div><div class="propRow"><label>Playhead</label><select id="playheadModeSelect"><option value="center">Tetap di Tengah</option><option value="moving">Bergerak (Mode Lama)</option></select><span></span></div><div class="miniNote" id="playheadModeHelp">Tetap di Tengah: playhead diam dan timeline bergerak saat playback/scrub.</div><div class="propRow"><label>Layout 9:16</label><select id="portraitLayoutSelect"><option value="side">Samping (Baru)</option><option value="classic">Horizontal (Klasik)</option></select><span></span></div><div class="miniNote" id="portraitLayoutHelp">Khusus komposisi 9:16 atau lebih tinggi pada mobile. Pilihan ini disimpan di perangkat.</div><div class="propRow"><label>Kualitas Preview</label><select id="previewQualitySelect"><option value="auto">Otomatis</option><option value="1">Penuh: 100%</option><option value="0.75">Tinggi: 75%</option><option value="0.5">Sedang: 50%</option><option value="0.25">Rendah: 25%</option></select><span></span></div><div class="miniNote" id="previewQualityHelp">Kualitas preview hanya memengaruhi editor. Ekspor tetap memakai kualitas penuh. Scrub video memakai WebCodecs bila tersedia dan fallback otomatis jika tidak didukung.</div><div class="switchRow"><span>Ambient Editor</span><input id="editorAmbientToggle" type="checkbox" ${omsEditorAmbient.enabled?'checked':''}></div><div class="miniNote" id="editorAmbientHelp">Aktif secara default dengan intensitas 100%. Cahaya memakai lapisan latar terpisah; sampling mengikuti frame baru dan berkurang saat playback berat. Intensitas 0% menghentikan sampling. Efek hanya pada UI editor, bukan hasil ekspor. Pilihan disimpan di perangkat.</div><div class="propRow"><label>Intensitas Ambient</label><input id="editorAmbientIntensity" type="range" min="0" max="100" step="5" value="${omsEditorAmbient.intensity}"><span id="editorAmbientIntensityValue">${omsEditorAmbient.intensity}%</span></div><div class="miniNote">Mengatur kekuatan warna ambient tanpa mengubah tampilan dasar UI. Piksel putih/abu terang otomatis diberi bobot lebih kecil agar tidak mendominasi ambient.</div><div class="propRow"><label>Diagnostik</label><button id="openDiagnosticsHub" class="preRenderSettingButton" type="button">BUKA</button><span id="diagnosticSettingState">Nonaktif</span></div><div class="miniNote">Diagnostik modular untuk Timeline, Playback, Video, Audio, Render, Export, GPU Fast, Cache, Memory, dan UI. Semua nonaktif secara default; aktifkan hanya kategori yang sedang diuji.</div><div class="propRow"><label>Uji 1080p</label><select id="nativeCapacityTestTarget"><option value="auto">Auto 4→16</option><option value="4">4 layer</option><option value="6">6 layer</option><option value="8">8 layer</option><option value="10">10 layer</option><option value="12">12 layer</option><option value="16">16 layer</option></select><button id="runNativeCapacityBenchmark" class="diamond" type="button" title="Uji kapasitas native 1080p">▶</button></div><div class="miniNote" id="nativeCapacityStatus">${omsNativeCapacity.summary()}</div><div class="miniNote">Adaptive N-Source mempertahankan sebanyak mungkin video pada decoder native. Saat beban melewati kapasitas terukur, Open Motion menurunkan cadence upload texture layer berprioritas rendah secara progresif sebelum memakai fallback WebCodecs.</div><div class="switchRow"><span>Pre-render Timeline</span><input id="timelinePreRenderToggle" type="checkbox" ${timelinePreRender.enabled?'checked':''}></div><div class="propRow"><label>Mode Pre-render</label><select id="timelinePreRenderMode"><option value="normal">Normal: Real-time</option><option value="follow">Real-time Mengejar: Tanpa Celah</option><option value="semi">Semi Kuat: Prioritas Cache</option><option value="complete">Kuat: Tanpa Lewat Frame</option></select><span></span></div><div class="miniNote" id="timelinePreRenderModeHelp">Normal menjaga real-time dan boleh melewatkan cache jika decoder tertinggal. Real-time Mengejar juga menjaga playhead/audio real-time, tetapi pre-render mempertahankan antrean frame berurutan di belakang playhead dan mengejar tanpa sengaja membuat celah. Semi Kuat memberi frame yang hilang waktu singkat untuk masuk cache sehingga playback boleh sedikit melambat. Kuat menunggu setiap frame. Tombol Rekam Pre-render tetap memaksa Mode Kuat selama aktif.</div><div class="propRow"><label>Mode Cache</label><select id="timelinePreRenderStorage"><option value="lossless">Lossless: Hemat RAM</option><option value="classic">Klasik: RAM Besar, CPU Ringan</option><option value="video">Video HW: Hemat RAM & CPU</option></select><span></span></div><div class="miniNote" id="timelinePreRenderStorageHelp">Lossless memakai Hot ImageBitmap + PNG lossless. Klasik menyimpan ImageBitmap mentah dengan CPU paling ringan. Video HW memakai WebCodecs prefer-hardware untuk kompresi preview berkualitas tinggi: RAM jauh lebih hemat tanpa biaya PNG yang berat; ekspor tidak terpengaruh. ⚠️ Kompatibilitas Video HW bergantung pada browser, SoC, dan driver codec; prefer-hardware tidak menjamin encoder hardware benar-benar dipakai. Jika jalur video tidak didukung atau gagal, Open Motion akan fallback ke Cache Klasik.</div><div class="propRow"><label>Cache Preview</label><button id="clearTimelinePreRender" class="preRenderSettingButton" type="button">BERSIHKAN</button><span></span></div><div class="miniNote" id="timelinePreRenderStatus">${timelinePreRender.statsText()}</div><div class="miniNote">Pre-render Timeline nonaktif secara default agar preview live mendapat prioritas penuh. Jika diaktifkan manual, pilihan disimpan di perangkat. Pada mobile/touch, Mode Normal dan Real-time Mengejar tidak menjalankan decoder pre-render kedua selama Play; Semi Kuat, Kuat, dan Rekam tetap tersedia sebagai mode eksplisit. Garis hijau menunjukkan frame yang benar-benar masih tersedia.</div><div class="miniNote">Editor Camera hanya mengubah sudut pandang kerja. PNG dan video selalu dirender melalui Main Camera tanpa grid atau gizmo editor.</div></div>`);ui.drawerMode='settings';timeline.refreshKeyframeInteractionState?.();$('#projectNameEdit').onchange=e=>{history.push();model.project.name=e.target.value;ui.syncProject()};$('#bgEdit').oninput=e=>{timelinePreRender.invalidate('background');model.project.bg=e.target.value;renderer.render()};$('#gridEdit').onchange=e=>{timelinePreRender.invalidate('grid');model.project.grid=e.target.checked;renderer.render()};const ph=$('#playheadModeSelect');ph.value=model.project.playheadMode||'center';const updateHelp=()=>{$('#playheadModeHelp').textContent=ph.value==='center'?'Tetap di Tengah: playhead diam dan timeline bergerak saat playback/scrub.':'Bergerak (Mode Lama): timeline tetap pada posisi scroll dan playhead bergerak mengikuti waktu.'};updateHelp();ph.onchange=e=>{history.push();model.project.playheadMode=e.target.value;const sc=$('#timelineScroll');if(model.project.playheadMode==='moving')sc.scrollLeft=0;timeline.rebuild();renderer.render();updateHelp()};const portraitSel=$('#portraitLayoutSelect');if(portraitSel){portraitSel.value=portraitSideControls?.layoutPreference?.()||'side';portraitSel.onchange=e=>{portraitSideControls?.setLayoutPreference?.(e.target.value);const changed=portraitSideControls?.sync?.({refit:false});requestAnimationFrame(()=>{ui.fit();timeline.rebuild();if(editorSplit?.isDrawerOpen?.())editorSplit.autoForDrawer(0);else editorSplit?.scheduleFit?.({render:true});if(changed)renderer.render()})}}const diagBtn=$('#openDiagnosticsHub');if(diagBtn)diagBtn.onclick=()=>omsDiagnostics.openPanel();omsDiagnostics.updateSettingState();omsNativeCapacity.updateSettingState();const nativeBenchBtn=$('#runNativeCapacityBenchmark'),nativeBenchTarget=$('#nativeCapacityTestTarget');if(nativeBenchBtn)nativeBenchBtn.onclick=()=>omsNativeBenchmark.open(nativeBenchTarget?.value||'auto');const previewSel=$('#previewQualitySelect'),previewHelp=$('#previewQualityHelp');if(previewSel){previewSel.value=omsPreviewQualityPreference();const updatePreviewHelp=()=>{if(previewHelp)previewHelp.textContent=`Kualitas preview editor saat ini ${omsPreviewQualityPercent()}%. Ekspor tetap kualitas penuh. Scrub video memakai WebCodecs bila tersedia dan fallback otomatis jika tidak didukung.`};updatePreviewHelp();previewSel.onchange=e=>{omsSetPreviewQuality(e.target.value);updatePreviewHelp();toast(`Kualitas preview ${omsPreviewQualityPercent()}%`)}}const ambientToggle=$('#editorAmbientToggle'),ambientHelp=$('#editorAmbientHelp');if(ambientToggle){ambientToggle.checked=!!omsEditorAmbient.enabled;ambientToggle.onchange=e=>{const enabled=omsEditorAmbient.setEnabled(e.target.checked);if(ambientHelp)ambientHelp.textContent=enabled?'Aktif • workspace mengikuti warna komposisi dengan sampling ±2 detik dan transisi ±2,4 detik. Hanya UI editor; ekspor tidak terpengaruh.':'Ambient Editor nonaktif. Aktifkan untuk membuat warna workspace mengikuti komposisi dengan sampling berkala dan transisi lambat; efek hanya pada UI editor dan tidak masuk ke hasil ekspor. Pilihan disimpan di perangkat.';toast(enabled?'Ambient Editor aktif':'Ambient Editor nonaktif')}}const ambientIntensity=$('#editorAmbientIntensity'),ambientIntensityValue=$('#editorAmbientIntensityValue');if(ambientIntensity){ambientIntensity.value=String(omsEditorAmbient.intensity);const updateAmbientIntensity=()=>{const v=omsEditorAmbient.setIntensity(ambientIntensity.value);if(ambientIntensityValue)ambientIntensityValue.textContent=`${v}%`};ambientIntensity.oninput=updateAmbientIntensity;ambientIntensity.onchange=updateAmbientIntensity}const preRenderToggle=$('#timelinePreRenderToggle');if(preRenderToggle)preRenderToggle.onchange=e=>{const wasPlaying=model.playing;if(wasPlaying)clock.stop({continuePreRender:false});const enabled=timelinePreRender.setEnabled(e.target.checked);omsDiagnostics.log('cache','PRERENDER_TOGGLE',enabled?'ON':'OFF',{mode:timelinePreRender.mode,storage:timelinePreRender.storageMode});toast(enabled?'Pre-render timeline aktif':'Pre-render timeline nonaktif');if(wasPlaying)clock.start()};const preRenderMode=$('#timelinePreRenderMode'),preRenderModeHelp=$('#timelinePreRenderModeHelp');if(preRenderMode){preRenderMode.value=timelinePreRender.mode;const updatePreRenderModeHelp=()=>{if(!preRenderModeHelp)return;if(preRenderMode.value==='complete')preRenderModeHelp.textContent='Kuat: setiap frame wajib masuk cache sebelum timeline maju. Area yang belum tercache boleh melambat dan hening agar audio tidak lari; saat playhead kembali ke area cache yang siap, audio otomatis diputar sinkron.';else if(preRenderMode.value==='semi')preRenderModeHelp.textContent='Semi Kuat: setiap frame yang hilang diberi waktu singkat untuk exact seek + capture. Playback boleh sedikit melambat dan audio dapat tertahan sesaat, tetapi satu frame berat tidak bisa menghentikan playback tanpa batas.';else if(preRenderMode.value==='follow')preRenderModeHelp.textContent='Real-time Mengejar: playhead dan audio tetap real-time. Pre-render B-frame-safe berjalan sebagai cursor berurutan di belakang playhead; jika perangkat lambat garis hijau akan tertinggal, bukan melompat ke depan dan meninggalkan celah. Worker terus mengejar sampai menyamai bagian timeline yang sudah dilewati.';else preRenderModeHelp.textContent='Normal: playback dan audio tetap real-time, tetapi frame yang masuk pre-render didecode melalui pipeline sequential presentation-order yang sama dengan Kuat/Rekam agar video B-frame aman. Jika decoder tidak sempat mengejar, frame cache boleh terlewat tanpa memperlambat playback.'};updatePreRenderModeHelp();preRenderMode.onchange=e=>{const wasPlaying=model.playing;if(wasPlaying)clock.stop({continuePreRender:false});const mode=timelinePreRender.setMode(e.target.value);omsDiagnostics.log('cache','PRERENDER_MODE',mode,{enabled:timelinePreRender.enabled});updatePreRenderModeHelp();toast(mode==='complete'?'Pre-render Kuat aktif':mode==='semi'?'Pre-render Semi Kuat aktif':mode==='follow'?'Pre-render Real-time Mengejar aktif':'Pre-render Normal aktif');if(wasPlaying)clock.start()}}const preRenderStorage=$('#timelinePreRenderStorage'),preRenderStorageHelp=$('#timelinePreRenderStorageHelp');if(preRenderStorage){preRenderStorage.value=timelinePreRender.storageMode;const updatePreRenderStorageHelp=()=>{if(!preRenderStorageHelp)return;preRenderStorageHelp.textContent=preRenderStorage.value==='classic'?'Klasik: semua frame cache tetap sebagai ImageBitmap mentah. CPU paling ringan, tetapi RAM jauh lebih besar dan frame lama dieviksi saat batas tercapai.':preRenderStorage.value==='video'?'Video HW: frame dekat playhead tetap ImageBitmap, frame jauh dikompresi sebagai keyframe video WebCodecs dengan preferensi hardware. RAM dan CPU biasanya jauh lebih hemat daripada PNG; kualitas preview sangat tinggi tetapi tidak pixel-identical. Ekspor tetap asli. ⚠️ Kompatibilitas bergantung pada browser, SoC, dan driver codec. prefer-hardware hanya preferensi dan tidak menjamin encoder hardware digunakan; jika encoder/decoder tidak didukung atau gagal, Open Motion otomatis fallback ke Cache Klasik.':'Lossless: frame dekat playhead tetap ImageBitmap, frame jauh dikompresi PNG lossless. FPS/kualitas pixel cache tetap sama, RAM lebih hemat dengan biaya CPU tambahan.'};updatePreRenderStorageHelp();preRenderStorage.onchange=e=>{const wasPlaying=model.playing;if(wasPlaying)clock.stop({continuePreRender:false});const mode=timelinePreRender.setStorageMode(e.target.value);omsDiagnostics.log('cache','CACHE_STORAGE_MODE',mode,{enabled:timelinePreRender.enabled});updatePreRenderStorageHelp();renderer.render();toast(mode==='classic'?'Cache Klasik aktif • CPU paling ringan':mode==='video'?'Cache Video HW aktif • RAM & CPU hemat':'Cache Lossless aktif • RAM lebih hemat');if(wasPlaying)clock.start()}}const clearPreRender=$('#clearTimelinePreRender');if(clearPreRender)clearPreRender.onclick=()=>{omsDiagnostics.log('cache','CACHE_CLEAR','manual',{stats:timelinePreRender.statsText?.()});timelinePreRender.clear('manual');renderer.render();toast('Cache pre-render dibersihkan')}};
 
 // === OPEN MOTION KEYBOARD SHORTCUTS & CUSTOM REMAPPING ===
@@ -59336,42 +59437,23 @@ THE SOFTWARE.
 
     // 4. One-tap Template Application
     document.querySelectorAll('[data-template-use]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.preventDefault();
         const tmplName = btn.getAttribute('data-template-use');
         if (!tmplName) return;
 
-        if (typeof model !== 'undefined' && typeof ui !== 'undefined') {
-          // If already in project, apply template directly
-          if (model.project) {
-            ui.authorizeEditorOpen?.();
-            ui.showEditor();
-            ui.applyTemplate(tmplName);
-            if (typeof toast === 'function') toast('Templat berhasil diterapkan');
-          } else {
-            // Create a fresh project first
-            try {
-              model.createProject({
-                name: 'Proyek ' + tmplName.toUpperCase(),
-                width: 1080,
-                height: 1920,
-                fps: 30,
-                background: '#000000'
-              });
-              ui.authorizeEditorOpen?.();
-              ui.showEditor();
-              setTimeout(() => {
-                ui.applyTemplate(tmplName);
-                if (typeof toast === 'function') toast('Templat berhasil diterapkan');
-              }, 100);
-            } catch (err) {
-              console.warn('[OMS Mobile] Template create failed:', err);
-              triggerNewProject();
-            }
-          }
-        } else {
-          triggerNewProject();
+        // A template card always starts a NEW project and applies the template to
+        // it (window.omsCreateProjectFromTemplate, defined next to createProject()
+        // in the main script). The earlier code called model.createProject(), which
+        // does not exist, and otherwise added the template to whichever project was
+        // still loaded from the last editing session.
+        let created = false;
+        try {
+          created = !!(await window.omsCreateProjectFromTemplate?.(tmplName));
+        } catch (err) {
+          console.warn('[OMS Mobile] Template create failed:', err);
         }
+        if (!created) triggerNewProject();
       });
     });
 
@@ -60144,6 +60226,11 @@ THE SOFTWARE.
   function getAppUi() {
     return window.ui || (typeof ui !== 'undefined' ? ui : null);
   }
+  // The project name is user- and file-controlled text (it can come from an
+  // imported project). It must be escaped wherever it is written as markup.
+  function escHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
 
   function initTitleRename() {
     const titleEl = document.getElementById('editorTitle');
@@ -60174,7 +60261,7 @@ THE SOFTWARE.
 
       titleEl.innerHTML = `
         <div style="display:flex;align-items:center;gap:6px;width:100%;">
-          <input type="text" id="editorTitleInlineInput" class="editorTitleInlineInput" value="${currentTitle.replace(/"/g, '&quot;')}" maxlength="60" spellcheck="false" autocomplete="off">
+          <input type="text" id="editorTitleInlineInput" class="editorTitleInlineInput" value="${escHtml(currentTitle)}" maxlength="60" spellcheck="false" autocomplete="off">
           ${smallText}
         </div>
       `;
@@ -60193,7 +60280,7 @@ THE SOFTWARE.
         if (modelRef?.project) {
           modelRef.project.name = newName;
         }
-        titleEl.innerHTML = `${newName} ${smallText}`;
+        titleEl.innerHTML = `${escHtml(newName)} ${smallText}`;
         const uiRef = getAppUi();
         if (uiRef?.syncProject && modelRef?.project) {
           try { uiRef.syncProject(); } catch (e) {}
@@ -60207,7 +60294,7 @@ THE SOFTWARE.
       function cancel() {
         if (committed) return;
         committed = true;
-        titleEl.innerHTML = `${currentTitle} ${smallText}`;
+        titleEl.innerHTML = `${escHtml(currentTitle)} ${smallText}`;
       }
 
       input.addEventListener('keydown', (ke) => {
@@ -60289,12 +60376,13 @@ THE SOFTWARE.
       const l=layerById(bar.dataset.layerId);
       if(!l)return;
       const name=l.name||'Layer';
-      history.push();
+      // Not `history.push()`: in this script `history` is window.history.
+      window.omsHistory?.push();
       for(const cam of model.layers.filter(x=>x.type==='camera'&&x.orbitTargetId===l.id))ui.cameraOrbitDisable?.(cam);
       model.removeLayer(l.id);
       ui.closeDrawer();
       ui.rebuildAll();
-      try{toast(`Layer "${name}" dihapus`)}catch(e){}
+      try{window.omsToast?.(`Layer "${name}" dihapus`)}catch(e){}
     };
 
     const commit=()=>{
@@ -60303,9 +60391,9 @@ THE SOFTWARE.
       const v=input.value.trim();
       if(!v){input.value=l.name||'';return}
       if(v===l.name)return;
-      history.push();
+      window.omsHistory?.push();
       l.name=v;
-      try{timeline.rebuild()}catch(e){}
+      try{window.omsTimeline?.rebuild()}catch(e){}
       const pt=document.querySelector('#drawer .propTitle');
       const tn=pt&&[...pt.childNodes].find(n=>n.nodeType===3);
       if(tn)tn.nodeValue=v+' ';
