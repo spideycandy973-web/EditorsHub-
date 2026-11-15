@@ -1,88 +1,34 @@
-<h1 align="center">EditorsHub</h1>
+# Open Motion (Android)
 
-<p align="center">
-  <img src="icons/editorshub-192.png" width="120" alt="EditorsHub logo" />
-</p>
+Native Kotlin & Jetpack Compose rewrite of **Open Motion**, a mobile-first motion graphics, keyframe animation, vector editing, and 3D compositing studio.
 
-<p align="center">
-  <strong>A browser-based motion graphics and video editor.</strong>
-</p>
+## Implemented Features
 
-## Project status
+- **Home & Project Workspace**:
+  - 4-tab mobile studio shell (`Beranda`, `Tutorial`, `Proyek`, `Templat`) with bilingual Indonesian / English UI toggle (`ID` / `EN`).
+  - Local project persistence powered by **Room Database** (`ProjectEntity`, `ProjectDao`, `ProjectRepository`).
+  - Project creation modal with Aspect Ratio presets (`9:16`, `16:9`, `4:5`, `1:1`, `4:3`, `Custom`), Resolution (`720p`, `1080p`, `1440p`), FPS (`24`, `30`, `60`), Duration, and Background Color.
+  - Pre-built animated templates (`Title Motion`, `3D Parallax Scene`, `Cinematic Camera`, `Neon Pulse Intro`) and interactive workflow tutorials.
+  - Project JSON import/export, rename, duplicate, and delete.
 
-**Prototype / work in progress.** EditorsHub is not production-ready. Features,
-project formats and the interface may still change.
+- **Composition Editor & Timeline**:
+  - Live interactive Composition Viewport with zoom, tap-to-select, and drag-to-move layer positioning.
+  - Multi-track Timeline with time ruler scrubbing, timeline zoom, play/pause/loop playback, keyframe jump, split at playhead, trim edges, marker pins, layer visibility/lock toggles, and clip shifting.
+  - Undo / Redo snapshot history (`History` stack).
 
-## Run it
+- **Layer Types & Creative Tools**:
+  - **27 Parametric & Geometric Shapes** + **Shape Studio** (corner radius, star points, inner radius, polygon sides, stroke width/color).
+  - **Interactive Vector Pen Tool** for drawing custom Bezier node paths directly on the canvas.
+  - **Text Typography Studio** with 7 bundled Google Fonts (`Space Grotesk`, `Inter`, `Montserrat`, `Oswald`, `Playfair Display`, `Roboto Mono`, `Pacifico`), bold/italic, tracking, line height, and alignment.
+  - **Media & Audio**: Zero-permission Android Photo Picker (`PickVisualMedia`) for images & videos, plus `OpenDocument` for audio tracks.
+  - **3D Space & Elements**: Perspective `Camera 3D` (FOV, Z-depth, rotation), `3D Cube` & `3D Sphere` meshes, `Null / Controller`, and `Group` parenting/hierarchy.
+  - **Visual Effects Stack & Browser**: Gaussian Blur, Directional Motion Blur, Brightness & Contrast, Hue & Saturation, Neon Glow, Chromatic Aberration, Vignette, Oscillate/Swing, Pulse Scale, Wave Warp, Particle Emitter, Audio Spectrum Visualizer, and Drop Shadow.
+  - **Cubic-Bezier Curve Editor** with draggable control handles and 8 easing presets (`Linear`, `Ease Out`, `Ease In`, `In-Out`, `Expo Out`, `Overshoot`, `Snap`, `Elastic`).
 
-EditorsHub is a static site. There is no build step.
+- **Export & Share**:
+  - Native H.264 **MP4 Video** export via `MediaCodec` + `MediaMuxer`.
+  - **PNG** active frame export, **JSON** portable project package, and **XML Interchange** (Alight Motion-compatible structure with Open Motion 3D extensions).
 
-- **Locally:** serve this folder with any static file server and open it in the
-  browser, for example `python3 -m http.server 8080` and then
-  `http://localhost:8080/`.
-- **Hosted:** put the folder on any static host. With GitHub Pages
-  (Settings → Pages → deploy from the `main` branch, root folder) the address is
-  `https://spideycandy973-web.github.io/EditorsHub-/`.
+## License
 
-Opening `index.html` straight from disk starts the editor, but installing the
-app and offline use need `http://localhost` or HTTPS.
-
-**Recommended browser:** Google Chrome, on desktop or Android. Other browsers
-may lack some of the media APIs the editor uses.
-
-## Features
-
-- **Keyframe animation** with interpolation controls on a layer timeline.
-- **Curve and easing editing** for fine control over timing.
-- **Vector path editing** with anchors, Bézier handles and touch-friendly tools.
-- **3D transforms and cameras**, including orbit and lens controls.
-- **Layer-based compositing** with masks, blending, groups and effects.
-- **Text animation** presets and per-character animators.
-- **Export** to video, PNG frames, a project package (`*.editorshub.json`) and
-  XML (`*.editorshub.xml`).
-- **Mobile-first interface** that also works on desktop.
-- **Installable** as a Progressive Web App, with an offline shell.
-
-## Languages
-
-The interface is in English. The home screen and the main inspector labels can
-also be shown in Indonesian, Chinese, Japanese, Malay, Thai, Vietnamese,
-Filipino, Burmese, Khmer, Lao, Tetum, Portuguese and Tamil. Choose the language
-from the globe button on the home screen.
-
-## Files
-
-| File | Purpose |
-| --- | --- |
-| `index.html` | The whole application: markup, styles and scripts. |
-| `manifest.webmanifest` | Install metadata for the Progressive Web App. |
-| `sw.js` | Service worker that keeps an offline copy of the app shell. |
-| `icons/` | App icons. `editorshub-logo.png` is the full-size logo. |
-| `THIRD_PARTY_NOTICES.txt` | License notices for the third-party code in the app. |
-| `CHANGELOG.md` | History of changes. |
-
-## Project file compatibility
-
-Project packages and XML files written by earlier builds still open. The
-identifiers inside saved files and browser storage were kept unchanged for that
-reason, so some of them still start with `open-motion`.
-
-## Technology
-
-HTML, CSS and JavaScript with Canvas, WebGL, WebCodecs and other browser media
-APIs. The app is one self-contained file plus the PWA assets.
-
-Three optional components are downloaded when first used and are not part of
-this repository: the Mediabunny media library, and the MODNet model with ONNX
-Runtime Web for AI background removal. Google Fonts are loaded on demand from
-the font library.
-
-## Third-party notices
-
-EditorsHub is built on open-source code. The license notices that code requires
-are in [`THIRD_PARTY_NOTICES.txt`](THIRD_PARTY_NOTICES.txt) and in the app under
-**About → Licenses**. Keep both when you redistribute the app.
-
-## Feedback
-
-Bug reports and ideas are welcome through the repository's Issues.
+MIT License — see [LICENSE](LICENSE).

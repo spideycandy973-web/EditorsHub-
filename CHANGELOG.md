@@ -1,72 +1,5 @@
 # Changelog
 
-## 2026-11-14 — EditorsHub Name, English Interface & New Logo
-
-### Name and logo
-
-- The app is now called **EditorsHub** everywhere: page title, splash screen, home screen, About dialog, install prompt, share text, default text layer and the notices that name the app.
-- New logo on the splash screen and home screen, and new app icons (`icons/editorshub-192.png`, `-512.png`, `-maskable-512.png`, plus the favicon and Apple touch icon). `icons/editorshub-logo.png` is the full-size logo. The old `open-motion-*` icons are removed.
-- `manifest.webmanifest` and `sw.js` use the new name and icons. The service worker cache is renamed, and caches written by earlier builds are deleted when the new worker activates.
-- Saved files use the new name: `*.editorshub.json`, `*.editorshub.xml`, `editorshub-export.mp4` and the preset and diagnostics downloads.
-- Kept on purpose so existing projects still open: the format ids inside saved files, the XML root element and the browser storage names. Some of these still begin with `open-motion`.
-
-### English interface
-
-- The interface is English: about 2,700 strings in menus, panels, dialogs, effect and preset names, hints, toasts and error messages were translated from Indonesian.
-- English is the default and the fallback language. Shape, layer, group and template names that the app creates are English.
-- Effect categories, text preset categories and parameter groups were renamed consistently (for example **All**, **Color**, **Motion**, **Custom**), including the places where the code compares those names.
-- The language picker still works. As before, the other 13 languages cover the home screen and the main inspector labels; everything else is shown in English.
-- Numbers and dates no longer fall back to the Indonesian format.
-
-### Licenses
-
-- About → Licenses lists the third-party code that is inside the app, each with its license text: the base application code, FishTools-Studio, Motionity (reference), Acorn and the EffectCraft camera tracker with its Rust dependency notices.
-- `THIRD_PARTY_NOTICES.txt` is rebuilt from that same list. Components that are only downloaded at runtime (Mediabunny, ONNX Runtime Web, MODNet) are named in a short separate section.
-- The top-level `LICENSE` file is removed. The MIT notice it carried for the base application code is kept in `THIRD_PARTY_NOTICES.txt` and in the app.
-- The start-up notice no longer describes the upstream project's roadmap.
-- The credits and source-link lists are removed from the About dialog, and the links to the upstream repository are removed from the older entries of this changelog. The license notices listed above stay.
-
-### Interface fixes
-
-- Home screen on phones: the app name is no longer cut off. Below 480 px the **AM LINK** button shows its icon only, and below 416 px **IMPORT** does too.
-- Home screen on phones, **Recent Projects**: cards are listed one per row below 640 px. Two cards side by side left about 40 px for the text, so a project name was cut to three letters.
-- Home screen on phones, **Tutorial** tab: card descriptions wrap to up to three lines instead of one line cut off mid-word.
-- Home screen on phones, wording: the tagline no longer names another product, the **Templates** card title fits on one line like its neighbours, and the tab is labelled **Templates**.
-- Home screen on desktop: the **No projects yet** heading was white on a light background and could not be read.
-- Text contrast is raised to at least 4.5:1 for the small grey text on the home screen, the language picker, the export sheet and the effect stack note.
-- The timecode button no longer points assistive technology at a dialog that does not exist until it is opened.
-- The language button, the project title, the timecode button and the **Blending & Opacity** tile now include the text they show in their accessible name (the language code, the project name, the current time). Their hints stay available as the description.
-- Upstream build numbers are removed from headings and effect descriptions.
-
-## 2026-11-14 — Layer Bar, Template Cards, Storage Cleanup & Safety Fixes
-
-### Editor fixes
-
-- Make the layer header bar work: the trash button deletes the layer and the name field renames it. Both called `history.push()` from a late patch script, where `history` is the browser's History object, so they threw and did nothing. Renaming is undoable and refreshes the timeline row.
-- Fix the Inspector **Tautkan Ulang** tile throwing `openRelinkMenu is not defined` when tapped right after the Inspector opened.
-- Fix a malformed `transition` declaration on the transform number popover; its `width` part was ignored.
-
-### Home and New Project dialog
-
-- Home template cards now always start a new project and apply the template to it. They called a function that does not exist and fell back to the blank New Project dialog, or added the template to whichever project was still loaded.
-- Add the missing `fade-scale` template used by the fourth Home template card.
-- Remove the PROYEK / ELEMEN switch from the New Project dialog; it had no function.
-- Make the New Project dialog title readable on phones and tablets (dark text on the dark sheet).
-
-### Browser storage
-
-- Deleting projects on Home now also removes stored media that no remaining project uses. Media records are shared by asset id, so anything still referenced by another project, a local fallback snapshot or the open project's undo stack is kept.
-
-### Safety
-
-- Escape the project name wherever the editor title is rewritten. A project file with markup in its name could run script when the title was tapped.
-- AM Link export: accept only an http(s) link from the publish response and escape it in the result dialog.
-- Project import: keep the canvas (16–8192 px), frame rate (1–120) and duration inside the New Project limits, ignore non-object layer entries and refuse files with more than 10,000 layers.
-
-### Accessibility
-
-- Label the form controls that had none (New Project dialog, export sheet, canvas zoom) and mark the New Project dialog as a dialog.
-
 ## 2026-11-08 — Timeline Playhead, Layer Header & Export Menu Fixes
 
 ## Timeline and playhead
@@ -93,20 +26,20 @@
 
 - Import native AM Link/XML `<bookmark>` nodes, retaining millisecond times and appearance indices. Keep nested-scene bookmarks in their own group workspace, with the same trim, in-point and speed mapping as the group's contents.
 - Show colored marker flags at the top of the ruler. Tap the live timecode to add/remove a current-frame marker; hold for 500 ms to open marker settings without changing markers on release.
-- Rename, retime, recolor, delete, and navigate markers through the marker settings dialog. Share data with the expression marker API and retain Undo/Redo, project JSON and additive EditorsHub XML persistence.
+- Rename, retime, recolor, delete, and navigate markers through the marker settings dialog. Share data with the expression marker API and retain Undo/Redo, project JSON and additive Open Motion XML persistence.
 - Use the existing timeline start/end buttons to seek previous/next markers on tap and composition boundaries on hold. From the first/last marker frame, one additional tap reaches the corresponding timeline edge. Apply the same behavior inside groups; keep the separate keyframe buttons unchanged.
 - Preserve imported times while mapping display/seek positions to frames. Keep out-of-span imported bookmarks in project data. Increase the shared marker access budget to 4096. Add root bookmark nodes to the existing AM XML exporter; this does not replace the legacy layer exporter with a complete native AM exporter.
 - Support mouse, touch and keyboard operation, including gesture cancellation, focus restoration and Back/Escape handling. No separate marker toolbar is added.
 
 ### Home About, credits and recent projects
 
-- Open **About EditorsHub** from the existing Home logo/wordmark without requiring an open project. Include searchable credits, source links, full offline license notices and a bundled `THIRD_PARTY_NOTICES.txt` copy.
+- Open **About Open Motion** from the existing Home logo/wordmark without requiring an open project. Include searchable credits, source links, full offline license notices and a bundled `THIRD_PARTY_NOTICES.txt` copy.
 - Surface existing library/reference/community notices and the pinned Mediabunny MPL-2.0 notice. Keep Alight Motion/Aurea compatibility references separate from verified open-source licenses. Retain the original embedded notices.
 - Fix unresponsive cards in **Recent Projects**: handle the actual click/tap or Enter/Space on each card rather than forwarding an untrusted synthetic click to another card. Preserve project storage, thumbnails, selection behavior and homepage-first navigation guards.
 
 ### Preserve published changes and refresh the PWA
 
-- Merge and retain the ruler stacking-order and start-of-project gap fixes that were already published. Keep every prior changelog entry and all unrelated repository files, including README, unchanged.
+- Merge and retain the ruler stacking-order and start-of-project gap fixes already published in [cdd7f7e](https://github.com/Hada45/Open-Motion/commit/cdd7f7ec9a26ae5879aa84420cf7b766eb8e92ca). Keep every prior changelog entry and all unrelated repository files, including README, unchanged.
 - Refresh only the service worker's shell-cache identity; retain its network-first navigation and exclusion of imported media/project storage.
 - Local Chrome checks cover marker navigation, group boundaries, imported bookmarks, gesture cancellation, timecode controls, recent project loading and About. Physical phones, live resolver services, full native AM visual parity and complete video export remain outside this release's validation.
 
@@ -152,7 +85,7 @@
 
 ## 2026-10-23 — Home Banner, Media Recovery & Preview Warnings
 
-Previously published; this entry backfills the missing changelog.
+Previously published in [ed642c8](https://github.com/Hada45/Open-Motion/commit/ed642c87ed7629581eb9cfb6d317cf803b78859b); this entry backfills the missing changelog.
 
 - Fix the giant desktop download icon caused by install-banner CSS being limited to mobile media queries. Keep the banner compact, dismissible and hidden in standalone mode.
 - Let media recovery explicitly choose premium, official anonymous (5 MB maximum package), or third-party resolver, with provider-specific notes and no automatic provider switching.
@@ -162,17 +95,19 @@ Previously published; this entry backfills the missing changelog.
 
 ## 2026-10-23 — Mobile Compatibility, Resizable Panels & Freehand
 
-Previously published; this entry backfills the missing changelog.
+Previously published in [1a25e6f](https://github.com/Hada45/Open-Motion/commit/1a25e6fb7e94dabe07695ad4247eca2b40db5dc9); this entry backfills the missing changelog.
 
 - Add separate photo, video, audio and Files picker paths, safer MIME fallback and bounded media-probe cleanup for browser/device compatibility.
 - Guard video/audio proxy ownership, pending playback and background teardown to prevent overlapping playback.
 - Keep the timeline visible alongside responsive inspector/Add panels. Center resize grips inside existing panel headers, remember per-layout sizes, and let Add content fill the resized area with vertical overflow and retained shape paging.
 - Add adjustable freehand stroke smoothing, optional stylus-pressure width and single-tap dots as editable vector outlines, with Undo/Redo and XML persistence.
 - Keep Bezier handles reachable without rewriting curve overshoot. Expose GPU/media failures and retain a limited 2D startup fallback.
-- Preserve the PWA, AM share/export, project thumbnails, keyboard shortcuts and the prior export-resolution fixes.
+- Preserve community PWA, AM share/export, project thumbnails and keyboard-shortcut contributions and the prior export-resolution fixes.
 - Historical validation: 634 scoped local checks on the then-published build. Physical iPhone/iPad/Infinix, hardware stylus and complete video export remain unverified; not every black-preview case is confirmed fixed.
 
 ## 2026-10-22 — Export Resolution & Diagnostics
+
+Published in [ee4e288](https://github.com/Hada45/Open-Motion/commit/ee4e2886ce4bea60a2793ff73410122ffab33f62).
 
 ### Export resolution detection
 
@@ -220,13 +155,14 @@ Previously published; this entry backfills the missing changelog.
 ## V5.283 — 2026-10-17
 
 This update brings the tested single-file experimental build to main, including
-the configurable keyboard shortcuts. The app remains a prototype.
+the keyboard-shortcuts contribution from [PR #33](https://github.com/Hada45/Open-Motion/pull/33)
+by [anonimBRO-design](https://github.com/anonimBRO-design). The app remains a prototype.
 
 ### Configurable keyboard shortcuts
 
 - Open the categorized guide with the editor's ? button, F1, or ?.
 - Remap 13 actions with Ctrl/Cmd, Shift, and Alt; conflicting combinations cannot be saved.
-- Persist per-browser settings and restore defaults. Retain the nine UI languages of the shortcuts guide.
+- Persist per-browser settings and restore defaults. Retain the contribution's nine UI languages.
 - Keep typing/IME isolated from editing commands, restore dialog focus, and respect the active group timeline when seeking.
 
 ### Layer groups, appearance and audio
@@ -234,7 +170,7 @@ the configurable keyboard shortcuts. The app remains a prototype.
 - Dedicated group timelines with breadcrumb navigation, ordinary groups, Mask and Exclude groups, and AM Link group import.
 - Ungrouping retains child layers and the supported Mask/Exclude relationships.
 - Inspector border and shadow controls, audio spectrum, and reusable audio-spectrum presets.
-- Preserve existing tracking, Text Animator and project-thumbnail features.
+- Preserve existing tracking, Text Animator and project-thumbnail features, including credit for the PR #32 contribution.
 
 ### Experimental Alight Motion compatibility
 
@@ -256,7 +192,7 @@ the configurable keyboard shortcuts. The app remains a prototype.
 ## V5.238 — 2026-10-11
 
 This update publishes the previously unreleased V5.238 work and carries forward
-the project thumbnails. The app remains a prototype.
+the project-thumbnail contribution merged in PR #32. The app remains a prototype.
 
 ### Tracking (experimental)
 
@@ -277,9 +213,10 @@ the project thumbnails. The app remains a prototype.
 
 ### Home project thumbnails
 
-- Real saved-preview thumbnails on project cards.
+- Real saved-preview thumbnails on project cards, adapted from [PR #32](https://github.com/Hada45/Open-Motion/pull/32) by [anonimBRO-design](https://github.com/anonimBRO-design).
 - Bounded thumbnail capture from an eligible paused preview without starting additional rendering or decoding.
 - Thumbnail persistence, invalid-image fallback, and compatibility with older projects. If no valid preview is available, the previous thumbnail is retained.
+- Preserves the original contribution credit and merge history.
 
 ### Current limitations
 

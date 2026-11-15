@@ -1,0 +1,8 @@
+{
+  "name": "Open Motion",
+  "description": "Mobile motion graphics, keyframe animation, vector editing, and 3D compositing studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Open Motion</string>
+    <string name="nav_home">Beranda</string>
+    <string name="nav_tutorial">Tutorial</string>
+    <string name="nav_projects">Proyek</string>
+    <string name="nav_templates">Templat</string>
+    <string name="new_project">Proyek Baru</string>
+    <string name="export_share">Ekspor &amp; Bagikan</string>
+</resources>
