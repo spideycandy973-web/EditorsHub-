@@ -35,7 +35,7 @@
 - Home screen on desktop: the **No projects yet** heading was white on a light background and could not be read.
 - Text contrast is raised to at least 4.5:1 for the small grey text on the home screen, the language picker, the export sheet and the effect stack note.
 - The timecode button no longer points assistive technology at a dialog that does not exist until it is opened.
-- The language button, the project title and the timecode button now include the text they show in their accessible name: the language code, the project name and the current time. Their hints stay available as the description.
+- The language button, the project title, the timecode button and the **Blending & Opacity** tile now include the text they show in their accessible name (the language code, the project name, the current time). Their hints stay available as the description.
 - Upstream build numbers are removed from headings and effect descriptions.
 
 ## 2026-11-14 — Layer Bar, Template Cards, Storage Cleanup & Safety Fixes
