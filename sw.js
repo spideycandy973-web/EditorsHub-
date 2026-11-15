@@ -1,13 +1,15 @@
-/* Open Motion Markers & About (2026-10-30) PWA service worker.
+/* EditorsHub PWA service worker (2026-11-14).
    Network-first navigation keeps GitHub deployments fresh while retaining an
    offline shell. User-imported Blob/File media is never cached here. */
-const CACHE_NAME = 'open-motion-pwa-20261030-markers-about';
+const CACHE_NAME = 'editorshub-pwa-20261114';
+// Caches written by earlier builds of this app, removed on activation.
+const OLD_CACHE_PREFIXES = ['editorshub-pwa-', 'open-motion-pwa-'];
 const SHELL = [
   './',
   './manifest.webmanifest',
-  './icons/open-motion-192.png',
-  './icons/open-motion-512.png',
-  './icons/open-motion-maskable-512.png',
+  './icons/editorshub-192.png',
+  './icons/editorshub-512.png',
+  './icons/editorshub-maskable-512.png',
   './icons/apple-touch-icon.png',
   './icons/favicon-64.png'
 ];
@@ -17,14 +19,14 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(SHELL))
-      .catch(error => console.warn('[Open Motion PWA] shell pre-cache skipped:', error))
+      .catch(error => console.warn('[EditorsHub PWA] shell pre-cache skipped:', error))
   );
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const names = await caches.keys();
-    await Promise.all(names.filter(name => name.startsWith('open-motion-pwa-') && name !== CACHE_NAME)
+    await Promise.all(names.filter(name => name !== CACHE_NAME && OLD_CACHE_PREFIXES.some(prefix => name.startsWith(prefix)))
       .map(name => caches.delete(name)));
     await self.clients.claim();
   })());
@@ -78,5 +80,3 @@ self.addEventListener('fetch', event => {
     })());
   }
 });
-
-
